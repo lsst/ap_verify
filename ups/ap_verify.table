@@ -1,0 +1,10 @@
+setupRequired(python)
+setupRequired(python_future)
+
+setupRequired(utils)
+
+setupRequired(pyyaml)
+setupRequired(verify)
+
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
+envPrepend(PATH, ${PRODUCT_DIR}/bin)
