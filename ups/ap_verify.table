@@ -6,5 +6,7 @@ setupRequired(utils)
 setupRequired(pyyaml)
 setupRequired(verify)
 
+setupOptional(ap_verify_hits2015)
+
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
