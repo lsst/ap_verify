@@ -154,6 +154,26 @@ class Dataset(object):
         return os.path.join(self.dataset_root, 'calib')
 
     @property
+    def defect_location(self):
+        """The directory containing defect files.
+
+        Returns
+        -------
+        a string giving the location of the top-level directory for defect files
+        """
+        return self.calib_location
+
+    @property
+    def refcat_location(self):
+        """The directory containing external reference catalogs.
+
+        Returns
+        -------
+        a string giving the location of the top-level directory for astrometric and photometric catalogs
+        """
+        return os.path.join(self.dataset_root, 'ref_cats')
+
+    @property
     def template_location(self):
         """The directory containing the image subtraction templates.
 
@@ -189,9 +209,13 @@ class Dataset(object):
             raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing data directory')
         if not os.path.exists(self.calib_location):
             raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing calibration directory')
-        # Template directory might not be subdirectory of self.dataset_root
+        if not os.path.exists(self.defect_location):
+            raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing defect directory')
+        # Template and refcat directories might not be subdirectories of self.dataset_root
         if not os.path.exists(self.template_location):
             raise RuntimeError('Dataset is missing template directory at ' + self.template_location)
+        if not os.path.exists(self.refcat_location):
+            raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcat_location)
         if not os.path.exists(self._stub_input_repo):
             raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing stub repo')
         if not os.path.exists(os.path.join(self._stub_input_repo, '_mapper')):
