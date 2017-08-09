@@ -125,12 +125,14 @@ def _get_output_dir(input_dir, output_arg, rerun_arg):
         return os.path.join(input_dir, "rerun", rerun_arg)
 
 
-def _measure_final_properties(metrics_job):
+def _measure_final_properties(metadata, metrics_job):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
     Parameters
     ----------
+    metadata: `lsst.daf.base.PropertySet`
+        The metadata produced by the AP pipeline.
     metrics_job: `verify.Job`
         The Job object to which to add any metric measurements made.
     """
@@ -154,5 +156,5 @@ if __name__ == '__main__':
     with AutoJob(args) as job:
         log.info('Running pipeline...')
         pipeline = ApPipe(test_data, output, args)
-        pipeline.run(job)
-        _measure_final_properties(job)
+        metadata = pipeline.run(job)
+        _measure_final_properties(metadata, job)

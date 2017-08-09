@@ -25,10 +25,10 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["ApPipeParser", "ApPipe"]
 
 import argparse
+from future.utils import raise_from
 
 import lsst.log
-from lsst.ap.verify.dataset import Dataset
-from lsst.ap.verify.pipeline import Pipeline
+from lsst.ap.verify.pipeline import Pipeline, MeasurementStorageError
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -70,31 +70,99 @@ class ApPipe(Pipeline):
         self._dataId = parsed_cmd_line.dataId
         self._parallelization = parsed_cmd_line.processes
 
-    def _ingest_raws(self):
+    def _update_metrics(self, metadata, job):
+        """Common measurement-handling policy for ApPipe.
+
+        Attempts to read measurements from disk using
+        `store_metrics_from_files`, and raises `MeasurementStorageError` on
+        failure instead of trying an alternate approach or allowing
+        measurements to be lost.
+        """
+        try:
+            Pipeline.store_metrics_from_files(metadata, job)
+        except (IOError, TypeError) as e:
+            raise_from(MeasurementStorageError(
+                'Task metadata could not be read; possible downstream bug'), e)
+
+    def _ingest_raws(self, metrics_job):
         """Ingest the raw data for use by LSST.
 
         The original data directory shall not be modified.
+
+        Parameters
+        ----------
+        metrics_job: `verify.Job`
+            The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by this method. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them.
         """
         # use self.dataset and self.repo
         raise NotImplementedError
 
-    def _ingest_calibs(self):
+        self._update_metrics(metadata, metrics_job)
+        return metadata
+
+    def _ingest_calibs(self, metrics_job):
         """Ingest the raw calibrations for use by LSST.
 
         The original calibration directory shall not be modified.
+
+        Parameters
+        ----------
+        metrics_job: `verify.Job`
+            The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by this method. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them.
         """
         # use self.dataset and self.repo
         raise NotImplementedError
 
-    def _ingest_templates(self):
+        self._update_metrics(metadata, metrics_job)
+        return metadata
+
+    def _ingest_templates(self, metrics_job):
         """Ingest precomputed templates for use by LSST.
 
         The templates may be either LSST `calexp` or LSST
         `deepCoadd_psfMatchedWarp`. The original template directory shall not
         be modified.
+
+        Parameters
+        ----------
+        metrics_job: `verify.Job`
+            The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by this method. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them.
         """
         # use self.dataset and self.repo
         raise NotImplementedError
+
+        self._update_metrics(metadata, metrics_job)
+        return metadata
 
     def _process(self, metrics_job):
         """Run single-frame processing on a dataset.
@@ -103,9 +171,22 @@ class ApPipe(Pipeline):
         ----------
         metrics_job: `verify.Job`
             The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by this method. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them.
         """
         # use self.repo, self._dataId, self._parallelization
         raise NotImplementedError
+
+        self._update_metrics(metadata, metrics_job)
+        return metadata
 
     def _difference(self, metrics_job):
         """Run image differencing on a dataset.
@@ -114,9 +195,22 @@ class ApPipe(Pipeline):
         ----------
         metrics_job: `verify.Job`
             The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by this method. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them.
         """
         # use self.repo, self._dataId, self._parallelization
         raise NotImplementedError
+
+        self._update_metrics(metadata, metrics_job)
+        return metadata
 
     def _associate(self, metrics_job):
         """Run source association on a dataset.
@@ -125,9 +219,22 @@ class ApPipe(Pipeline):
         ----------
         metrics_job: `verify.Job`
             The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by this method. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them.
         """
         # use self.repo, self._parallelization
         raise NotImplementedError
+
+        self._update_metrics(metadata, metrics_job)
+        return metadata
 
     def _post_process(self):
         """Run post-processing on a dataset.
@@ -144,19 +251,31 @@ class ApPipe(Pipeline):
         ----------
         metrics_job: `verify.Job`
             The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by the pipeline. May be empty.
+
+        Raises
+        ------
+        `pipeline.MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with all of them.
         """
         log = lsst.log.Log.getLogger('ap.verify.appipe.ApPipe.run')
 
-        self._ingest_raws()
-        self._ingest_calibs()
-        self._ingest_templates()
+        metadata = self._ingest_raws(metrics_job)
+        metadata.combine(self._ingest_calibs(metrics_job))
+        metadata.combine(self._ingest_templates(metrics_job))
         log.info('Data ingested')
 
-        self._process(metrics_job)
+        metadata.combine(self._process(metrics_job))
         log.info('Single-frame processing complete')
-        self._difference(metrics_job)
+        metadata.combine(self._difference(metrics_job))
         log.info('Image differencing complete')
-        self._associate(metrics_job)
+        metadata.combine(self._associate(metrics_job))
         log.info('Source association complete')
+
         self._post_process()
         log.info('Pipeline complete')
+        return metadata

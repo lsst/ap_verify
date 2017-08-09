@@ -23,6 +23,13 @@
 from __future__ import absolute_import, division, print_function
 
 from abc import ABCMeta, abstractmethod
+import json
+
+from lsst.verify import Job
+
+
+class MeasurementStorageError(RuntimeError):
+    pass
 
 
 class Pipeline(object):
@@ -68,12 +75,61 @@ class Pipeline(object):
         measurements and metadata in `metrics_job`, but must not export or
         otherwise post-process those measurements.
 
-        This method is not called by Pipeline, so implementation decisions in
-        a subclass will not have unintended consequences.
+        This method is not called by `Pipeline`.
 
         Parameters
         ----------
         metrics_job: `verify.Job`
             The Job object to which to add any metric measurements made.
+
+        Returns
+        -------
+        The metadata from any Tasks called by the pipeline. May be empty.
+
+        Raises
+        ------
+        `MeasurementStorageError`
+            Measurements were made, but `metrics_job` could not be updated
+            with them. `metrics_job` may be changed in the event of this
+            exception, so long as it is left in a valid state.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def store_metrics_from_files(metadata, job):
+        """Update a Job object with the measurements created from running a Task.
+
+        The metadata shall be searched for the locations of Job dump files from
+        the most recent run of a Task and its subTasks; the contents of these
+        files shall be added to `job`. This method is a temporary workaround
+        for the `verify` framework's limited persistence support, and will be
+        removed in a future version.
+
+        This method is intended to help implement subclasses, and should not be
+        called by external code. It is not called by `Pipeline` itself.
+
+        Parameters
+        ----------
+        metadata: `lsst.daf.base.PropertySet`
+            The metadata from running a Task(s). Assumed to contain keys of
+            the form `<standard task prefix>.verify_json_path` that maps to the
+            absolute file location of that Task's serialized measurements. All
+            other metadata fields are ignored.
+        job: `verify.Job`
+            The Job object to which to add measurements. This object shall be
+            left in a consistent state if this method raises exceptions.
+
+        Raises
+        ------
+        `IOError`
+            Serialized measurements could not be located or read from disk.
+        `TypeError`
+            A `verify_json_path` key does not map to a string.
+        """
+        keys = metadata.names(topLevelOnly=False)
+        files = [metadata.getAsString(key) for key in keys if key.endswith('verify_json_path')]
+
+        for measurement_file in files:
+            with open(measurement_file) as f:
+                task_job = Job.deserialize(**json.load(f))
+            job += task_job
