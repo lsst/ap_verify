@@ -6,9 +6,15 @@ This package manages end-to-end testing and metric generation for the LSST DM Al
 
 ## Configuration
 
-`ap_verify` is configured from `config/dataset_config.yaml`. The file currently must have a single dictionary named `datasets`, which maps from user-visible dataset names to the eups package that implements them (see `Setting Up a Package`, below). Other configuration options may be added in the future.
+`ap_verify` is configured from `config/dataset_config.yaml`. The file currently must have:
 
-### Setting Up a Package
+* a dictionary named `datasets`, which maps from user-visible dataset names to the eups package that implements them (see `Setting Up a Dataset`, below)
+* a dictionary named `measurements`, which contains dictionaries needed for different metrics:
+    * `timing`: maps from names of metrics in the `verify_metrics` package to the Tasks or subTasks they time. The names of subTasks must be those assigned by the parent Task, and may be prefixed by the parent Task name(s) followed by a colon, as in "imageDifference:detection".
+
+Other configuration options may be added in the future.
+
+### Setting Up a Dataset
 
 `ap_verify` requires that all data be in a [dataset package](https://github.com/lsst-dm/ap_verify_dataset_template). It will create a workspace modeled after the package's `data` directory, then process any data found in the `raw` and `ref_cats` in the new workspace. Anything placed in `data` will be copied to a `ap_verify` run's workspace as-is, and must at least include a `_mapper` file naming the CameraMapper for the data.
 

@@ -51,6 +51,16 @@ class Config(object):
         except (KeyError, TypeError) as e:
             raise_from(RuntimeError('Invalid config file.'), e)
 
+        try:
+            measurement_map = self._all_info['measurements']
+            if not isinstance(measurement_map, Policy):
+                raise TypeError('`measurements` is not a dictionary')
+            timing_map = measurement_map['timing']
+            if not isinstance(timing_map, Policy):
+                raise TypeError('`measurements.timing` is not a dictionary')
+        except (KeyError, TypeError) as e:
+            raise_from(RuntimeError('Invalid config file.'), e)
+
 
 # Hack, but I don't know how else to make Config.instance act like a dictionary of config options
 Config.instance = Config()._all_info

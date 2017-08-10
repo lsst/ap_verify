@@ -35,9 +35,10 @@ import os
 import re
 
 import lsst.log
-from lsst.ap.verify.dataset import Dataset
-from lsst.ap.verify.metrics import MetricsParser, check_squash_ready, AutoJob
-from lsst.ap.verify.appipe import ApPipeParser, ApPipe
+from .dataset import Dataset
+from .metrics import MetricsParser, check_squash_ready, AutoJob
+from .appipe import ApPipeParser, ApPipe
+from .measurements import measure_from_metadata
 
 
 class _VerifyApParser(argparse.ArgumentParser):
@@ -136,7 +137,9 @@ def _measure_final_properties(metadata, metrics_job):
     metrics_job: `verify.Job`
         The Job object to which to add any metric measurements made.
     """
-    pass
+    measurements = measure_from_metadata(metadata)
+    for measurement in measurements:
+        metrics_job.measurements.insert(measurement)
 
 
 if __name__ == '__main__':

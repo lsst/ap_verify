@@ -29,7 +29,7 @@ from eups import Eups
 
 from lsst.utils import getPackageDir
 
-from lsst.ap.verify.config import Config
+from .config import Config
 
 
 class Dataset(object):
