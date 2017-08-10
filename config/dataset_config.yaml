@@ -1,5 +1,18 @@
 ---
 datasets:
     HiTS2015: ap_verify_hits2015
+measurements:
+    timing:
+        pipe_tasks.ProcessCcdTime: processCcd
+        ip_isr.IsrTime: processCcd:isr
+        pipe_tasks.CharacterizeImageTime: processCcd:charImage
+        pipe_tasks.CalibrateTime: processCcd:calibrate
+        pipe_tasks.ImageDifferenceTime: imageDifference
+        meas_astrom.AstrometryTime: imageDifference:astrometer
+        pipe_tasks.RegisterImageTime: imageDifference:register
+        ip_diffim.ImagePsfMatchTime: imageDifference:subtract
+        meas_algorithms.SourceDetectionTime: imageDifference:detection
+        ip_diffim.DipoleFitTime: imageDifference:measurement
+        ap_association.AssociationTime: association
 ...
 

@@ -28,7 +28,7 @@ import argparse
 from future.utils import raise_from
 
 import lsst.log
-from lsst.ap.verify.pipeline import Pipeline, MeasurementStorageError
+from .pipeline import Pipeline, MeasurementStorageError
 
 
 class ApPipeParser(argparse.ArgumentParser):
