@@ -2,8 +2,8 @@ setupRequired(python)
 setupRequired(python_future)
 
 setupRequired(utils)
+setupRequired(daf_persistence)
 
-setupRequired(pyyaml)
 setupRequired(verify)
 
 setupOptional(ap_verify_hits2015)
