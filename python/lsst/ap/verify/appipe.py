@@ -148,10 +148,16 @@ class ApPipe(Pipeline):
         calib_output_repo = os.path.join(self.repo, CALIBINGESTED_DIR)
         
         types = ('*.fits', '*.fz')
-        calibdatafiles = []
+        allcalibdatafiles = []
         for files in types:
-            calibdatafiles.extend(glob(os.path.join(self.dataset.calib_location, files)))
-
+            allcalibdatafiles.extend(glob(os.path.join(self.dataset.calib_location, files)))
+        # Ignore wtmaps and illumcors
+        calibdatafiles = []
+        filestoignore = ['fcw', 'zcw', 'ici']
+        for file in allcalibdatafiles:
+            if all(string not in file for string in filestoignore):
+                calibdatafiles.append(file)
+        
         defectloc = self.dataset.defect_location
         DEFECT_TARBALL = 'defects_2014-12-05.tar.gz'
         defect_tarfile_path = glob(os.path.join(defectloc, DEFECT_TARBALL))[0]
