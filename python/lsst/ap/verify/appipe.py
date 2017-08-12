@@ -25,6 +25,9 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["ApPipeParser", "ApPipe"]
 
 import argparse
+import os
+from glob import glob
+import tarfile
 from future.utils import raise_from
 
 import lsst.log
@@ -114,7 +117,7 @@ class ApPipe(Pipeline):
         types = ('*.fits', '*.fz')
         datafiles = []
         for files in types:
-            datafiles.extend(glob(self.dataset.data_location, files))
+            datafiles.extend(glob(os.path.join(self.dataset.data_location, files)))
 
         metadata = ap_pipe.doIngest(raw_output_repo, self.dataset.refcat_location, datafiles)
 
@@ -147,7 +150,7 @@ class ApPipe(Pipeline):
         types = ('*.fits', '*.fz')
         calibdatafiles = []
         for files in types:
-            calibdatafiles.extend(glob(self.dataset.calib_location, files))
+            calibdatafiles.extend(glob(os.path.join(self.dataset.calib_location, files)))
 
         defectloc = self.dataset.defect_location
         DEFECT_TARBALL = 'defects_2014-12-05.tar.gz'
