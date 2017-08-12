@@ -28,7 +28,7 @@ command-line argument parsing.
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = []
+__all__ = ["run_ap_verify"]
 
 import argparse
 import os
@@ -142,7 +142,7 @@ def _measure_final_properties(metadata, metrics_job):
         metrics_job.measurements.insert(measurement)
 
 
-if __name__ == '__main__':
+def run_ap_verify():
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
