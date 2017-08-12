@@ -28,8 +28,13 @@ import argparse
 from future.utils import raise_from
 
 import lsst.log
+import lsst.ap.pipe as ap_pipe
 from .pipeline import Pipeline, MeasurementStorageError
 
+INGESTED_DIR = 'ingested'
+CALIBINGESTED_DIR = 'calibingested'
+PROCESSED_DIR = 'processed'
+DIFFIM_DIR = 'diffim'
 
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ap_pipe activities.
@@ -104,8 +109,14 @@ class ApPipe(Pipeline):
             Measurements were made, but `metrics_job` could not be updated
             with them.
         """
-        # use self.dataset and self.repo
-        raise NotImplementedError
+        raw_output_repo = os.path.join(self.repo, INGESTED_DIR)
+        
+        types = ('*.fits', '*.fz')
+        datafiles = []
+        for files in types:
+            datafiles.extend(glob(self.dataset.data_location, files))
+
+        metadata = ap_pipe.doIngest(raw_output_repo, self.dataset.refcat_location, datafiles)
 
         self._update_metrics(metadata, metrics_job)
         return metadata
@@ -130,9 +141,21 @@ class ApPipe(Pipeline):
             Measurements were made, but `metrics_job` could not be updated
             with them.
         """
-        # use self.dataset and self.repo
-        raise NotImplementedError
+        raw_output_repo = os.path.join(self.repo, INGESTED_DIR)
+        calib_output_repo = os.path.join(self.repo, CALIBINGESTED_DIR)
+        
+        types = ('*.fits', '*.fz')
+        calibdatafiles = []
+        for files in types:
+            calibdatafiles.extend(glob(self.dataset.calib_location, files))
 
+        defectloc = self.dataset.defect_location
+        DEFECT_TARBALL = 'defects_2014-12-05.tar.gz'
+        defect_tarfile_path = glob(os.path.join(defectloc, DEFECT_TARBALL))[0]
+        defectfiles = tarfile.open(defect_tarfile_path).getnames()
+        defectfiles = [os.path.join(defectloc, file) for file in defectfiles]
+
+        metadata = ap_pipe.doIngestCalibs(raw_output_repo, calib_output_repo, calibdatafiles, defectfiles)
         self._update_metrics(metadata, metrics_job)
         return metadata
 
