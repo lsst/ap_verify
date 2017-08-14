@@ -5,6 +5,7 @@ setupRequired(utils)
 setupRequired(daf_persistence)
 
 setupRequired(verify)
+setupRequired(ap_pipe)
 
 setupOptional(ap_verify_hits2015)
 
