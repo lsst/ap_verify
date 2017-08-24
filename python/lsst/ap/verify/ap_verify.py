@@ -37,7 +37,7 @@ import re
 import lsst.log
 from .dataset import Dataset
 from .metrics import MetricsParser, check_squash_ready, AutoJob
-from .appipe import ApPipeParser, ApPipe
+from .pipeline_driver import ApPipeParser, run_ap_pipe
 from .measurements import measure_from_metadata
 
 
@@ -158,6 +158,5 @@ def run_ap_verify():
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        pipeline = ApPipe(test_data, output, args)
-        metadata = pipeline.run(job)
+        metadata = run_ap_pipe(test_data, output, args, job)
         _measure_final_properties(metadata, job)
