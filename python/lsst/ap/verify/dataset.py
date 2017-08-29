@@ -171,7 +171,7 @@ class Dataset(object):
         -------
         a string giving the location of the top-level directory for astrometric and photometric catalogs
         """
-        return os.path.join(self.dataset_root, 'ref_cats')
+        return os.path.join(self.dataset_root, 'refcats')
 
     @property
     def template_location(self):
@@ -191,7 +191,7 @@ class Dataset(object):
         -------
         a string giving the location of the stub input repo
         """
-        return os.path.join(self.dataset_root, 'data')
+        return os.path.join(self.dataset_root, 'repo')
 
     def _validate_package(self):
         """Confirm that the dataset directory satisfies all assumptions.
