@@ -2,14 +2,14 @@
 
 from documenteer.sphinxconfig.stackconf import build_package_configs
 
-import lsst.afw
+import lsst.ap.verify
 
 _g = globals()
 _g.update(build_package_configs(
-    project_name="afw",
+    project_name="ap_verify",
     copyright="2017 Association of Univerities for "
               "Research in Astronomy, Inc.",
-    version=lsst.afw.version.__version__,
+    version=lsst.ap_verify.version.__version__,
     doxygen_xml_dirname=None))
 
 intersphinx_mapping['astropy'] = ('http://docs.astropy.org/en/stable', None)

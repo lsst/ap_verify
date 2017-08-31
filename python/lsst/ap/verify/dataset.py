@@ -22,14 +22,14 @@
 
 from __future__ import absolute_import, division, print_function
 
-from future.utils import raise_from
 import os
 import shutil
 
 from eups import Eups
-import yaml
 
 from lsst.utils import getPackageDir
+
+from .config import Config
 
 
 class Dataset(object):
@@ -104,22 +104,11 @@ class Dataset(object):
 
         Raises
         ------
-        `IoError`:
-            the config file does not exist or is not readable
         `RuntimeError`:
             the config file exists, but does not contain the expected data
         """
         if not hasattr(Dataset, '_dataset_config'):
-            try:
-                yaml_file = os.path.join(getPackageDir('ap_verify'), 'config/dataset_config.yaml')
-                with open(yaml_file, 'r') as config:
-                    dataset_map = yaml.safe_load(config)['datasets']
-                if not isinstance(dataset_map, dict):
-                    raise TypeError('`datasets` is not a dictionary')
-
-                Dataset._dataset_config = dataset_map
-            except (KeyError, TypeError, yaml.YAMLError) as e:
-                raise_from(RuntimeError('Invalid config file.'), e)
+            Dataset._dataset_config = Config.instance['datasets']
 
         return Dataset._dataset_config
 

@@ -28,16 +28,17 @@ command-line argument parsing.
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = []
+__all__ = ["run_ap_verify"]
 
 import argparse
 import os
 import re
 
 import lsst.log
-from lsst.ap.verify.dataset import Dataset
-from lsst.ap.verify.metrics import MetricsParser, check_squash_ready, AutoJob
-from lsst.ap.verify.appipe import ApPipeParser, ApPipe
+from .dataset import Dataset
+from .metrics import MetricsParser, check_squash_ready, AutoJob
+from .pipeline_driver import ApPipeParser, run_ap_pipe
+from .measurements import measure_from_metadata
 
 
 class _VerifyApParser(argparse.ArgumentParser):
@@ -125,19 +126,23 @@ def _get_output_dir(input_dir, output_arg, rerun_arg):
         return os.path.join(input_dir, "rerun", rerun_arg)
 
 
-def _measure_final_properties(metrics_job):
+def _measure_final_properties(metadata, metrics_job):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
     Parameters
     ----------
+    metadata: `lsst.daf.base.PropertySet`
+        The metadata produced by the AP pipeline.
     metrics_job: `verify.Job`
         The Job object to which to add any metric measurements made.
     """
-    pass
+    measurements = measure_from_metadata(metadata)
+    for measurement in measurements:
+        metrics_job.measurements.insert(measurement)
 
 
-if __name__ == '__main__':
+def run_ap_verify():
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
@@ -153,6 +158,5 @@ if __name__ == '__main__':
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        pipeline = ApPipe(test_data, output, args)
-        pipeline.run(job)
-        _measure_final_properties(job)
+        metadata = run_ap_pipe(test_data, output, args, job)
+        _measure_final_properties(metadata, job)
