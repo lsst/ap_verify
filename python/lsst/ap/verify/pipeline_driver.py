@@ -66,10 +66,11 @@ def _update_metrics(self, metadata, job):
     Parameters
     ----------
     metadata: `lsst.daf.base.PropertySet`
-        The metadata from running a Task(s). Assumed to contain keys of
-        the form `<standard task prefix>.verify_json_path` that maps to the
-        absolute file location of that Task's serialized measurements. All
-        other metadata fields are ignored.
+        The metadata from running a Task(s). No action taken if None.
+        Assumed to contain keys of the form
+        `<standard task prefix>.verify_json_path` that maps to the
+        absolute file location of that Task's serialized measurements.
+        All other metadata fields are ignored.
     job: `verify.Job`
         The Job object to which to add measurements. This object shall be
         left in a consistent state if this method raises exceptions.
@@ -80,6 +81,8 @@ def _update_metrics(self, metadata, job):
         A `verify_json_path` key does not map to a string, or serialized
         measurements could not be located or read from disk.
     """
+    if metadata is None:
+        return
     try:
         keys = metadata.names(topLevelOnly=False)
         files = [metadata.getAsString(key) for key in keys if key.endswith('verify_json_path')]
@@ -119,6 +122,7 @@ def _ingest_raws(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
+    # note that RAW_DIR = dataset.data_location, ref_cats = dataset.refcats_location, etc.
     raise NotImplementedError
 
     _update_metrics(metadata, metrics_job)

@@ -153,7 +153,7 @@ class Dataset(object):
         return self.calib_location
 
     @property
-    def refcat_location(self):
+    def refcats_location(self):
         """The directory containing external reference catalogs.
 
         Returns
@@ -203,8 +203,8 @@ class Dataset(object):
         # Template and refcat directories might not be subdirectories of self.dataset_root
         if not os.path.exists(self.template_location):
             raise RuntimeError('Dataset is missing template directory at ' + self.template_location)
-        if not os.path.exists(self.refcat_location):
-            raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcat_location)
+        if not os.path.exists(self.refcats_location):
+            raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcats_location)
         if not os.path.exists(self._stub_input_repo):
             raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing stub repo')
         if not os.path.exists(os.path.join(self._stub_input_repo, '_mapper')):
