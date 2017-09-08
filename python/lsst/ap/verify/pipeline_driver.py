@@ -160,39 +160,6 @@ def _ingest_calibs(dataset, working_repo, metrics_job):
     return metadata
 
 
-def _ingest_templates(dataset, working_repo, metrics_job):
-    """Ingest precomputed templates for use by LSST.
-
-    The templates may be either LSST `calexp` or LSST
-    `deepCoadd_psfMatchedWarp`. The original template directory shall not
-    be modified.
-
-    Parameters
-    ----------
-    dataset: `dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    working_repo: `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
-    metrics_job: `verify.Job`
-        The Job object to which to add any metric measurements made.
-
-    Returns
-    -------
-    The metadata from any Tasks called by this method. May be empty.
-
-    Raises
-    ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
-        with them.
-    """
-    raise NotImplementedError
-
-    _update_metrics(metadata, metrics_job)
-    return metadata
-
-
 def _process(working_repo, dataId, parallelization, metrics_job):
     """Run single-frame processing on a dataset.
 
@@ -325,7 +292,6 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
 
     metadata = _ingest_raws(dataset, working_repo, metrics_job)
     metadata.combine(_ingest_calibs(dataset, working_repo, metrics_job))
-    metadata.combine(_ingest_templates(dataset, working_repo, metrics_job))
     log.info('Data ingested')
 
     dataId = parsed_cmd_line.dataId
