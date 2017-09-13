@@ -30,6 +30,7 @@ from future.utils import raise_from
 import json
 
 import lsst.log
+import lsst.ap.pipe as ap_pipe
 from lsst.verify import Job
 
 
@@ -47,7 +48,8 @@ class ApPipeParser(argparse.ArgumentParser):
                           help='An identifier for the data to process. '
                           'May not support all features of a Butler dataId; '
                           'see the ap_pipe documentation for details.')
-        self.add_argument("-j", "--processes", default=1, type=int, help="Number of processes to use")
+        self.add_argument("-j", "--processes", default=1, type=int, 
+                          help="Number of processes to use. Not yet implemented.")
 
 
 class MeasurementStorageError(RuntimeError):
@@ -122,8 +124,10 @@ def _ingest_raws(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    # note that RAW_DIR = dataset.data_location, ref_cats = dataset.refcats_location, etc.
-    raise NotImplementedError
+    repo = ap_pipe.get_output_repos(working_repo)[0]
+    datafiles = ap_pipe.get_datafiles(dataset.data_location)
+
+    metadata = ap_pipe.doIngest(repo, dataset.refcats_location, datafiles)
 
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -154,7 +158,12 @@ def _ingest_calibs(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
+    repo = ap_pipe.get_output_repos(working_repo)[0]
+    calib_repo = ap_pipe.get_output_repos(working_repo)[1]
+    calibdatafiles = ap_pipe.get_calibdatafiles(dataset.data_location)
+    defectfiles = ap_pipe.get_defectfiles(dataset.data_location)
+
+    metadata = ap_pipe.doIngestCalibs(repo, calib_repo, calibdatafiles, defectfiles)
 
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -185,7 +194,11 @@ def _process(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
+    repo = ap_pipe.get_output_repos(working_repo)[0]
+    calib_repo = ap_pipe.get_output_repos(working_repo)[1]
+    processed_repo = ap_pipe.get_output_repos(working_repo)[2]
+
+    metadata = ap_pipe.doProcessCcd(repo, calib_repo, processed_repo, dataId)
 
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -216,7 +229,11 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
+    processed_repo = ap_pipe.get_output_repos(working_repo)[2]
+    diffim_repo = ap_pipe.get_output_repos(working_repo)[3]
+    template = '410929'  # one g-band Blind15A40 visit for testing
+
+    metadata = ap_pipe.doDiffIm(processed_repo, dataId, template, diffim_repo)
 
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -298,10 +315,14 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
     processes = parsed_cmd_line.processes
     metadata.combine(_process(working_repo, dataId, processes, metrics_job))
     log.info('Single-frame processing complete')
+
+    dataId_template = 'visit=410929 ccdnum=25'  # temporary for testing
+    _process(working_repo, dataId_template, processes, metrics_job)  # temporary for testing
+
     metadata.combine(_difference(working_repo, dataId, processes, metrics_job))
     log.info('Image differencing complete')
-    metadata.combine(_associate(working_repo, processes, metrics_job))
-    log.info('Source association complete')
+    #metadata.combine(_associate(working_repo, processes, metrics_job))
+    #log.info('Source association complete')
 
     _post_process(working_repo)
     log.info('Pipeline complete')
