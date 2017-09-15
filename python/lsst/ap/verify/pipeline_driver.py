@@ -33,6 +33,12 @@ import lsst.log
 import lsst.ap.pipe as ap_pipe
 from lsst.verify import Job
 
+# Names of directories to be created in specified output location
+INGESTED_DIR = 'ingested'
+CALIBINGESTED_DIR = 'calibingested'
+PROCESSED_DIR = 'processed'
+DIFFIM_DIR = 'diffim'
+OUTPUT_DIRS = [INGESTED_DIR, CALIBINGESTED_DIR, PROCESSED_DIR, DIFFIM_DIR]
 
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ap_pipe activities.
@@ -56,7 +62,7 @@ class MeasurementStorageError(RuntimeError):
     pass
 
 
-def _update_metrics(self, metadata, job):
+def _update_metrics(metadata, job):
     """Update a Job object with the measurements created from running a Task.
 
     The metadata shall be searched for the locations of Job dump files from
@@ -124,11 +130,9 @@ def _ingest_raws(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repos(working_repo)[0]
-    datafiles = ap_pipe.get_datafiles(dataset.data_location)
-
+    repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[0]
+    datafiles = ap_pipe.get_datafiles(dataset.data_location, dataset.data_location)
     metadata = ap_pipe.doIngest(repo, dataset.refcats_location, datafiles)
-
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -158,13 +162,11 @@ def _ingest_calibs(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repos(working_repo)[0]
-    calib_repo = ap_pipe.get_output_repos(working_repo)[1]
-    calibdatafiles = ap_pipe.get_calibdatafiles(dataset.data_location)
-    defectfiles = ap_pipe.get_defectfiles(dataset.data_location)
-
+    repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[0]
+    calib_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[1]
+    calibdatafiles = ap_pipe.get_calibdatafiles(dataset.data_location, dataset.calib_location)
+    defectfiles = ap_pipe.get_defectfiles(dataset.data_location, dataset.defect_location, 'defects_2014-12-05.tar.gz')
     metadata = ap_pipe.doIngestCalibs(repo, calib_repo, calibdatafiles, defectfiles)
-
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -194,12 +196,10 @@ def _process(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repos(working_repo)[0]
-    calib_repo = ap_pipe.get_output_repos(working_repo)[1]
-    processed_repo = ap_pipe.get_output_repos(working_repo)[2]
-
+    repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[0]
+    calib_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[1]
+    processed_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[2]
     metadata = ap_pipe.doProcessCcd(repo, calib_repo, processed_repo, dataId)
-
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -229,12 +229,10 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    processed_repo = ap_pipe.get_output_repos(working_repo)[2]
-    diffim_repo = ap_pipe.get_output_repos(working_repo)[3]
+    processed_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[2]
+    diffim_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[3]
     template = '410929'  # one g-band Blind15A40 visit for testing
-
     metadata = ap_pipe.doDiffIm(processed_repo, dataId, template, diffim_repo)
-
     _update_metrics(metadata, metrics_job)
     return metadata
 
