@@ -59,7 +59,7 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(self._testbed.data_location, os.path.join(root, 'raw'))
         self.assertEqual(self._testbed.calib_location, os.path.join(root, 'calib'))
         self.assertEqual(self._testbed.template_location, os.path.join(root, 'templates'))
-        self.assertEqual(self._testbed.refcat_location, os.path.join(root, 'refcats'))
+        self.assertEqual(self._testbed.refcats_location, os.path.join(root, 'refcats'))
 
     def test_output(self):
         """Verify that a Dataset can create an output repository as desired.

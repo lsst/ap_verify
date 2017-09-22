@@ -30,8 +30,14 @@ from future.utils import raise_from
 import json
 
 import lsst.log
+import lsst.ap.pipe as ap_pipe
 from lsst.verify import Job
 
+# Names of directories to be created in specified output location
+INGESTED_DIR = 'ingested'
+CALIBINGESTED_DIR = 'calibingested'
+PROCESSED_DIR = 'processed'
+DIFFIM_DIR = 'diffim'
 
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ap_pipe activities.
@@ -47,14 +53,15 @@ class ApPipeParser(argparse.ArgumentParser):
                           help='An identifier for the data to process. '
                           'May not support all features of a Butler dataId; '
                           'see the ap_pipe documentation for details.')
-        self.add_argument("-j", "--processes", default=1, type=int, help="Number of processes to use")
+        self.add_argument("-j", "--processes", default=1, type=int, 
+                          help="Number of processes to use. Not yet implemented.")
 
 
 class MeasurementStorageError(RuntimeError):
     pass
 
 
-def _update_metrics(self, metadata, job):
+def _update_metrics(metadata, job):
     """Update a Job object with the measurements created from running a Task.
 
     The metadata shall be searched for the locations of Job dump files from
@@ -66,10 +73,11 @@ def _update_metrics(self, metadata, job):
     Parameters
     ----------
     metadata: `lsst.daf.base.PropertySet`
-        The metadata from running a Task(s). Assumed to contain keys of
-        the form `<standard task prefix>.verify_json_path` that maps to the
-        absolute file location of that Task's serialized measurements. All
-        other metadata fields are ignored.
+        The metadata from running a Task(s). No action taken if None.
+        Assumed to contain keys of the form
+        `<standard task prefix>.verify_json_path` that maps to the
+        absolute file location of that Task's serialized measurements.
+        All other metadata fields are ignored.
     job: `verify.Job`
         The Job object to which to add measurements. This object shall be
         left in a consistent state if this method raises exceptions.
@@ -80,6 +88,8 @@ def _update_metrics(self, metadata, job):
         A `verify_json_path` key does not map to a string, or serialized
         measurements could not be located or read from disk.
     """
+    if metadata is None:
+        return
     try:
         keys = metadata.names(topLevelOnly=False)
         files = [metadata.getAsString(key) for key in keys if key.endswith('verify_json_path')]
@@ -119,8 +129,9 @@ def _ingest_raws(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
-
+    repo = ap_pipe.get_output_repo(working_repo, INGESTED_DIR)
+    datafiles = ap_pipe.get_datafiles(dataset.data_location)
+    metadata = ap_pipe.doIngest(repo, dataset.refcats_location, datafiles)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -150,41 +161,11 @@ def _ingest_calibs(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
-
-    _update_metrics(metadata, metrics_job)
-    return metadata
-
-
-def _ingest_templates(dataset, working_repo, metrics_job):
-    """Ingest precomputed templates for use by LSST.
-
-    The templates may be either LSST `calexp` or LSST
-    `deepCoadd_psfMatchedWarp`. The original template directory shall not
-    be modified.
-
-    Parameters
-    ----------
-    dataset: `dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    working_repo: `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
-    metrics_job: `verify.Job`
-        The Job object to which to add any metric measurements made.
-
-    Returns
-    -------
-    The metadata from any Tasks called by this method. May be empty.
-
-    Raises
-    ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
-        with them.
-    """
-    raise NotImplementedError
-
+    repo = ap_pipe.get_output_repo(working_repo, INGESTED_DIR)
+    calib_repo = ap_pipe.get_output_repo(working_repo, CALIBINGESTED_DIR)
+    calib_datafiles = ap_pipe.get_calib_datafiles(dataset.calib_location)
+    defectfiles = ap_pipe.get_defectfiles(dataset.defect_location, 'defects_2014-12-05.tar.gz')
+    metadata = ap_pipe.doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -214,8 +195,10 @@ def _process(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
-
+    repo = ap_pipe.get_output_repo(working_repo, INGESTED_DIR)
+    calib_repo = ap_pipe.get_output_repo(working_repo, CALIBINGESTED_DIR)
+    processed_repo = ap_pipe.get_output_repo(working_repo, PROCESSED_DIR)
+    metadata = ap_pipe.doProcessCcd(repo, calib_repo, processed_repo, dataId)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -245,8 +228,11 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
-
+    processed_repo = ap_pipe.get_output_repo(working_repo, PROCESSED_DIR)
+    diffim_repo = ap_pipe.get_output_repo(working_repo, DIFFIM_DIR)
+    template = '410929'  # one g-band Blind15A40 visit for testing
+    # TODO: implement a coadd template by default, not a hard-wired visit (DM-11422)
+    metadata = ap_pipe.doDiffIm(processed_repo, dataId, template, diffim_repo)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -321,17 +307,20 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
 
     metadata = _ingest_raws(dataset, working_repo, metrics_job)
     metadata.combine(_ingest_calibs(dataset, working_repo, metrics_job))
-    metadata.combine(_ingest_templates(dataset, working_repo, metrics_job))
     log.info('Data ingested')
 
     dataId = parsed_cmd_line.dataId
     processes = parsed_cmd_line.processes
     metadata.combine(_process(working_repo, dataId, processes, metrics_job))
     log.info('Single-frame processing complete')
+
+    dataId_template = 'visit=410929 ccdnum=25'  # temporary (DM-11422)
+    _process(working_repo, dataId_template, processes, metrics_job)  # temporary (DM-11422)
+
     metadata.combine(_difference(working_repo, dataId, processes, metrics_job))
     log.info('Image differencing complete')
-    metadata.combine(_associate(working_repo, processes, metrics_job))
-    log.info('Source association complete')
+    #metadata.combine(_associate(working_repo, processes, metrics_job))
+    #log.info('Source association complete')
 
     _post_process(working_repo)
     log.info('Pipeline complete')
