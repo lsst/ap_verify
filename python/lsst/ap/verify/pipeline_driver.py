@@ -231,6 +231,7 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
     processed_repo = ap_pipe.get_output_repos(working_repo, PROCESSED_DIR)
     diffim_repo = ap_pipe.get_output_repos(working_repo, DIFFIM_DIR)
     template = '410929'  # one g-band Blind15A40 visit for testing
+    # TODO: implement a coadd template by default, not a hard-wired visit (DM-11422)
     metadata = ap_pipe.doDiffIm(processed_repo, dataId, template, diffim_repo)
     _update_metrics(metadata, metrics_job)
     return metadata
