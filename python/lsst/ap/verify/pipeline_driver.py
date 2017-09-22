@@ -38,7 +38,6 @@ INGESTED_DIR = 'ingested'
 CALIBINGESTED_DIR = 'calibingested'
 PROCESSED_DIR = 'processed'
 DIFFIM_DIR = 'diffim'
-OUTPUT_DIRS = [INGESTED_DIR, CALIBINGESTED_DIR, PROCESSED_DIR, DIFFIM_DIR]
 
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ap_pipe activities.
@@ -130,8 +129,8 @@ def _ingest_raws(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[0]
-    datafiles = ap_pipe.get_datafiles(dataset.data_location, dataset.data_location)
+    repo = ap_pipe.get_output_repos(working_repo, INGESTED_DIR)
+    datafiles = ap_pipe.get_datafiles(dataset.data_location)
     metadata = ap_pipe.doIngest(repo, dataset.refcats_location, datafiles)
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -162,10 +161,10 @@ def _ingest_calibs(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[0]
-    calib_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[1]
-    calibdatafiles = ap_pipe.get_calibdatafiles(dataset.data_location, dataset.calib_location)
-    defectfiles = ap_pipe.get_defectfiles(dataset.data_location, dataset.defect_location, 'defects_2014-12-05.tar.gz')
+    repo = ap_pipe.get_output_repos(working_repo, INGESTED_DIR)
+    calib_repo = ap_pipe.get_output_repos(working_repo, CALIBINGESTED_DIR)
+    calibdatafiles = ap_pipe.get_calibdatafiles(dataset.calib_location)
+    defectfiles = ap_pipe.get_defectfiles(dataset.defect_location, 'defects_2014-12-05.tar.gz')
     metadata = ap_pipe.doIngestCalibs(repo, calib_repo, calibdatafiles, defectfiles)
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -196,9 +195,9 @@ def _process(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[0]
-    calib_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[1]
-    processed_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[2]
+    repo = ap_pipe.get_output_repos(working_repo, INGESTED_DIR)
+    calib_repo = ap_pipe.get_output_repos(working_repo, CALIBINGESTED_DIR)
+    processed_repo = ap_pipe.get_output_repos(working_repo, PROCESSED_DIR)
     metadata = ap_pipe.doProcessCcd(repo, calib_repo, processed_repo, dataId)
     _update_metrics(metadata, metrics_job)
     return metadata
@@ -229,8 +228,8 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    processed_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[2]
-    diffim_repo = ap_pipe.get_output_repos(working_repo, OUTPUT_DIRS)[3]
+    processed_repo = ap_pipe.get_output_repos(working_repo, PROCESSED_DIR)
+    diffim_repo = ap_pipe.get_output_repos(working_repo, DIFFIM_DIR)
     template = '410929'  # one g-band Blind15A40 visit for testing
     metadata = ap_pipe.doDiffIm(processed_repo, dataId, template, diffim_repo)
     _update_metrics(metadata, metrics_job)
@@ -314,8 +313,8 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
     metadata.combine(_process(working_repo, dataId, processes, metrics_job))
     log.info('Single-frame processing complete')
 
-    dataId_template = 'visit=410929 ccdnum=25'  # temporary for testing
-    _process(working_repo, dataId_template, processes, metrics_job)  # temporary for testing
+    dataId_template = 'visit=410929 ccdnum=25'  # temporary (DM-11422)
+    _process(working_repo, dataId_template, processes, metrics_job)  # temporary (DM-11422)
 
     metadata.combine(_difference(working_repo, dataId, processes, metrics_job))
     log.info('Image differencing complete')
