@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import shutil
+import tempfile
 import unittest
 
 import lsst.utils.tests
@@ -64,24 +65,23 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
     def test_output(self):
         """Verify that a Dataset can create an output repository as desired.
         """
-        test_dir = os.path.dirname(__file__)
-        output = os.path.join(test_dir, 'hitsOut')
-        self.assertFalse(os.path.exists(output), 'Output test invalid if directory exists.')
+        test_dir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
+        output_dir = os.path.join(test_dir, 'hitsOut')
 
         try:
-            self._testbed.make_output_repo(output)
-            self.assertTrue(os.path.exists(output), 'Output directory must exist.')
-            self.assertTrue(os.listdir(output), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(output, '_mapper')),
+            self._testbed.make_output_repo(output_dir)
+            self.assertTrue(os.path.exists(output_dir), 'Output directory must exist.')
+            self.assertTrue(os.listdir(output_dir), 'Output directory must not be empty.')
+            self.assertTrue(os.path.exists(os.path.join(output_dir, '_mapper')),
                             'Output directory must have a _mapper file.')
         finally:
-            if os.path.exists(output):
-                shutil.rmtree(output)
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
 
     def test_bad_output(self):
         """Verify that a Dataset will not create an output directory if it is unsafe to do so.
         """
-        test_dir = os.path.dirname(__file__)
+        test_dir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
         output_dir = os.path.join(test_dir, 'badOut')
 
         try:
@@ -93,8 +93,8 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
             with self.assertRaises(IOError):
                 self._testbed.make_output_repo(output_dir)
         finally:
-            if os.path.exists(output_dir):
-                shutil.rmtree(output_dir)
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

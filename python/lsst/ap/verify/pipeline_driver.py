@@ -39,6 +39,7 @@ CALIBINGESTED_DIR = 'calibingested'
 PROCESSED_DIR = 'processed'
 DIFFIM_DIR = 'diffim'
 
+
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ap_pipe activities.
 
@@ -53,7 +54,7 @@ class ApPipeParser(argparse.ArgumentParser):
                           help='An identifier for the data to process. '
                           'May not support all features of a Butler dataId; '
                           'see the ap_pipe documentation for details.')
-        self.add_argument("-j", "--processes", default=1, type=int, 
+        self.add_argument("-j", "--processes", default=1, type=int,
                           help="Number of processes to use. Not yet implemented.")
 
 
@@ -319,8 +320,8 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
 
     metadata.combine(_difference(working_repo, dataId, processes, metrics_job))
     log.info('Image differencing complete')
-    #metadata.combine(_associate(working_repo, processes, metrics_job))
-    #log.info('Source association complete')
+    # metadata.combine(_associate(working_repo, processes, metrics_job))
+    # log.info('Source association complete')
 
     _post_process(working_repo)
     log.info('Pipeline complete')
