@@ -1,4 +1,3 @@
-#
 # LSST Data Management System
 # Copyright 2017 LSST Corporation.
 #
@@ -36,16 +35,16 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
     def setUp(self):
         self._testbed = Dataset('HiTS2015')
 
-    def test_init(self):
+    def testInit(self):
         """Verify that if a Dataset object exists, the corresponding data are available.
         """
         # EUPS does not provide many guarantees about what setting up a package means
         self.assertIsNotNone(os.getenv('AP_VERIFY_HITS2015_DIR'))
 
-    def test_datasets(self):
+    def testDatasets(self):
         """Verify that a Dataset knows its supported datasets.
         """
-        datasets = Dataset.get_supported_datasets()
+        datasets = Dataset.getSupportedDatasets()
         self.assertIn('HiTS2015', datasets)  # assumed by other tests
 
         # Initializing another Dataset has side effects, alas, but should not
@@ -53,52 +52,52 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         for dataset in datasets:
             Dataset(dataset)
 
-    def test_directories(self):
+    def testDirectories(self):
         """Verify that a Dataset reports the desired directory structure.
         """
-        root = self._testbed.dataset_root
-        self.assertEqual(self._testbed.data_location, os.path.join(root, 'raw'))
-        self.assertEqual(self._testbed.calib_location, os.path.join(root, 'calib'))
-        self.assertEqual(self._testbed.template_location, os.path.join(root, 'templates'))
-        self.assertEqual(self._testbed.refcats_location, os.path.join(root, 'refcats'))
+        root = self._testbed.datasetRoot
+        self.assertEqual(self._testbed.rawLocation, os.path.join(root, 'raw'))
+        self.assertEqual(self._testbed.calibLocation, os.path.join(root, 'calib'))
+        self.assertEqual(self._testbed.templateLocation, os.path.join(root, 'templates'))
+        self.assertEqual(self._testbed.refcatsLocation, os.path.join(root, 'refcats'))
 
-    def test_output(self):
+    def testOutput(self):
         """Verify that a Dataset can create an output repository as desired.
         """
-        test_dir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
-        output_dir = os.path.join(test_dir, 'hitsOut')
+        testDir = tempfile.mkdtemp()
+        outputDir = os.path.join(testDir, 'hitsOut')
 
         try:
-            self._testbed.make_output_repo(output_dir)
-            self.assertTrue(os.path.exists(output_dir), 'Output directory must exist.')
-            self.assertTrue(os.listdir(output_dir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(output_dir, '_mapper')),
+            self._testbed.makeOutputRepo(outputDir)
+            self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
+            self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
+            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')),
                             'Output directory must have a _mapper file.')
         finally:
-            if os.path.exists(test_dir):
-                shutil.rmtree(test_dir, ignore_errors=True)
+            if os.path.exists(testDir):
+                shutil.rmtree(testDir, ignore_errors=True)
 
-    def test_existing_output(self):
+    def testExistingOutput(self):
         """Verify that a Dataset can handle pre-existing output directories,
         including directories made by external code.
         """
-        test_dir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
-        output_dir = os.path.join(test_dir, 'badOut')
+        testDir = tempfile.mkdtemp()
+        outputDir = os.path.join(testDir, 'badOut')
 
         try:
-            os.makedirs(output_dir)
-            output = os.path.join(output_dir, 'foo.txt')
+            os.makedirs(outputDir)
+            output = os.path.join(outputDir, 'foo.txt')
             with open(output, 'w') as dummy:
                 dummy.write('This is a test!')
 
-            self._testbed.make_output_repo(output_dir)
-            self.assertTrue(os.path.exists(output_dir), 'Output directory must exist.')
-            self.assertTrue(os.listdir(output_dir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(output_dir, '_mapper')),
+            self._testbed.makeOutputRepo(outputDir)
+            self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
+            self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
+            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')),
                             'Output directory must have a _mapper file.')
         finally:
-            if os.path.exists(test_dir):
-                shutil.rmtree(test_dir, ignore_errors=True)
+            if os.path.exists(testDir):
+                shutil.rmtree(testDir, ignore_errors=True)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

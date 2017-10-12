@@ -29,7 +29,7 @@ import astropy.units as u
 from lsst.ip.isr import IsrTask
 import lsst.utils.tests
 from lsst.verify import Measurement
-from lsst.ap.verify.measurements.profiling import measure_runtime
+from lsst.ap.verify.measurements.profiling import measureRuntime
 
 
 class MeasureRuntimeTestSuite(lsst.utils.tests.TestCase):
@@ -45,27 +45,27 @@ class MeasureRuntimeTestSuite(lsst.utils.tests.TestCase):
     def tearDown(self):
         del self.task
 
-    def test_valid(self):
+    def testValid(self):
         """Verify that timing information can be recovered.
         """
-        meas = measure_runtime(self.task.getFullMetadata(), task_name='isr', metric_name='ip_isr.IsrTime')
+        meas = measureRuntime(self.task.getFullMetadata(), taskName='isr', metricName='ip_isr.IsrTime')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(meas.metric_name, lsst.verify.Name(metric='ip_isr.IsrTime'))
         self.assertGreater(meas.quantity, 0.0 * u.second)
         # The Task didn't actually do anything, so it should be short
         self.assertLess(meas.quantity, 1.0 * u.second)
 
-    def test_no_metric(self):
+    def testNoMetric(self):
         """Verify that trying to measure a nonexistent metric fails.
         """
         with self.assertRaises(TypeError):
-            measure_runtime(self.task.getFullMetadata(), task_name='isr', metric_name='foo.bar.FooBarTime')
+            measureRuntime(self.task.getFullMetadata(), taskName='isr', metricName='foo.bar.FooBarTime')
 
-    def test_not_run(self):
+    def testNotRun(self):
         """Verify that trying to measure a real but inapplicable metric returns None.
         """
-        not_run = IsrTask(IsrTask.ConfigClass())
-        meas = measure_runtime(not_run.getFullMetadata(), task_name='isr', metric_name='ip_isr.IsrTime')
+        notRun = IsrTask(IsrTask.ConfigClass())
+        meas = measureRuntime(notRun.getFullMetadata(), taskName='isr', metricName='ip_isr.IsrTime')
         self.assertIsNone(meas)
 
 

@@ -28,7 +28,7 @@ command-line argument parsing.
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["run_ap_verify"]
+__all__ = ["runApVerify"]
 
 import argparse
 import os
@@ -36,11 +36,11 @@ import re
 
 import lsst.log
 from .dataset import Dataset
-from .metrics import MetricsParser, check_squash_ready, AutoJob
-from .pipeline_driver import ApPipeParser, run_ap_pipe
-from .measurements import measure_from_metadata, \
-                          measure_from_butler_repo, \
-                          measure_from_L1_db_sqlite
+from .metrics import MetricsParser, checkSquashReady, AutoJob
+from .pipeline_driver import ApPipeParser, runApPipe
+from .measurements import measureFromMetadata, \
+    measureFromButlerRepo, \
+    measureFromL1DbSqlite
 
 
 class _VerifyApParser(argparse.ArgumentParser):
@@ -54,7 +54,7 @@ class _VerifyApParser(argparse.ArgumentParser):
             epilog='',
             parents=[ApPipeParser(), MetricsParser()],
             add_help=True)
-        self.add_argument('--dataset', choices=Dataset.get_supported_datasets(), required=True,
+        self.add_argument('--dataset', choices=Dataset.getSupportedDatasets(), required=True,
                           help='The source of data to pass through the pipeline.')
 
         output = self.add_mutually_exclusive_group(required=True)
@@ -85,12 +85,12 @@ class _FormattedType:
         invalid argument.
     """
     def __init__(self, fmt, msg='"%s" does not have the expected format.'):
-        full_format = fmt
-        if not full_format.startswith('^'):
-            full_format = '^' + full_format
-        if not full_format.endswith('$'):
-            full_format += '$'
-        self._format = re.compile(full_format)
+        fullFormat = fmt
+        if not fullFormat.startswith('^'):
+            fullFormat = '^' + fullFormat
+        if not fullFormat.endswith('$'):
+            fullFormat += '$'
+        self._format = re.compile(fullFormat)
         self._message = msg
 
     def __call__(self, value):
@@ -100,35 +100,36 @@ class _FormattedType:
             raise argparse.ArgumentTypeError(self._message % value)
 
 
-def _get_output_dir(input_dir, output_arg, rerun_arg):
+def _getOutputDir(inputDir, outputArg, rerunArg):
     """Choose an output directory based on program arguments.
 
     Parameters
     ----------
-    input_dir: `str`
+    inputDir: `str`
         The root directory of the input dataset.
-    output_arg: `str`
-        The directory given using the `--output` command line argument.
-    rerun_arg: `str`
-        The subdirectory given using the `--rerun` command line argument. Must
-        be relative to `input_rerun`.
+    outputArg: `str`
+        The directory given using the `--output` command line argument. May
+        be None.
+    rerunArg: `str`
+        The subdirectory given using the `--rerun` command line argument.  May
+        be None, otherwise must be relative to `inputDir`.
 
     Raises
     ------
     `ValueError`:
-        Neither `output_arg` nor `rerun_arg` is None, or both are.
+        Neither `outputArg` nor `rerunArg` is None, or both are.
     """
-    if output_arg and rerun_arg:
+    if outputArg and rerunArg:
         raise ValueError('Cannot provide both --output and --rerun.')
-    if not output_arg and not rerun_arg:
+    if not outputArg and not rerunArg:
         raise ValueError('Must provide either --output or --rerun.')
-    if output_arg:
-        return output_arg
+    if outputArg:
+        return outputArg
     else:
-        return os.path.join(input_dir, "rerun", rerun_arg)
+        return os.path.join(inputDir, "rerun", rerunArg)
 
 
-def _measure_final_properties(metadata, output_dir, args, metrics_job):
+def _measureFinalProperties(metadata, outputDir, args, metricsJob):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
@@ -136,46 +137,46 @@ def _measure_final_properties(metadata, output_dir, args, metrics_job):
     ----------
     metadata: `lsst.daf.base.PropertySet`
         The metadata produced by the AP pipeline.
-    metrics_job: `verify.Job`
+    metricsJob: `verify.Job`
         The Job object to which to add any metric measurements made.
     """
     measurements = []
-    measurements.extend(measure_from_metadata(metadata))
+    measurements.extend(measureFromMetadata(metadata))
     # In the current version of ap_pipe, DIFFIM_DIR has a parent of
     # PROCESSED_DIR. This means that a butler created from the DIFFIM_DIR reop
     # includes data from PROCESSED_DIR.
-    measurements.extend(measure_from_butler_repo(
-        os.path.join(output_dir, metadata.getAsString('ap_pipe.DIFFIM_DIR')), args.dataId))
-    measurements.extend(measure_from_L1_db_sqlite(
-        os.path.join(output_dir, metadata.getAsString('ap_pipe.DB_DIR'), "association.db")))
+    measurements.extend(measureFromButlerRepo(
+        os.path.join(outputDir, metadata.getAsString('ap_pipe.DIFFIM_DIR')), args.dataId))
+    measurements.extend(measureFromL1DbSqlite(
+        os.path.join(outputDir, metadata.getAsString('ap_pipe.DB_DIR'), "association.db")))
 
     for measurement in measurements:
-        metrics_job.measurements.insert(measurement)
+        metricsJob.measurements.insert(measurement)
 
 
-def run_ap_verify(cmdLine=None):
+def runApVerify(cmdLine=None):
     """Execute the AP pipeline while handling metrics.
 
     Parameters
     ----------
     cmdLine: `list` of `str`
-        an optional command line used to execute `run_ap_verify` from other
+        an optional command line used to execute `runApVerify` from other
         Python code. If `None`, `sys.argv` will be used.
     """
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _VerifyApParser().parse_args(args=cmdLine)
-    check_squash_ready(args)
+    checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 
-    test_data = Dataset(args.dataset)
+    testData = Dataset(args.dataset)
     log.info('Dataset %s set up.', args.dataset)
-    output = _get_output_dir(test_data.dataset_root, args.output, args.rerun)
-    test_data.make_output_repo(output)
+    output = _getOutputDir(testData.datasetRoot, args.output, args.rerun)
+    testData.makeOutputRepo(output)
     log.info('Output repo at %s created.', output)
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        metadata = run_ap_pipe(test_data, output, args, job)
-        _measure_final_properties(metadata, output, args, job)
+        metadata = runApPipe(testData, output, args, job)
+        _measureFinalProperties(metadata, output, args, job)

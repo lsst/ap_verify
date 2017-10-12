@@ -47,39 +47,39 @@ import lsst.pipe.base as pipeBase
 import lsst.utils.tests
 from lsst.verify import Measurement
 from lsst.ap.verify.measurements.association import \
-    measure_number_new_dia_objects, \
-    measure_number_unassociated_dia_objects, \
-    measure_fraction_updated_dia_objects, \
-    measure_number_sci_sources, \
-    measure_fraction_dia_sources_to_sci_sources, \
-    measure_total_unassociated_dia_objects
+    measureNumberNewDiaObjects, \
+    measureNumberUnassociatedDiaObjects, \
+    measureFractionUpdatedDiaObjects, \
+    measureNumberSciSources, \
+    measureFractionDiaSourcesToSciSources, \
+    measureTotalUnassociatedDiaObjects
 
 # Define the root of the tests relative to this file
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
 # Define a generic dataId
-dataId_dict = {'visit': 1111,
-               'filter': 'r'}
+dataIdDict = {'visit': 1111,
+              'filter': 'r'}
 
 
-def create_test_dia_objects(n_objects=1,
-                            n_sources=1,
-                            start_id=0,
-                            object_centers_degrees=None,
-                            scatter_arcsec=1.0):
+def createTestDiaObjects(nObjects=1,
+                         nSources=1,
+                         startId=0,
+                         objectCentersDegrees=None,
+                         scatterArcsec=1.0):
     """ Create DIAObjects with a specified number of DIASources attached.
 
     Parameters
     ----------
-    n_objects : int
+    nObjects : int
         Number of DIAObjects to generate.
-    n_src : int
+    nSources : int
         Number of DIASources to generate for each DIAObject.
-    start_id : int
+    startId : int
         Starting index to increment the created DIAObjects from.
-    object_centers_degrees : (N, 2) list of floats
+    objectCentersDegrees : (N, 2) list of floats
         Centers of each DIAObject to create.
-    scatter_arcsec : float
+    scatterArcsec : float
         Scatter to add to the position of each DIASource.
 
     Returns
@@ -87,36 +87,36 @@ def create_test_dia_objects(n_objects=1,
     A list of DIAObjects
     """
 
-    if object_centers_degrees is None:
-        object_centers_degrees = [[idx, idx] for idx in range(n_objects)]
+    if objectCentersDegrees is None:
+        objectCentersDegrees = [[idx, idx] for idx in range(nObjects)]
 
-    output_dia_objects = []
-    for obj_idx in range(n_objects):
-        src_cat = create_test_sources(
-            n_sources,
-            start_id + obj_idx * n_sources,
-            [object_centers_degrees[obj_idx] for src_idx in range(n_sources)],
-            scatter_arcsec)
-        output_dia_objects.append(DIAObject(src_cat))
-    return output_dia_objects
+    outputDiaObjects = []
+    for objIdx in range(nObjects):
+        srcCat = createTestSources(
+            nSources,
+            startId + objIdx * nSources,
+            [objectCentersDegrees[objIdx] for srcIdx in range(nSources)],
+            scatterArcsec)
+        outputDiaObjects.append(DIAObject(srcCat))
+    return outputDiaObjects
 
 
-def create_test_sources(n_sources=5,
-                        start_id=0,
-                        source_locs_deg=None,
-                        scatter_arcsec=1.0):
+def createTestSources(nSources=5,
+                      startId=0,
+                      sourceLocsDeg=None,
+                      scatterArcsec=1.0):
     """ Create dummy DIASources for use in our tests.
 
     Parameters
     ----------
-    n_sources : int
+    nSources : int
         Number of fake sources to create for testing.
-    start_id : int
+    startId : int
         Unique id of the first object to create. The remaining sources are
         incremented by one from the first id.
-    source_locs_deg : (N, 2) list of floats
+    sourceLocsDeg : (N, 2) list of floats
         Positions of the DIASources to create.
-    scatter_arcsec : float
+    scatterArcsec : float
         Scatter to add to the position of each DIASource.
 
     Returns
@@ -125,18 +125,18 @@ def create_test_sources(n_sources=5,
     """
     sources = afwTable.SourceCatalog(make_minimal_dia_source_schema())
 
-    if source_locs_deg is None:
-        source_locs_deg = [[idx, idx] for idx in range(n_sources)]
+    if sourceLocsDeg is None:
+        sourceLocsDeg = [[idx, idx] for idx in range(nSources)]
 
-    for src_idx in range(n_sources):
+    for srcIdx in range(nSources):
         src = sources.addNew()
-        src['id'] = src_idx + start_id
-        coord = Coord(source_locs_deg[src_idx][0] * afwGeom.degrees,
-                      source_locs_deg[src_idx][1] * afwGeom.degrees)
-        if scatter_arcsec > 0.0:
+        src['id'] = srcIdx + startId
+        coord = Coord(sourceLocsDeg[srcIdx][0] * afwGeom.degrees,
+                      sourceLocsDeg[srcIdx][1] * afwGeom.degrees)
+        if scatterArcsec > 0.0:
             coord.offset(
                 np.random.rand() * 360 * afwGeom.degrees,
-                np.random.rand() * scatter_arcsec * afwGeom.arcseconds)
+                np.random.rand() * scatterArcsec * afwGeom.arcseconds)
         src.setCoord(coord)
 
     return sources
@@ -147,7 +147,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
     def setUp(self):
 
         # Create an unrun AssociationTask.
-        self.assoc_task = AssociationTask()
+        self.assocTask = AssociationTask()
 
         # Create a empty butler repository and put data in it.
         self.testDir = tempfile.mkdtemp(
@@ -158,56 +158,56 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             mode='rw')
         self.butler = dafPersist.Butler(
             outputs=outputRepoArgs)
-        self.num_test_sci_sources = 10
-        self.num_test_dia_sources = 5
-        test_sources = create_test_sources(self.num_test_sci_sources)
-        test_dia_sources = create_test_sources(self.num_test_dia_sources)
-        self.butler.put(obj=test_sources,
+        self.numTestSciSources = 10
+        self.numTestDiaSources = 5
+        testSources = createTestSources(self.numTestSciSources)
+        testDiaSources = createTestSources(self.numTestDiaSources)
+        self.butler.put(obj=testSources,
                         datasetType='src',
-                        dataId=dataId_dict)
-        self.butler.put(obj=test_dia_sources,
+                        dataId=dataIdDict)
+        self.butler.put(obj=testDiaSources,
                         datasetType='deepDiff_diaSrc',
-                        dataId=dataId_dict)
+                        dataId=dataIdDict)
 
-        (self.tmp_file, self.db_file) = tempfile.mkstemp(
+        (self.tmpFile, self.dbFile) = tempfile.mkstemp(
             dir=os.path.dirname(__file__))
-        assoc_db_config = AssociationDBSqliteConfig()
-        assoc_db_config.db_name = self.db_file
-        assoc_db = AssociationDBSqliteTask(config=assoc_db_config)
-        assoc_db.create_tables()
+        assocDbConfig = AssociationDBSqliteConfig()
+        assocDbConfig.db_name = self.dbFile
+        assocDb = AssociationDBSqliteTask(config=assocDbConfig)
+        assocDb.create_tables()
 
-        self.num_test_dia_objects = 5
-        dia_collection = DIAObjectCollection(
-            create_test_dia_objects(self.num_test_dia_objects))
-        assoc_db.store(dia_collection, True)
-        assoc_db.close()
+        self.numTestDiaObjects = 5
+        diaCollection = DIAObjectCollection(
+            createTestDiaObjects(self.numTestDiaObjects))
+        assocDb.store(diaCollection, True)
+        assocDb.close()
 
     def tearDown(self):
-        del self.assoc_task
+        del self.assocTask
 
         if os.path.exists(self.testDir):
             shutil.rmtree(self.testDir)
         if hasattr(self, "butler"):
             del self.butler
 
-        del self.tmp_file
-        os.remove(self.db_file)
+        del self.tmpFile
+        os.remove(self.dbFile)
 
-    def test_valid_from_metadata(self):
+    def testValidFromMetadata(self):
         """Verify that association information can be recovered from metadata.
         """
         # Insert data into the task metadata.
-        n_updated_dia_objects = 5
-        n_new_dia_objects = 6
-        n_unassociated_dia_objects = 7
-        test_assoc_result = pipeBase.Struct(
-            n_updated_dia_objects=n_updated_dia_objects,
-            n_new_dia_objects=n_new_dia_objects,
-            n_unassociated_dia_objects=n_unassociated_dia_objects,)
-        self.assoc_task._add_association_meta_data(test_assoc_result)
-        metadata = self.assoc_task.getFullMetadata()
+        nUpdatedDiaObjects = 5
+        nNewDiaObjects = 6
+        nUnassociatedDiaObjects = 7
+        testAssocResult = pipeBase.Struct(
+            n_updated_dia_objects=nUpdatedDiaObjects,
+            n_new_dia_objects=nNewDiaObjects,
+            n_unassociated_dia_objects=nUnassociatedDiaObjects,)
+        self.assocTask._add_association_meta_data(testAssocResult)
+        metadata = self.assocTask.getFullMetadata()
 
-        meas = measure_number_new_dia_objects(
+        meas = measureNumberNewDiaObjects(
             metadata,
             "association",
             "association.numNewDIAObjects")
@@ -215,9 +215,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric="association.numNewDIAObjects"))
-        self.assertEqual(meas.quantity, n_new_dia_objects * u.count)
+        self.assertEqual(meas.quantity, nNewDiaObjects * u.count)
 
-        meas = measure_number_unassociated_dia_objects(
+        meas = measureNumberUnassociatedDiaObjects(
             metadata,
             'association',
             'association.fracUpdatedDIAObjects')
@@ -226,9 +226,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(
                 metric='association.fracUpdatedDIAObjects'))
-        self.assertEqual(meas.quantity, n_unassociated_dia_objects * u.count)
+        self.assertEqual(meas.quantity, nUnassociatedDiaObjects * u.count)
 
-        meas = measure_fraction_updated_dia_objects(
+        meas = measureFractionUpdatedDiaObjects(
             metadata,
             'association',
             'association.fracUpdatedDIAObjects')
@@ -237,27 +237,27 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(metric='association.fracUpdatedDIAObjects'))
         self.assertEqual(meas.quantity,
-                         n_updated_dia_objects /
-                         (n_updated_dia_objects + n_unassociated_dia_objects) *
+                         nUpdatedDiaObjects /
+                         (nUpdatedDiaObjects + nUnassociatedDiaObjects) *
                          u.dimensionless_unscaled)
 
-    def test_valid_from_butler(self):
+    def testValidFromButler(self):
         """ Test the association measurements that require a butler.
         """
-        meas = measure_number_sci_sources(
+        meas = measureNumberSciSources(
             self.butler,
-            dataId_dict=dataId_dict,
-            metric_name='ip_diffim.numSciSrc')
+            dataIdDict=dataIdDict,
+            metricName='ip_diffim.numSciSrc')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric='ip_diffim.numSciSrc'))
         self.assertEqual(meas.quantity, 10 * u.count)
 
-        meas = measure_fraction_dia_sources_to_sci_sources(
+        meas = measureFractionDiaSourcesToSciSources(
             self.butler,
-            dataId_dict=dataId_dict,
-            metric_name='ip_diffim.fracDiaSrcToSciSrc')
+            dataIdDict=dataIdDict,
+            metricName='ip_diffim.fracDiaSrcToSciSrc')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
             meas.metric_name,
@@ -265,13 +265,13 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         # We put in half the number of DIASources as detected sources.
         self.assertEqual(meas.quantity, 0.5 * u.dimensionless_unscaled)
 
-    def test_valid_from_sqlite(self):
-        conn = sqlite3.connect(self.db_file)
+    def testValidFromSqlite(self):
+        conn = sqlite3.connect(self.dbFile)
         cursor = conn.cursor()
 
-        meas = measure_total_unassociated_dia_objects(
+        meas = measureTotalUnassociatedDiaObjects(
             cursor,
-            metric_name='association.numTotalUnassociatedDiaObjects')
+            metricName='association.numTotalUnassociatedDiaObjects')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
             meas.metric_name,
@@ -279,91 +279,91 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 metric='association.numTotalUnassociatedDiaObjects'))
         self.assertEqual(meas.quantity, 5 * u.count)
 
-    def test_no_butler_data(self):
+    def testNoButlerData(self):
         """ Test attempting to create a measurement with data that the butler
         does not contain.
         """
 
         with self.assertRaises(dafPersist.NoResults):
-            measure_number_sci_sources(
+            measureNumberSciSources(
                 self.butler,
-                dataId_dict={'visit': 1000, 'filter': 'r'},
-                metric_name='ip_diffim.fracDiaSrcToSciSrc')
+                dataIdDict={'visit': 1000, 'filter': 'r'},
+                metricName='ip_diffim.fracDiaSrcToSciSrc')
 
         with self.assertRaises(dafPersist.NoResults):
-            measure_fraction_dia_sources_to_sci_sources(
+            measureFractionDiaSourcesToSciSources(
                 self.butler,
-                dataId_dict={'visit': 1000, 'filter': 'r'},
-                metric_name='ip_diffim.fracDiaSrcToSciSrc')
+                dataIdDict={'visit': 1000, 'filter': 'r'},
+                metricName='ip_diffim.fracDiaSrcToSciSrc')
 
         with self.assertRaises(dafPersist.NoResults):
-            measure_number_sci_sources(
+            measureNumberSciSources(
                 self.butler,
-                dataId_dict={'visit': 1111, 'filter': 'g'},
-                metric_name='ip_diffim.fracDiaSrcToSciSrc')
+                dataIdDict={'visit': 1111, 'filter': 'g'},
+                metricName='ip_diffim.fracDiaSrcToSciSrc')
 
         with self.assertRaises(dafPersist.NoResults):
-            measure_fraction_dia_sources_to_sci_sources(
+            measureFractionDiaSourcesToSciSources(
                 self.butler,
-                dataId_dict={'visit': 1111, 'filter': 'g'},
-                metric_name='ip_diffim.fracDiaSrcToSciSrc')
+                dataIdDict={'visit': 1111, 'filter': 'g'},
+                metricName='ip_diffim.fracDiaSrcToSciSrc')
 
-    def test_metadata_not_created(self):
+    def testMetadataNotCreated(self):
         """ Test for the correct failure when measuring from non-existent
         metadata.
         """
-        metadata = self.assoc_task.getFullMetadata()
+        metadata = self.assocTask.getFullMetadata()
 
-        meas = measure_number_new_dia_objects(
+        meas = measureNumberNewDiaObjects(
             metadata,
             "association",
             "association.numNewDIAObjects")
         self.assertIsNone(meas)
 
-    def test_invalid_db(self):
+    def testInvalidDb(self):
         """ Test that the measurement raises the correct error when given an
         improper database.
         """
         conn = sqlite3.connect(":memory:")
         cursor = conn.cursor()
         with self.assertRaises(sqlite3.OperationalError):
-            measure_total_unassociated_dia_objects(
+            measureTotalUnassociatedDiaObjects(
                 cursor,
-                metric_name='association.numTotalUnassociatedDiaObjects')
+                metricName='association.numTotalUnassociatedDiaObjects')
 
-    def test_no_metric(self):
+    def testNoMetric(self):
         """Verify that trying to measure a nonexistent metric fails.
         """
-        test_assoc_result = pipeBase.Struct(
+        testAssocResult = pipeBase.Struct(
             n_updated_dia_objects=5,
             n_new_dia_objects=6,
             n_unassociated_dia_objects=7,)
-        self.assoc_task._add_association_meta_data(test_assoc_result)
-        metadata = self.assoc_task.getFullMetadata()
+        self.assocTask._add_association_meta_data(testAssocResult)
+        metadata = self.assocTask.getFullMetadata()
         with self.assertRaises(TypeError):
-            measure_number_new_dia_objects(
+            measureNumberNewDiaObjects(
                 metadata, "association", "foo.bar.FooBar")
         with self.assertRaises(TypeError):
-            measure_number_unassociated_dia_objects(
+            measureNumberUnassociatedDiaObjects(
                 metadata, "association", "foo.bar.FooBar")
         with self.assertRaises(TypeError):
-            measure_fraction_updated_dia_objects(
+            measureFractionUpdatedDiaObjects(
                 metadata, "association", "foo.bar.FooBar")
 
         with self.assertRaises(TypeError):
-            measure_number_sci_sources(
-                self.butler, dataId=dataId_dict,
-                metric_name='foo.bar.FooBar')
+            measureNumberSciSources(
+                self.butler, dataId=dataIdDict,
+                metricName='foo.bar.FooBar')
         with self.assertRaises(TypeError):
-            measure_fraction_dia_sources_to_sci_sources(
-                self.butler, dataId=dataId_dict,
-                metric_name='foo.bar.FooBar')
+            measureFractionDiaSourcesToSciSources(
+                self.butler, dataId=dataIdDict,
+                metricName='foo.bar.FooBar')
 
-        conn = sqlite3.connect(self.db_file)
+        conn = sqlite3.connect(self.dbFile)
         cursor = conn.cursor()
         with self.assertRaises(TypeError):
-            measure_total_unassociated_dia_objects(
-                cursor, metric_name='foo.bar.FooBar')
+            measureTotalUnassociatedDiaObjects(
+                cursor, metricName='foo.bar.FooBar')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
