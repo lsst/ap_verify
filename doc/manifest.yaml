@@ -1,0 +1,7 @@
+package: "ap_verify"
+modules:
+  - "lsst.ap.verify"
+  - "lsst.ap.verify.measurements"
+statics:
+  - "_static/ap_verify"
+
