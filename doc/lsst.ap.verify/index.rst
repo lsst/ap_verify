@@ -10,13 +10,21 @@ TODO: package summary goes here
 
 .. _lsst-ap-verify-overview:
 
-.. Overview
-   ========
+Overview
+========
 
-   .. toctree::
-      :maxdepth: 1
+.. toctree::
+   :maxdepth: 1
 
-      ap-verify-overview.rst
+   overview.rst
+
+Using ap.verify
+===============
+
+.. toctree::
+   :maxdepth: 1
+
+   datasets.rst
 
 Python API reference
 ====================

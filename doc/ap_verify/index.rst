@@ -5,7 +5,7 @@ ap_verify
 #########
 
 The ``ap_verify`` package wraps `lsst.ap.pipe` with support for managing `lsst.verify` metrics.
-It allows :py:mod:`ap_pipe <lsst.ap.pipe>` to be run on :ref:`standardized data repositories <ap-verify-dataset-template-package>` provided by the :ref:`dataset framework<ap-verify-dataset-framework>`.
+It allows `lsst.ap.pipe` to be run on standardized data repositories provided by the :ref:`dataset framework<ap-verify-datasets>`.
 
 Project info
 ============
