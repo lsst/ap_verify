@@ -33,12 +33,6 @@ import lsst.log
 import lsst.ap.pipe as ap_pipe
 from lsst.verify import Job
 
-# Names of directories to be created in specified output location
-INGESTED_DIR = 'ingested'
-CALIBINGESTED_DIR = 'calibingested'
-PROCESSED_DIR = 'processed'
-DIFFIM_DIR = 'diffim'
-
 
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ap_pipe activities.
@@ -130,9 +124,7 @@ def _ingest_raws(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repo(working_repo, INGESTED_DIR)
-    datafiles = ap_pipe.get_datafiles(dataset.data_location)
-    metadata = ap_pipe.doIngest(repo, dataset.refcats_location, datafiles)
+    metadata = ap_pipe.doIngest(working_repo, dataset.data_location, dataset.refcats_location)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -162,11 +154,7 @@ def _ingest_calibs(dataset, working_repo, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repo(working_repo, INGESTED_DIR)
-    calib_repo = ap_pipe.get_output_repo(working_repo, CALIBINGESTED_DIR)
-    calib_datafiles = ap_pipe.get_calib_datafiles(dataset.calib_location)
-    defectfiles = ap_pipe.get_defectfiles(dataset.defect_location, 'defects_2014-12-05.tar.gz')
-    metadata = ap_pipe.doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles)
+    metadata = ap_pipe.doIngestCalibs(working_repo, dataset.calib_location, dataset.defect_location)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -196,10 +184,7 @@ def _process(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    repo = ap_pipe.get_output_repo(working_repo, INGESTED_DIR)
-    calib_repo = ap_pipe.get_output_repo(working_repo, CALIBINGESTED_DIR)
-    processed_repo = ap_pipe.get_output_repo(working_repo, PROCESSED_DIR)
-    metadata = ap_pipe.doProcessCcd(repo, calib_repo, processed_repo, dataId)
+    metadata = ap_pipe.doProcessCcd(working_repo, dataId)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -229,11 +214,7 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    processed_repo = ap_pipe.get_output_repo(working_repo, PROCESSED_DIR)
-    diffim_repo = ap_pipe.get_output_repo(working_repo, DIFFIM_DIR)
-    template = '410929'  # one g-band Blind15A40 visit for testing
-    # TODO: implement a coadd template by default, not a hard-wired visit (DM-11422)
-    metadata = ap_pipe.doDiffIm(processed_repo, dataId, template, diffim_repo)
+    metadata = ap_pipe.doDiffIm(working_repo, dataId)
     _update_metrics(metadata, metrics_job)
     return metadata
 
