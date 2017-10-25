@@ -219,13 +219,16 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
     return metadata
 
 
-def _associate(working_repo, parallelization, metrics_job):
+def _associate(working_repo, dataId, parallelization, metrics_job):
     """Run source association on a dataset.
 
     Parameters
     ----------
     working_repo: `str`
         The repository containing the input and output data.
+    dataId: `str`
+        Butler identifier naming the data to be processed by the underlying
+        Task(s).
     parallelization: `int`
         Parallelization level at which to run underlying Task(s).
     metrics_job: `verify.Job`
@@ -241,8 +244,7 @@ def _associate(working_repo, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    raise NotImplementedError
-
+    metadata = ap_pipe.doAssociation(working_repo, dataId)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -301,8 +303,8 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
 
     metadata.combine(_difference(working_repo, dataId, processes, metrics_job))
     log.info('Image differencing complete')
-    # metadata.combine(_associate(working_repo, processes, metrics_job))
-    # log.info('Source association complete')
+    metadata.combine(_associate(working_repo, dataId, processes, metrics_job))
+    log.info('Source association complete')
 
     _post_process(working_repo)
     log.info('Pipeline complete')
