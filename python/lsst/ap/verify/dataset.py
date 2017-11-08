@@ -32,6 +32,36 @@ from lsst.utils import getPackageDir
 from .config import Config
 
 
+def _nicecopy(src, dst):
+    """Recursively copy a directory from src to dst, ignoring any files
+    that already exist.
+
+    Parameters
+    ----------
+    src: `str`
+        The directory whose contents will be copied. Symbolic links will
+        be duplicated in `dst`, but will not be followed.
+    dst: `str`
+        The directory to which `src` and its contents will be copied.
+    """
+    # Can't use exceptions to distinguish pre-existing directory from I/O failures until Python 3
+    if not os.path.exists(dst):
+        os.makedirs(dst)
+
+    for baseName in os.listdir(src):
+        old = os.path.join(src, baseName)
+        new = os.path.join(dst, baseName)
+
+        if not os.path.islink(old) and os.path.isdir(old):
+            _nicecopy(old, new)
+        elif not os.path.exists(new):
+            if os.path.islink(old):
+                target = os.readlink(old)
+                os.symlink(target, new)
+            else:
+                shutil.copy2(old, new)
+
+
 class Dataset(object):
     """A dataset supported by ap_verify.
 
@@ -213,19 +243,13 @@ class Dataset(object):
     def make_output_repo(self, output_dir):
         """Set up a directory as an output repository compatible with this dataset.
 
+        If the directory already exists, any files required by the dataset will
+        be added if absent; otherwise the directory will remain unchanged.
+
         Parameters
         ----------
         output_dir: `str`
-            The directory where the output repository will be created. Must be
-            empty or non-existent.
+            The directory where the output repository will be created.
         """
-        if os.path.exists(output_dir):
-            if not os.path.isdir(output_dir):
-                raise IOError(output_dir + 'is not a directory')
-            if os.listdir(output_dir):
-                raise IOError(output_dir + 'is already occupied')
-
-            # copytree does not allow empty destination directories
-            shutil.rmtree(output_dir)
-
-        shutil.copytree(self._stub_input_repo, output_dir)
+        # shutil.copytree has wrong behavior for existing destinations, do it by hand
+        _nicecopy(self._stub_input_repo, output_dir)

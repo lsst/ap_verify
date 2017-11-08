@@ -76,10 +76,11 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
                             'Output directory must have a _mapper file.')
         finally:
             if os.path.exists(test_dir):
-                shutil.rmtree(test_dir)
+                shutil.rmtree(test_dir, ignore_errors=True)
 
-    def test_bad_output(self):
-        """Verify that a Dataset will not create an output directory if it is unsafe to do so.
+    def test_existing_output(self):
+        """Verify that a Dataset can handle pre-existing output directories,
+        including directories made by external code.
         """
         test_dir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
         output_dir = os.path.join(test_dir, 'badOut')
@@ -90,11 +91,14 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
             with open(output, 'w') as dummy:
                 dummy.write('This is a test!')
 
-            with self.assertRaises(IOError):
-                self._testbed.make_output_repo(output_dir)
+            self._testbed.make_output_repo(output_dir)
+            self.assertTrue(os.path.exists(output_dir), 'Output directory must exist.')
+            self.assertTrue(os.listdir(output_dir), 'Output directory must not be empty.')
+            self.assertTrue(os.path.exists(os.path.join(output_dir, '_mapper')),
+                            'Output directory must have a _mapper file.')
         finally:
             if os.path.exists(test_dir):
-                shutil.rmtree(test_dir)
+                shutil.rmtree(test_dir, ignore_errors=True)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

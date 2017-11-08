@@ -30,6 +30,7 @@ from future.utils import raise_from
 import json
 
 import lsst.log
+import lsst.daf.base as dafBase
 import lsst.ap.pipe as ap_pipe
 from lsst.verify import Job
 
@@ -289,7 +290,9 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.run_ap_pipe')
 
-    metadata = _ingest_raws(dataset, working_repo, metrics_job)
+    # Easiest way to defend against None return values
+    metadata = dafBase.PropertySet()
+    metadata.combine(_ingest_raws(dataset, working_repo, metrics_job))
     metadata.combine(_ingest_calibs(dataset, working_repo, metrics_job))
     log.info('Data ingested')
 
