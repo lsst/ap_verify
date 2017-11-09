@@ -129,12 +129,14 @@ def _getOutputDir(inputDir, outputArg, rerunArg):
         return os.path.join(inputDir, "rerun", rerunArg)
 
 
-def _measureFinalProperties(metadata, outputDir, args, metricsJob):
+def _measureFinalProperties(metricsJob, metadata, outputDir, args):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
     Parameters
     ----------
+    metricsJob : `lsst.verify.Job`
+        The Job object to which to add any metric measurements made.
     metadata : `lsst.daf.base.PropertySet`
         The metadata produced by the AP pipeline.
     outputDir : `str`
@@ -142,8 +144,6 @@ def _measureFinalProperties(metadata, outputDir, args, metricsJob):
     args : `argparse.Namespace`
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
-    metricsJob : `lsst.verify.Job`
-        The Job object to which to add any metric measurements made.
     """
     # TODO: remove this function's dependency on pipeline_driver (possibly after DM-11372)
     measurements = []
@@ -191,5 +191,5 @@ def runApVerify(cmdLine=None):
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        metadata = runApPipe(testData, output, args, job)
-        _measureFinalProperties(metadata, output, args, job)
+        metadata = runApPipe(job, testData, output, args)
+        _measureFinalProperties(job, metadata, output, args)
