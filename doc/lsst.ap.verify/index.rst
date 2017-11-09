@@ -24,6 +24,7 @@ Using ap.verify
 .. toctree::
    :maxdepth: 1
 
+   running.rst
    datasets.rst
 
 Python API reference
