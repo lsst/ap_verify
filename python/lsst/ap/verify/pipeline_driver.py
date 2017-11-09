@@ -20,6 +20,14 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
+"""Interface between `ap_verify` and `ap_pipe`.
+
+This module handles calling `ap_pipe` and converting any information
+as needed. It also attempts to collect measurements step-by-step, so
+that a total pipeline failure still allows some measurements to be
+recovered.
+"""
+
 from __future__ import absolute_import, division, print_function
 
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
