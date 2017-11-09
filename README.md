@@ -10,7 +10,7 @@ This package manages end-to-end testing and metric generation for the LSST DM Al
 
 * a dictionary named `datasets`, which maps from user-visible dataset names to the eups package that implements them (see `Setting Up a Dataset`, below)
 * a dictionary named `measurements`, which contains dictionaries needed for different metrics:
-    * `timing`: maps from names of metrics in the `verify_metrics` package to the Tasks or subTasks they time. The names of subTasks must be those assigned by the parent Task, and may be prefixed by the parent Task name(s) followed by a colon, as in "imageDifference:detection".
+    * `timing`: maps from Tasks or subTasks to the names of metrics that time them. The names of subTasks must be those assigned by the parent Task, and may be prefixed by the parent Task name(s) followed by a colon, as in "imageDifference:detection". Metric names must exist in `verify_metrics` and include the package they're associated with, as in "meas_algorithms.SourceDetectionTime".
 
 Other configuration options may be added in the future.
 
