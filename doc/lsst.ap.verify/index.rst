@@ -26,6 +26,7 @@ Using ap.verify
 
    running.rst
    datasets.rst
+   command-line-reference.rst
 
 Python API reference
 ====================
