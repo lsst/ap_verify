@@ -31,7 +31,7 @@ Once the dataset has been installed, use :command:`eups declare` to register the
 The product name given to EUPS must match the repository name; the version can be anything.
 It is also possible to register the dataset using :command:`setup`, but this is recommended only for temporary tests.
 
-For example, to install the :doc:`HiTS 2015 <../../packages/ap_verify_hits2015/index>` dataset,
+For example, to install the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset,
 
 .. prompt:: bash
 

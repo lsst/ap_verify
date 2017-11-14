@@ -10,7 +10,7 @@ Packaging Data as a Dataset
 This page describes how to create and maintain a dataset.
 It does not include :ref:`configuring ap_verify to use the dataset<ap-verify-configuration>`.
 
-.. _ap-ver-fy-datasets-creation-gitlfs:
+.. _ap-verify-datasets-creation-gitlfs:
 
 Creating a Dataset Repository
 -----------------------------
@@ -21,7 +21,7 @@ This will create empty directories for all data and will add placeholder files f
 
 .. _dataset template repository: https://github.com/lsst-dm/ap_verify_dataset_template
 
-.. _ap-ver-fy-datasets-creation-layout:
+.. _ap-verify-datasets-creation-layout:
 
 Organizing the Data
 -------------------
@@ -38,7 +38,7 @@ Organizing the Data
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
 
-.. _ap-ver-fy-datasets-creation-obs:
+.. _ap-verify-datasets-creation-obs:
 
 Registering an Observatory Package
 ----------------------------------
@@ -51,3 +51,10 @@ The observatory package must be named in two files:
 * :file:`repo/_mapper` must contain a single line with the name of the obs package's mapper class.
   For DECam data this is ``lsst.obs.decam.DecamMapper``.
 
+.. _ap-verify-datasets-creation-name:
+
+Registering a Dataset Name
+--------------------------
+
+In order to be supported by ``ap_verify``, datasets must be registered in the package's :ref:`configuration file<ap-verify-configuration-dataset>`.
+The line for the new dataset should be committed to the ``ap_verify`` Git repository.
