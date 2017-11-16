@@ -190,11 +190,13 @@ def _process(working_repo, dataId, parallelization, metrics_job):
     return metadata
 
 
-def _difference(working_repo, dataId, parallelization, metrics_job):
+def _difference(dataset, working_repo, dataId, parallelization, metrics_job):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
+    dataset: `dataset.Dataset`
+        The dataset on which the pipeline will be run.
     working_repo: `str`
         The repository containing the input and output data.
     dataId: `str`
@@ -215,7 +217,7 @@ def _difference(working_repo, dataId, parallelization, metrics_job):
         Measurements were made, but `metrics_job` could not be updated
         with them.
     """
-    metadata = ap_pipe.doDiffIm(working_repo, dataId)
+    metadata = ap_pipe.doDiffIm(working_repo, dataset.template_location, dataId)
     _update_metrics(metadata, metrics_job)
     return metadata
 
@@ -301,10 +303,7 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
     metadata.combine(_process(working_repo, dataId, processes, metrics_job))
     log.info('Single-frame processing complete')
 
-    dataId_template = 'visit=410929 ccdnum=25'  # temporary (DM-11422)
-    _process(working_repo, dataId_template, processes, metrics_job)  # temporary (DM-11422)
-
-    metadata.combine(_difference(working_repo, dataId, processes, metrics_job))
+    metadata.combine(_difference(dataset, working_repo, dataId, processes, metrics_job))
     log.info('Image differencing complete')
     metadata.combine(_associate(working_repo, dataId, processes, metrics_job))
     log.info('Source association complete')
