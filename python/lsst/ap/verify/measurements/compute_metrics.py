@@ -30,8 +30,17 @@ from __future__ import absolute_import, division, print_function
 
 __all__ = ["measure_from_metadata"]
 
+import sqlite3
+import re
+
 from lsst.ap.verify.config import Config
+import lsst.daf.persistence as dafPersist
 from .profiling import measure_runtime
+from .association import measure_number_new_dia_objects, \
+                         measure_number_unassociated_dia_objects, \
+                         measure_fraction_updated_dia_objects, \
+                         measure_dia_sources_to_sci_sources, \
+                         measure_total_unassociated_dia_objects
 
 
 def measure_from_metadata(metadata):
@@ -62,4 +71,65 @@ def measure_from_metadata(metadata):
         if measurement is not None:
             result.append(measurement)
 
+    measurement = measure_number_new_dia_objects(
+        metadata, 'AssociationTask', 'numNewDIAObjects')
+    if measurement is not None:
+        result.append(measurement)
+    measurement = measure_fraction_updated_dia_objects(
+        metadata, 'AssociationTask', 'fracUpdatedDIAObjects')
+    if measurement is not None:
+        result.append(measurement)
+    measurement = measure_number_unassociated_dia_objects(
+        metadata, 'AssociationTask', 'numUnassociatedDIAObjects')
+    if measurement is not None:
+        result.append(measurement)
+    return result
+
+
+def measure_from_butler_repo(repo, dataId):
+    """ Create measurements from a butler repository.
+
+    Parameters
+    ----------
+    repo: `str`
+        The output repository location to read from disk.
+    dataId: `str`
+        Butler identifier naming the data to be processed (e.g., visit and
+        ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
+
+    Returns
+    -------
+    a list of `lsst.verify.Measurement` derived from `metadata`. May be empty.
+    """
+    result = []
+
+    dataId_items = re.split('[ +=]', dataId)
+    dataId_dict = dict(zip(dataId_items[::2], dataId_items[1::2]))
+
+    butler = dafPersist.Butler(repo)
+    measurement = measure_dia_sources_to_sci_sources(
+        butler, dataId_dict, "")
+    if measurement is not None:
+        result.append(measurement)
+    return result
+
+
+def measure_from_L1_db_sqlite(db_name):
+    """ Make measurements on a sqlite database containing associated DIAObjects
+    and DIASources.
+
+    db_name : `str`
+        Name of the sqlite data base created from a previous run of
+        AssociationDBSqlite task to load.
+    """
+    db_connection = sqlite3.connect(db_name)
+    db_cursor = db_connection.cursor()
+
+    result = []
+    measurement = measure_total_unassociated_dia_objects(
+        db_cursor, "totalUnassociatedDIAObjects")
+    if measurement is not None:
+        result.append(measurement)
+
+    db_connection.close()
     return result
