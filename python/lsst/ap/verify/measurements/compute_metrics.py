@@ -57,8 +57,8 @@ def measure_from_metadata(metadata):
     result = []
 
     timing_map = Config.instance['measurements.timing']
-    for metric in timing_map.names():
-        measurement = measure_runtime(metadata, timing_map[metric], metric)
+    for task in timing_map.names():
+        measurement = measure_runtime(metadata, task, timing_map[task])
         if measurement is not None:
             result.append(measurement)
 
