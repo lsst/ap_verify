@@ -30,6 +30,7 @@ Using ap.verify
 
    running.rst
    datasets.rst
+   failsafe.rst
    command-line-reference.rst
    configuration.rst
 

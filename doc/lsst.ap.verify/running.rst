@@ -21,6 +21,8 @@ Since ``ap_verify`` begins with an uningested :ref:`dataset<ap-verify-datasets>`
 Datasets are identified by a name that gets mapped to an :ref:`eups-registered directory <ap-verify-datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
 
+.. _ap-verify-run-output:
+
 How to Run ap_verify in a New Workspace
 ---------------------------------------
 
@@ -69,6 +71,8 @@ The :command:`--rerun run1` argument will create a workspace in :file:`<hits-dat
 Since datasets are :ref:`not, in general, repositories<ap-verify-datasets-butler>`, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
 In particular, ``ap_verify``'s ``--rerun`` does not support repository chaining (as in :command:`--rerun input:output`); the input for ``ap_verify`` will always be determined by the :option:`--dataset <ap_verify.py --dataset>`.
 
+.. _ap-verify-results:
+
 How to Use Measurements of Metrics
 ----------------------------------
 
@@ -79,5 +83,6 @@ The file name is currently hard-coded, but may be customizable in a future versi
 Unless the :option:`--silent <ap_verify.py --silent>` argument is provided, ``ap_verify`` will also upload measurements to the `SQuaSH service <https://squash.lsst.codes/>`_ on completion.
 See the SQuaSH documentation for details.
 
-If the pipeline is interrupted by a fatal error, completed measurements will be saved to ``ap_verify.verify.json`` for debugging purposes, but nothing will get sent to SQuaSH.
+If the pipeline is interrupted by a fatal error, completed measurements will be saved to :file:`ap_verify.verify.json` for debugging purposes, but nothing will get sent to SQuaSH.
+See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for details.
 
