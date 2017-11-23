@@ -15,12 +15,8 @@ Overview
 ========
 
 ``ap_verify`` is designed to work with small, standardized :ref:`datasets<ap-verify-datasets>` that can be interchanged to test the Stack's performance under different conditions.
-
-
-.. toctree::
-   :maxdepth: 1
-
-   overview.rst
+To ensure consistent results, it :ref:`runs the entire AP pipeline<ap-verify-running>` as a single unit, from data ingestion to source association.
+It produces measurements, using the :ref:`lsst.verify<lsst.verify>` framework, that can be used for both monitoring stack development and debugging failure cases.
 
 Using ap.verify
 ===============
