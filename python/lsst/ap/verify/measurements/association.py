@@ -30,7 +30,7 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["measure_number_new_dia_objects",
            "measure_number_unassociated_dia_objects",
            "measure_fraction_updated_dia_objects",
-           "measure_n_sci_sources",
+           "measure_fraction_number_sci_sources",
            "measure_dia_sources_to_sci_sources",
            "measure_total_unassociated_dia_objects"]
 
@@ -39,8 +39,7 @@ import lsst.verify
 
 
 def measure_number_new_dia_objects(metadata, task_name, metric_name):
-    """Computes a wall-clock measurement from metadata provided
-    by @pipe.base.timeMethod.
+    """ Computes the number of newly created DIAObjects from metadata.
 
     Parameters
     ----------
@@ -54,24 +53,24 @@ def measure_number_new_dia_objects(metadata, task_name, metric_name):
         contexts, the information for only one run will be provided.
     metric_name: `str`
         The fully qualified name of the metric being measured, e.g.,
-        "pipe_tasks.ProcessCcdTime"
+        "association.numNewDiaObjects"
 
     Returns
     -------
     an `lsst.verify.Measurement` for `metric_name`, or `None` if the timing
     information for `task_name` is not present in `metadata`
     """
-    if task_name is not "AssociationTask":
+    if not metadata.exists("association.numNewDiaObjects"):
         return None
 
-    n_new = metadata.getAsInt("AssociationTask.numNewDIAObjects")
+    n_new = metadata.getAsInt("association.numNewDiaObjects")
     meas = lsst.verify.Measurement(metric_name, n_new * u.count)
     return meas
 
 
 def measure_number_unassociated_dia_objects(metadata, task_name, metric_name):
-    """Computes a wall-clock measurement from metadata provided
-    by @pipe.base.timeMethod.
+    """ Computes the number previously created DIAObjects that do loaded but
+    did not have a new association in this visit, ccd.
 
     Parameters
     ----------
@@ -92,18 +91,18 @@ def measure_number_unassociated_dia_objects(metadata, task_name, metric_name):
     an `lsst.verify.Measurement` for `metric_name`, or `None` if the timing
     information for `task_name` is not present in `metadata`
     """
-    if task_name is not "AssociationTask":
+    if not metadata.exists("association.numUnassociatedDiaObjects"):
         return None
 
     n_unassociated = metadata.getAsInt(
-        "AssociationTask.numUnassociatedDIAObjects")
+        "association.numUnassociatedDiaObjects")
     meas = lsst.verify.Measurement(metric_name, n_unassociated * u.count)
     return meas
 
 
 def measure_fraction_updated_dia_objects(metadata, task_name, metric_name):
-    """Computes a wall-clock measurement from metadata provided
-    by @pipe.base.timeMethod.
+    """ Computes the fraction of previously created DIAObjects that have a new
+    association in this visit, ccd.
 
     Parameters
     ----------
@@ -124,19 +123,20 @@ def measure_fraction_updated_dia_objects(metadata, task_name, metric_name):
     an `lsst.verify.Measurement` for `metric_name`, or `None` if the timing
     information for `task_name` is not present in `metadata`
     """
-    if task_name is not "AssociationTask":
+    if not metadata.exists("association.numUpdatedDiaObjects") or \
+       not metadata.exists("association.numUnassociatedDiaObjects"):
         return None
 
-    n_updated = metadata.getAsDouble("AssociationTask.numUpdatedDIAObjects")
+    n_updated = metadata.getAsDouble("association.numUpdatedDiaObjects")
     n_unassociated = metadata.getAsDouble(
-        "AssociationTask.numUnassociatedDIAObjects")
+        "association.numUnassociatedDiaObjects")
     meas = lsst.verify.Measurement(
         metric_name,
         n_updated / (n_updated + n_unassociated) * u.dimensionless_unscaled)
     return meas
 
 
-def measure_n_sci_sources(butler, dataId_dict, metric_name):
+def measure_number_sci_sources(butler, dataId_dict, metric_name):
     """ Compute the number of cataloged science sources.
 
     Parameters
@@ -164,7 +164,7 @@ def measure_n_sci_sources(butler, dataId_dict, metric_name):
     return meas
 
 
-def measure_dia_sources_to_sci_sources(butler, dataId_dict, metric_name):
+def measure_fraction_dia_sources_to_sci_sources(butler, dataId_dict, metric_name):
     """ Compute the ratio of cataloged science sources to different image
     sources per ccd per visit.
 

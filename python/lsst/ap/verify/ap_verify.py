@@ -141,8 +141,13 @@ def _measure_final_properties(metadata, output_dir, args, metrics_job):
     """
     measurements = []
     measurements.extend(measure_from_metadata(metadata))
-    measurements.extend(measure_from_butler_repo(output_dir, args.dataId))
-    measurements.extend(measure_from_L1_db_sqlite(db_name))
+    # In the current version of ap_pipe, DIFFIM_DIR has a parent of
+    # PROCESSED_DIR. This means that a butler created from the DIFFIM_DIR reop
+    # includes data from PROCESSED_DIR.
+    measurements.extend(measure_from_butler_repo(
+        os.path.join(output_dir, metadata.DIFFIM_DIR), args.dataId))
+    measurements.extend(measure_from_L1_db_sqlite(
+        os.path.join(output_dir, metadata.DB_DIR, "association.db")))
 
     for measurement in measurements:
         metrics_job.measurements.insert(measurement)

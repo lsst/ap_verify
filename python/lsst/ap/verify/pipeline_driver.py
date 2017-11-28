@@ -296,6 +296,7 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
     metadata = dafBase.PropertySet()
     metadata.combine(_ingest_raws(dataset, working_repo, metrics_job))
     metadata.combine(_ingest_calibs(dataset, working_repo, metrics_job))
+    _get_ap_pipe_repos(metadata)
     log.info('Data ingested')
 
     dataId = parsed_cmd_line.dataId
@@ -311,3 +312,25 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
     _post_process(working_repo)
     log.info('Pipeline complete')
     return metadata
+
+
+def _get_ap_pipe_repos(metadata):
+    """ Retrieve the subdirectories and reops defined in ap_pipe and store them
+    in the metedata.
+
+    Parameters
+    ----------
+    metadata : `lsst.daf.base.PropertySet`
+        A set of metadata to append to.
+    """
+    metadata.add("ap_pipe.RAW_DIR", ap_pipe.RAW_DIR)
+    metadata.add("ap_pipe.MASTERCAL_DIR", ap_pipe.MASTERCAL_DIR)
+    metadata.add("ap_pipe.DEFECT_DIR", ap_pipe.DEFECT_DIR)
+    metadata.add("ap_pipe.REFCATS_DIR", ap_pipe.REFCATS_DIR)
+    metadata.add("ap_pipe.TEMPLATES_DIR", ap_pipe.TEMPLATES_DIR)
+
+    metadata.add("ap_pipe.INGESTED_DIR", ap_pipe.INGESTED_DIR)
+    metadata.add("ap_pipe.CALIBINGESTED_DIR", ap_pipe.CALIBINGESTED_DIR)
+    metadata.add("ap_pipe.PROCESSED_DIR", ap_pipe.PROCESSED_DIR)
+    metadata.add("ap_pipe.DIFFIM_DIR", ap_pipe.DIFFIM_DIR)
+    metadata.add("ap_pipe.DB_DIR", ap_pipe.DB_DIR)
