@@ -33,15 +33,15 @@ from .config import Config
 
 
 def _nicecopy(src, dst):
-    """Recursively copy a directory from src to dst, ignoring any files
-    that already exist.
+    """Recursively copy a directory, ignoring any files that already exist at
+    the destination.
 
     Parameters
     ----------
-    src: `str`
+    src : `str`
         The directory whose contents will be copied. Symbolic links will
         be duplicated in `dst`, but will not be followed.
-    dst: `str`
+    dst : `str`
         The directory to which `src` and its contents will be copied.
     """
     # Can't use exceptions to distinguish pre-existing directory from I/O failures until Python 3
@@ -63,7 +63,7 @@ def _nicecopy(src, dst):
 
 
 class Dataset(object):
-    """A dataset supported by ap_verify.
+    """A dataset supported by ``ap_verify``.
 
     Any object of this class is guaranteed to represent a ready-for-use
     dataset, barring concurrent changes to the file system or EUPS operations.
@@ -72,14 +72,14 @@ class Dataset(object):
 
     Parameters
     ----------
-    datasetId: `str`
+    datasetId : `str`
        A tag identifying the dataset.
 
     Raises
     ------
-    `RuntimeError`:
+    `RuntimeError`
         `datasetId` exists, but is not correctly organized or incomplete
-    `ValueError`:
+    `ValueError`
         `datasetId` is not a recognized dataset. No side effects if this
         exception is raised.
     """
@@ -111,13 +111,14 @@ class Dataset(object):
 
         Returns
         -------
-        A set of strings of valid tags
+        datasets : `set` of `str`
+            the set of IDs that will be accepted
 
         Raises
         ------
-        `IoError`:
+        `IoError`
             if the config file does not exist or is not readable
-        `RuntimeError`:
+        `RuntimeError`
             if the config file exists, but does not contain the expected data
         """
         return Dataset._getDatasetInfo().keys()
@@ -130,11 +131,12 @@ class Dataset(object):
 
         Returns
         -------
-        A map from dataset IDs to package names.
+        datasetToPackage : `dict`-like
+            a map from dataset IDs to package names.
 
         Raises
         ------
-        `RuntimeError`:
+        `RuntimeError`
             the config file exists, but does not contain the expected data
         """
         if not hasattr(Dataset, '_datasetConfig'):
@@ -148,7 +150,8 @@ class Dataset(object):
 
         Returns
         -------
-        a string giving the location of the base directory
+        dir : `str`
+            the location of the base directory
         """
         return self._dataRootDir
 
@@ -158,7 +161,8 @@ class Dataset(object):
 
         Returns
         -------
-        a string giving the location of the top-level directory for telescope output files
+        dir : `str`
+            the location of the science image directory
         """
         return os.path.join(self.datasetRoot, 'raw')
 
@@ -168,7 +172,8 @@ class Dataset(object):
 
         Returns
         -------
-        a string giving the location of the top-level directory for master calibration files
+        dir : `str`
+            the location of the master calibration directory
         """
         return os.path.join(self.datasetRoot, 'calib')
 
@@ -178,17 +183,20 @@ class Dataset(object):
 
         Returns
         -------
-        a string giving the location of the top-level directory for defect files
+        dir : `str`
+            the location of the defect directory
         """
         return self.calibLocation
 
     @property
     def refcatsLocation(self):
-        """The directory containing external reference catalogs.
+        """The directory containing external astrometric and photometric
+        reference catalogs.
 
         Returns
         -------
-        a string giving the location of the top-level directory for astrometric and photometric catalogs
+        dir : `str`
+            the location of the reference catalog directory
         """
         return os.path.join(self.datasetRoot, 'refcats')
 
@@ -198,7 +206,8 @@ class Dataset(object):
 
         Returns
         -------
-        a string giving the location of the top-level directory for precomputed templates
+        repo : `str`
+            the location of the precomputed template repository.
         """
         return os.path.join(self.datasetRoot, 'templates')
 
@@ -208,19 +217,23 @@ class Dataset(object):
 
         Returns
         -------
-        a string giving the location of the stub input repo
+        dir : `str`
+            the location of the stub used to generate an ingested input repository
         """
         return os.path.join(self.datasetRoot, 'repo')
 
     def _validatePackage(self):
         """Confirm that the dataset directory satisfies all assumptions.
 
-        Requires that self._dataRootDir has been initialized.
-
         Raises
         ------
-        `RuntimeError`:
-            if any problems are found with the package
+        `RuntimeError`
+            the package represented by this object does not conform to the
+            dataset framework
+
+        Notes
+        -----
+        Requires that `self._dataRootDir` has been initialized.
         """
         if not os.path.exists(self.datasetRoot):
             raise RuntimeError('Could not find dataset at ' + self.datasetRoot)
@@ -248,7 +261,7 @@ class Dataset(object):
 
         Parameters
         ----------
-        outputDir: `str`
+        outputDir : `str`
             The directory where the output repository will be created.
         """
         # shutil.copytree has wrong behavior for existing destinations, do it by hand

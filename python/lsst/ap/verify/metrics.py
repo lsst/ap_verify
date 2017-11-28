@@ -22,9 +22,9 @@
 
 """Verification metrics handling for the AP pipeline.
 
-This module handles metrics loading and export (via the AutoJob class), but not
+This module handles metrics loading and export (via the `AutoJob` class), but not
 processing of individual measurements. Measurements are handled in the
-ap_verify module or in the appropriate pipeline step, as appropriate.
+``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -51,7 +51,7 @@ def checkSquashReady(parsedCmdLine):
 
     Parameters
     ----------
-    parsedCmdLine: `argparse.Namespace`
+    parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `MetricsParser`.
 
     Raises
@@ -84,7 +84,7 @@ class MetricsParser(argparse.ArgumentParser):
 
 
 class AutoJob:
-    """A wrapper for an lsst.verify.Job that automatically handles
+    """A wrapper for an `lsst.verify.Job` that automatically handles
     initialization and shutdown.
 
     When used in a `with... as...` statement, the wrapper assigns the
@@ -95,9 +95,10 @@ class AutoJob:
 
     Parameters
     ----------
-    args: `argparse.Namespace`
+    args : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `MetricsParser`.
     """
+
     def __init__(self, args):
         self._job = lsst.verify.Job.load_metrics_package()
         # TODO: add Job metadata (camera, filter, etc.) in DM-11321
@@ -111,7 +112,7 @@ class AutoJob:
 
         Parameters
         ----------
-        fileName: `str`
+        fileName : `str`
             The file to which the measurements will be saved.
         """
         self.job.write(fileName)
@@ -121,7 +122,7 @@ class AutoJob:
 
         Parameters
         ----------
-        fileName: `str`
+        fileName : `str`
             a file containing measurements in lsst.verify format
         """
         self.job.dispatch(api_user=self._squashUser, api_password=self._squashPassword,
@@ -141,9 +142,9 @@ class AutoJob:
     def __exit__(self, excType, excValue, traceback):
         """Package all metric measurements performed during this run.
 
-        The measurements shall be exported to `ap_verify.verify.json`, and the
-        metrics framework shall be shut down. If the context was exited
-        normally and the appropriate flag was passed to this object's
+        The measurements shall be exported to :file:`ap_verify.verify.json`,
+        and the metrics framework shall be shut down. If the context was
+        exited normally and the appropriate flag was passed to this object's
         constructor, the measurements shall be sent to SQuaSH.
         """
         log = lsst.log.Log.getLogger('ap.verify.metrics.AutoJob.__exit__')

@@ -28,11 +28,11 @@ from lsst.daf.persistence import Policy
 
 
 class Config(object):
-    """Confuration manager for ap_verify.
+    """Confuration manager for ``ap_verify``.
 
-    This is a singleton Policy that may be accessed from other modules in
-    ap_verify as needed using `Config.instance`. Please do not construct
-    objects of this class directly.
+    This is a singleton `lsst.daf.persistence.Policy` that may be accessed
+    from other modules in ``ap_verify`` as needed using `Config.instance`.
+    Please do not construct objects of this class directly.
     """
 
     def __init__(self):
@@ -41,8 +41,12 @@ class Config(object):
         self._validate()
 
     def _validate(self):
-        """Tests that the loaded configuration is correct, and raises
-        RuntimeError otherwise.
+        """Test that the loaded configuration is correct.
+
+        Raises
+        ------
+        `RuntimeError`
+            Validation failed
         """
         try:
             datasetMap = self._allInfo['datasets']

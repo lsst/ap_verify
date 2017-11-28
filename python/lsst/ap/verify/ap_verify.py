@@ -73,14 +73,14 @@ class _VerifyApParser(argparse.ArgumentParser):
 class _FormattedType:
     """An argparse type converter that requires strings in a particular format.
 
-    Leaves the input as a string if it matches, else raises ArgumentTypeError.
+    Leaves the input as a string if it matches, else raises `argparse.ArgumentTypeError`.
 
     Parameters
     ----------
-    fmt: `str`
+    fmt : `str`
         A regular expression that values must satisfy to be accepted. The *entire* string must match the
         expression in order to pass.
-    msg: `str`
+    msg : `str`
         An error string to display for invalid values. The first "%s" shall be filled with the
         invalid argument.
     """
@@ -105,19 +105,19 @@ def _getOutputDir(inputDir, outputArg, rerunArg):
 
     Parameters
     ----------
-    inputDir: `str`
+    inputDir : `str`
         The root directory of the input dataset.
-    outputArg: `str`
-        The directory given using the `--output` command line argument. May
-        be None.
-    rerunArg: `str`
-        The subdirectory given using the `--rerun` command line argument.  May
-        be None, otherwise must be relative to `inputDir`.
+    outputArg : `str`
+        The directory given using the ``--output`` command line argument. May
+        be `None`.
+    rerunArg : `str`
+        The subdirectory given using the ``--rerun`` command line argument.  May
+        be `None`, otherwise must be relative to `inputDir`.
 
     Raises
     ------
-    `ValueError`:
-        Neither `outputArg` nor `rerunArg` is None, or both are.
+    `ValueError`
+        Neither `outputArg` nor `rerunArg` is `None`, or both are.
     """
     if outputArg and rerunArg:
         raise ValueError('Cannot provide both --output and --rerun.')
@@ -135,11 +135,17 @@ def _measureFinalProperties(metadata, outputDir, args, metricsJob):
 
     Parameters
     ----------
-    metadata: `lsst.daf.base.PropertySet`
+    metadata : `lsst.daf.base.PropertySet`
         The metadata produced by the AP pipeline.
-    metricsJob: `verify.Job`
+    outputDir : `str`
+        The location of the final processed data repository.
+    args : `argparse.Namespace`
+        All command-line arguments passed to this program, including those
+        supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
     """
+    # TODO: remove this function's dependency on pipeline_driver (possibly after DM-11372)
     measurements = []
     measurements.extend(measureFromMetadata(metadata))
     # In the current version of ap_pipe, DIFFIM_DIR has a parent of
@@ -157,9 +163,16 @@ def _measureFinalProperties(metadata, outputDir, args, metricsJob):
 def runApVerify(cmdLine=None):
     """Execute the AP pipeline while handling metrics.
 
+    This is the main function for ``ap_verify``, and handles logging,
+    command-line argument parsing, pipeline execution, and metrics
+    generation.
+
+    After this function returns, metrics will be available in a file
+    named :file:`ap_verify.verify.json` in the working directory.
+
     Parameters
     ----------
-    cmdLine: `list` of `str`
+    cmdLine : `list` of `str`
         an optional command line used to execute `runApVerify` from other
         Python code. If `None`, `sys.argv` will be used.
     """

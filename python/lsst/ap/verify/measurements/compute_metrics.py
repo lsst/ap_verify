@@ -47,24 +47,26 @@ from .association import measureNumberNewDiaObjects, \
 
 
 def measureFromMetadata(metadata):
-    """Attempts to compute all known metrics on Task metadata.
+    """Compute all known metrics on Task metadata.
 
-    Metrics and measurement information are registered in the ap_verify
-    configuration file under the `measurements` label.
+    Metrics and measurement information are registered in the ``ap_verify``
+    configuration file under the ``measurements`` label.
 
     Parameters
     ----------
-    metadata: `lsst.daf.base.PropertySet`
+    metadata : `lsst.daf.base.PropertySet`
         The metadata to search for measurements.
 
     Returns
     -------
-    a list of `lsst.verify.Measurement` derived from `metadata`. May be empty.
+    measurements : iterable of `lsst.verify.Measurement`
+        all the measurements derived from ``metadata``. May be empty.
 
     Raises
     ------
-    `RuntimeError`:
-        the config file exists, but does not contain the expected data
+    `RuntimeError`
+        the ``ap_verify`` configuration file exists, but does not contain the
+        expected data under ``measurements``
     """
     result = []
 
@@ -90,19 +92,20 @@ def measureFromMetadata(metadata):
 
 
 def measureFromButlerRepo(repo, dataId):
-    """ Create measurements from a butler repository.
+    """Create measurements from a butler repository.
 
     Parameters
     ----------
-    repo: `str`
+    repo : `str`
         The output repository location to read from disk.
-    dataId: `str`
+    dataId : `str`
         Butler identifier naming the data to be processed (e.g., visit and
         ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
 
     Returns
     -------
-    a list of `lsst.verify.Measurement` derived from `metadata`. May be empty.
+    measurements : iterable of `lsst.verify.Measurement`
+        all the measurements derived from ``metadata``. May be empty.
     """
     result = []
 
@@ -122,18 +125,20 @@ def measureFromButlerRepo(repo, dataId):
 
 
 def _convertDataIdString(dataId):
-    """ Convert the input data ID string information to a dict readable by the
+    """Convert the input data ID string information to a `dict` readable by the
     butler.
 
     Parameters
     ----------
-    dataId: `str`
+    dataId : `str`
         Butler identifier naming the data to be processed (e.g., visit and
         ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
 
     Returns
     -------
-    dict of Butler dataIds.
+    dataId : `dict`
+        the data units, in a format compatible with the
+        `lsst.daf.persistence` API
     """
     dataIdItems = re.split('[ +=]', dataId)
     dataIdDict = dict(zip(dataIdItems[::2], dataIdItems[1::2]))
@@ -156,12 +161,12 @@ def _convertDataIdString(dataId):
 
 
 def measureFromL1DbSqlite(dbName):
-    """ Make measurements on a sqlite database containing the results of from
+    """Make measurements on an sqlite database containing the results of
     source association.
 
     dbName : `str`
-        Name of the sqlite data base created from a previous run of
-        AssociationDBSqlite task to load.
+        Name of the sqlite database created from a previous run of
+        `lsst.ap.association.AssociationDBSqliteTask` to load.
     """
     dbConnection = sqlite3.connect(dbName)
     dbCursor = dbConnection.cursor()

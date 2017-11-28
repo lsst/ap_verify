@@ -22,7 +22,7 @@
 
 """Code for measuring software performance metrics.
 
-All measurements assume the necessary information is present in a Task's metadata.
+All measurements assume the necessary information is present in a task's metadata.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -35,27 +35,28 @@ import lsst.verify
 
 
 def measureRuntime(metadata, taskName, metricName):
-    """Computes a wall-clock measurement from metadata provided
-    by @pipe.base.timeMethod.
+    """Compute a wall-clock measurement from metadata provided
+    by @`lsst.pipe.base.timeMethod`.
 
     Parameters
     ----------
-    metadata: `lsst.daf.base.PropertySet`
+    metadata : `lsst.daf.base.PropertySet`
         The metadata to search for timing information.
-    taskName: `str`
-        The name of the Task, e.g., "processCcd". SubTask names must be the
-        ones assigned by the parent Task and may be disambiguated using the
-        parent Task name, as in "processCcd:calibrate".
-        If `taskName` matches multiple runs of a subTask in different
+    taskName : `str`
+        The name of the task, e.g., "processCcd". Subtask names must be the
+        ones assigned by the parent task and may be disambiguated using the
+        parent task name, as in "processCcd:calibrate".
+        If `taskName` matches multiple runs of a subtask in different
         contexts, the information for only one run will be provided.
-    metricName: `str`
+    metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
         "pipe_tasks.ProcessCcdTime"
 
     Returns
     -------
-    an `lsst.verify.Measurement` for `metricName`, or `None` if the timing
-    information for `taskName` is not present in `metadata`
+    measurement : `lsst.verify.Measurement`
+        the value of `metricName`, or `None` if the timing information for
+        `taskName` is not present in `metadata`
     """
     endKey = "%s.runEndCpuTime" % taskName
 
