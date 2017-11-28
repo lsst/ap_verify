@@ -34,5 +34,4 @@ Python API reference
 ====================
 
 .. automodapi:: lsst.ap.verify
-.. automodapi:: lsst.ap.verify.measurements
 
