@@ -28,7 +28,9 @@ defined here, rather than depending on individual measurement functions.
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["measure_from_metadata"]
+__all__ = ["measure_from_metadata", 
+           "measure_from_butler_repo",
+           "measure_from_L1_db_sqlite"]
 
 import sqlite3
 import re

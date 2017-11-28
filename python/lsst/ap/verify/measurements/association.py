@@ -27,7 +27,12 @@ All measurements assume the necessary information is present in a Task's metadat
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["measure_association"]
+__all__ = ["measure_number_new_dia_objects",
+           "measure_number_unassociated_dia_objects",
+           "measure_fraction_updated_dia_objects",
+           "measure_n_sci_sources",
+           "measure_dia_sources_to_sci_sources",
+           "measure_total_unassociated_dia_objects"]
 
 import astropy.units as u
 import lsst.verify
@@ -131,6 +136,34 @@ def measure_fraction_updated_dia_objects(metadata, task_name, metric_name):
     return meas
 
 
+def measure_n_sci_sources(butler, dataId_dict, metric_name):
+    """ Compute the number of cataloged science sources.
+
+    Parameters
+    ----------
+    butler: lsst.daf.percistence.Butler instance
+        The output repository location to read from disk.
+    dataId_dict: dictionary
+        Butler identifier naming the data to be processed (e.g., visit and
+        ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
+    metric_name: `str`
+        The fully qualified name of the metric being measured, e.g.,
+        "pipe_tasks.ProcessCcdTime"
+
+    Returns
+    -------
+    an `lsst.verify.Measurement` for `metric_name`, or `None`
+    """
+
+    # Parse the input dataId string and convert to a dictionary of values.
+    # Hard coded assuming the same input formate as in ap_pipe.
+
+    n_sci_sources = len(butler.get('src', dataId=dataId_dict))
+    meas = lsst.verify.Measurement(
+        metric_name, n_sci_sources * u.count)
+    return meas
+
+
 def measure_dia_sources_to_sci_sources(butler, dataId_dict, metric_name):
     """ Compute the ratio of cataloged science sources to different image
     sources per ccd per visit.
@@ -156,7 +189,7 @@ def measure_dia_sources_to_sci_sources(butler, dataId_dict, metric_name):
 
     n_sci_sources = len(butler.get('src', dataId=dataId_dict))
     n_dia_sources = len(butler.get('deepDiff_diaSrc', dataId=dataId_dict))
-    meas = lsst.verify.Measurment(
+    meas = lsst.verify.Measurement(
         metric_name,
         n_dia_sources / n_sci_sources * u.dimensionless_unscaled)
     return meas
@@ -183,7 +216,7 @@ def measure_total_unassociated_dia_objects(db_cursor, metric_name):
                       "WHERE n_dia_sources = 1")
     (n_unassociated_dia_objects,) = db_cursor.fetchall()[0]
 
-    meas = lsst.verify.Measurment(
+    meas = lsst.verify.Measurement(
         metric_name,
         n_unassociated_dia_objects * u.count)
     return meas

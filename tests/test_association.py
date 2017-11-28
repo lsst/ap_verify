@@ -35,7 +35,8 @@ import lsst.afw.table as afwTable
 import lsst.obs.test as obsTest
 import lsst.utils.tests
 from lsst.verify import Measurement
-from lsst.ap.verify.measurements.profiling import \
+from lsst.ap.verify.measurements.association import \
+    measure_n_sci_sources, \
     measure_dia_sources_to_sci_sources
 
 # Define the root of the tests relative to this file
@@ -85,13 +86,14 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         inputRepoArgs = dafPersist.RepositoryArgs(
             root=os.path.join(ROOT, 'butlerAlias', 'data', 'input'),
             mapper=obsTest.TestMapper,
+            mode='rw',
             tags='baArgs')
         outputRepoArgs = dafPersist.RepositoryArgs(
             root=os.path.join(self.testDir, 'repoA'),
             mapper=obsTest.TestMapper,
             mode='rw')
         self.butler = dafPersist.Butler(
-            inputs=inputRepoArgs, outputs=outputRepoArgs)
+            outputs=outputRepoArgs)
         test_sources = create_test_sources(10)
         test_dia_sources = create_test_sources(5)
         self.butler.put(obj=test_sources,
@@ -113,6 +115,16 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
     def test_valid(self):
         """Verify that assocition information can be recovered.
         """
+        meas = measure_n_sci_sources(
+            self.butler,
+            dataId_dict=dataId_dict,
+            metric_name='ip_diffim.numSciSrc')
+        self.assertIsInstance(meas, Measurement)
+        self.assertEqual(
+            meas.metric_name,
+            lsst.verify.Name(metric='ip_diffim.numSciSrc'))
+        # We put in half the number of DIASources as detected sources.
+        self.assertEqual(meas.quantity, 10 * u.count)
 
         meas = measure_dia_sources_to_sci_sources(
             self.butler,
@@ -121,7 +133,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
             meas.metric_name,
-            lsst.verify.Name(metric='ap_association.fracDiaSrcToSciSrc'))
+            lsst.verify.Name(metric='ip_diffim.fracDiaSrcToSciSrc'))
         # We put in half the number of DIASources as detected sources.
         self.assertEqual(meas.quantity, 0.5 * u.dimensionless_unscaled)
 
@@ -139,13 +151,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         with self.assertRaises(TypeError):
             measure_dia_sources_to_sci_sources(
                 self.butler, dataId='isr', metric_name='foo.bar.FooBarTime')
-
-    def test_not_run(self):
-        """Verify that trying to measure a real but inapplicable metric returns None.
-        """
-        not_run = IsrTask(IsrTask.ConfigClass())
-        meas = measure_runtime(not_run.getFullMetadata(), task_name='isr', metric_name='ip_isr.IsrTime')
-        self.assertIsNone(meas)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
