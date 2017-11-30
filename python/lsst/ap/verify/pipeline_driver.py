@@ -323,14 +323,14 @@ def _get_ap_pipe_repos(metadata):
     metadata : `lsst.daf.base.PropertySet`
         A set of metadata to append to.
     """
-    metadata.add("ap_pipe.RAW_DIR", ap_pipe.RAW_DIR)
-    metadata.add("ap_pipe.MASTERCAL_DIR", ap_pipe.MASTERCAL_DIR)
-    metadata.add("ap_pipe.DEFECT_DIR", ap_pipe.DEFECT_DIR)
-    metadata.add("ap_pipe.REFCATS_DIR", ap_pipe.REFCATS_DIR)
-    metadata.add("ap_pipe.TEMPLATES_DIR", ap_pipe.TEMPLATES_DIR)
+    metadata.add("ap_pipe.RAW_DIR", ap_pipe.ap_pipe.RAW_DIR)
+    metadata.add("ap_pipe.MASTERCAL_DIR", ap_pipe.ap_pipe.MASTERCAL_DIR)
+    metadata.add("ap_pipe.DEFECT_DIR", ap_pipe.ap_pipe.DEFECT_DIR)
+    metadata.add("ap_pipe.REFCATS_DIR", ap_pipe.ap_pipe.REFCATS_DIR)
+    metadata.add("ap_pipe.TEMPLATES_DIR", ap_pipe.ap_pipe.TEMPLATES_DIR)
 
-    metadata.add("ap_pipe.INGESTED_DIR", ap_pipe.INGESTED_DIR)
-    metadata.add("ap_pipe.CALIBINGESTED_DIR", ap_pipe.CALIBINGESTED_DIR)
-    metadata.add("ap_pipe.PROCESSED_DIR", ap_pipe.PROCESSED_DIR)
-    metadata.add("ap_pipe.DIFFIM_DIR", ap_pipe.DIFFIM_DIR)
-    metadata.add("ap_pipe.DB_DIR", ap_pipe.DB_DIR)
+    metadata.add("ap_pipe.INGESTED_DIR", ap_pipe.ap_pipe.INGESTED_DIR)
+    metadata.add("ap_pipe.CALIBINGESTED_DIR", ap_pipe.ap_pipe.CALIBINGESTED_DIR)
+    metadata.add("ap_pipe.PROCESSED_DIR", ap_pipe.ap_pipe.PROCESSED_DIR)
+    metadata.add("ap_pipe.DIFFIM_DIR", ap_pipe.ap_pipe.DIFFIM_DIR)
+    metadata.add("ap_pipe.DB_DIR", ap_pipe.ap_pipe.DB_DIR)

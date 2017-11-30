@@ -130,6 +130,8 @@ def measure_fraction_updated_dia_objects(metadata, task_name, metric_name):
     n_updated = metadata.getAsDouble("association.numUpdatedDiaObjects")
     n_unassociated = metadata.getAsDouble(
         "association.numUnassociatedDiaObjects")
+    if n_updated <= 0. or n_unassociated <= 0.:
+        return lsst.verify.Measurement(metric_name, 0. * u.dimensionless_unscaled)
     meas = lsst.verify.Measurement(
         metric_name,
         n_updated / (n_updated + n_unassociated) * u.dimensionless_unscaled)
