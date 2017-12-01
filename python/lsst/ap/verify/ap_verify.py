@@ -38,7 +38,9 @@ import lsst.log
 from .dataset import Dataset
 from .metrics import MetricsParser, check_squash_ready, AutoJob
 from .pipeline_driver import ApPipeParser, run_ap_pipe
-from .measurements import measure_from_metadata
+from .measurements import measure_from_metadata, \
+                          measure_from_butler_repo, \
+                          measure_from_L1_db_sqlite
 
 
 class _VerifyApParser(argparse.ArgumentParser):
@@ -126,7 +128,7 @@ def _get_output_dir(input_dir, output_arg, rerun_arg):
         return os.path.join(input_dir, "rerun", rerun_arg)
 
 
-def _measure_final_properties(metadata, metrics_job):
+def _measure_final_properties(metadata, output_dir, args, metrics_job):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
@@ -137,7 +139,16 @@ def _measure_final_properties(metadata, metrics_job):
     metrics_job: `verify.Job`
         The Job object to which to add any metric measurements made.
     """
-    measurements = measure_from_metadata(metadata)
+    measurements = []
+    measurements.extend(measure_from_metadata(metadata))
+    # In the current version of ap_pipe, DIFFIM_DIR has a parent of
+    # PROCESSED_DIR. This means that a butler created from the DIFFIM_DIR reop
+    # includes data from PROCESSED_DIR.
+    measurements.extend(measure_from_butler_repo(
+        os.path.join(output_dir, metadata.getAsString('ap_pipe.DIFFIM_DIR')), args.dataId))
+    measurements.extend(measure_from_L1_db_sqlite(
+        os.path.join(output_dir, metadata.getAsString('ap_pipe.DB_DIR'), "association.db")))
+
     for measurement in measurements:
         metrics_job.measurements.insert(measurement)
 
@@ -159,4 +170,4 @@ def run_ap_verify():
     with AutoJob(args) as job:
         log.info('Running pipeline...')
         metadata = run_ap_pipe(test_data, output, args, job)
-        _measure_final_properties(metadata, job)
+        _measure_final_properties(metadata, output, args, job)

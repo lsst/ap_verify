@@ -15,4 +15,3 @@ measurements:
         imageDifference:measurement: ip_diffim.DipoleFitTime
         association: ap_association.AssociationTime
 ...
-
