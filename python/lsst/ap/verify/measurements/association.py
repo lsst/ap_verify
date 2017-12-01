@@ -30,8 +30,8 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["measure_number_new_dia_objects",
            "measure_number_unassociated_dia_objects",
            "measure_fraction_updated_dia_objects",
-           "measure_fraction_number_sci_sources",
-           "measure_dia_sources_to_sci_sources",
+           "measure_number_sci_sources",
+           "measure_fraction_dia_sources_to_sci_sources",
            "measure_total_unassociated_dia_objects"]
 
 import astropy.units as u
@@ -69,7 +69,7 @@ def measure_number_new_dia_objects(metadata, task_name, metric_name):
 
 
 def measure_number_unassociated_dia_objects(metadata, task_name, metric_name):
-    """ Computes the number previously created DIAObjects that do loaded but
+    """ Computes the number previously created DIAObjects that were loaded but
     did not have a new association in this visit, ccd.
 
     Parameters
@@ -166,7 +166,9 @@ def measure_number_sci_sources(butler, dataId_dict, metric_name):
     return meas
 
 
-def measure_fraction_dia_sources_to_sci_sources(butler, dataId_dict, metric_name):
+def measure_fraction_dia_sources_to_sci_sources(butler,
+                                                dataId_dict,
+                                                metric_name):
     """ Compute the ratio of cataloged science sources to different image
     sources per ccd per visit.
 

@@ -315,7 +315,7 @@ def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
 
 
 def _get_ap_pipe_repos(metadata):
-    """ Retrieve the subdirectories and reops defined in ap_pipe and store them
+    """ Retrieve the subdirectories and repos defined in ap_pipe and store them
     in the metedata.
 
     Parameters
