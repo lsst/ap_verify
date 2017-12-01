@@ -299,13 +299,13 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         with self.assertRaises(dafPersist.NoResults):
             measure_number_sci_sources(
                 self.butler,
-                dataId_dict={'visit': 1111},
+                dataId_dict={'visit': 1111, 'filter': 'g'},
                 metric_name='ip_diffim.fracDiaSrcToSciSrc')
 
         with self.assertRaises(dafPersist.NoResults):
             measure_fraction_dia_sources_to_sci_sources(
                 self.butler,
-                dataId_dict={'visit': 1111},
+                dataId_dict={'visit': 1111, 'filter': 'g'},
                 metric_name='ip_diffim.fracDiaSrcToSciSrc')
 
     def test_metadata_not_created(self):
