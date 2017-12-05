@@ -153,11 +153,19 @@ def _measure_final_properties(metadata, output_dir, args, metrics_job):
         metrics_job.measurements.insert(measurement)
 
 
-def run_ap_verify():
+def run_ap_verify(cmdLine=None):
+    """Execute the AP pipeline while handling metrics.
+
+    Parameters
+    ----------
+    cmdLine: `list` of `str`
+        an optional command line used to execute `run_ap_verify` from other
+        Python code. If `None`, `sys.argv` will be used.
+    """
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
-    args = _VerifyApParser().parse_args()
+    args = _VerifyApParser().parse_args(args=cmdLine)
     check_squash_ready(args)
     log.debug('Command-line arguments: %s', args)
 
