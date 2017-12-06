@@ -22,7 +22,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["ApPipeParser", "runApPipe"]
+__all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
 from future.utils import raise_from
