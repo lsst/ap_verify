@@ -22,6 +22,5 @@ ccds = list(range(3, 61)) + [62]    # range does not support concatenation in Py
 i=0
 with open('demo_cmds.conf', 'w') as f:
     for visit in visits:
-        for ccd in ccds:
-            f.write('{} {}exec_demo_run.sh {} {}\n'.format(i, BASE_DIR, visit, ccd))
-            i+=1
+        f.write('{} {}exec_demo_run.sh {}\n'.format(i, BASE_DIR, visit))
+        i+=1

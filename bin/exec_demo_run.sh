@@ -13,4 +13,11 @@ setup -k -r $BASE_DIR/ap_association
 setup -k -r $BASE_DIR/ap_pipe
 setup -k -r $BASE_DIR/ap_verify
 
-ap_verify.py --dataset HiTS2015 --output ap_verify_HiTS --dataIdString "visit=${1} ccdnum=${2} filter=g" --silent
+
+
+# CCD 1 has image subtraction problems, CCDs 2 and 61 are missing
+for i in `seq 3 60`; do
+	ap_verify.py --dataset HiTS2015 --output ap_verify_HiTS --dataIdString "visit=${1} ccdnum=$i filter=g" --silent;
+done
+
+ap_verify.py --dataset HiTS2015 --output ap_verify_HiTS --dataIdString "visit=${1} ccdnum=62 filter=g" --silent;
