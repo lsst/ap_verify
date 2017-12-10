@@ -1,3 +1,5 @@
+"""Write slurm command file for executing DECam HiTS processing."""
+
 import os
 import inspect
 
