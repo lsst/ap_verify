@@ -14,6 +14,8 @@ doc/*.tag
 doc/doxygen.conf
 doc/html
 doc/xml
+doc/_build
+doc/py-api/
 tests/.cache
 tests/.tests
 ups/*.cfgc

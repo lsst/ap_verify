@@ -22,49 +22,50 @@
 
 """Code for measuring software performance metrics.
 
-All measurements assume the necessary information is present in a Task's metadata.
+All measurements assume the necessary information is present in a task's metadata.
 """
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["measure_runtime"]
+__all__ = ["measureRuntime"]
 
 import astropy.units as u
 
 import lsst.verify
 
 
-def measure_runtime(metadata, task_name, metric_name):
-    """Computes a wall-clock measurement from metadata provided
-    by @pipe.base.timeMethod.
+def measureRuntime(metadata, taskName, metricName):
+    """Compute a wall-clock measurement from metadata provided
+    by @`lsst.pipe.base.timeMethod`.
 
     Parameters
     ----------
-    metadata: `lsst.daf.base.PropertySet`
+    metadata : `lsst.daf.base.PropertySet`
         The metadata to search for timing information.
-    task_name: `str`
-        The name of the Task, e.g., "processCcd". SubTask names must be the
-        ones assigned by the parent Task and may be disambiguated using the
-        parent Task name, as in "processCcd:calibrate".
-        If `task_name` matches multiple runs of a subTask in different
+    taskName : `str`
+        The name of the task, e.g., "processCcd". Subtask names must be the
+        ones assigned by the parent task and may be disambiguated using the
+        parent task name, as in "processCcd:calibrate".
+        If `taskName` matches multiple runs of a subtask in different
         contexts, the information for only one run will be provided.
-    metric_name: `str`
+    metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
         "pipe_tasks.ProcessCcdTime"
 
     Returns
     -------
-    an `lsst.verify.Measurement` for `metric_name`, or `None` if the timing
-    information for `task_name` is not present in `metadata`
+    measurement : `lsst.verify.Measurement`
+        the value of `metricName`, or `None` if the timing information for
+        `taskName` is not present in `metadata`
     """
-    end_key = "%s.runEndCpuTime" % task_name
+    endKey = "%s.runEndCpuTime" % taskName
 
     keys = metadata.names(topLevelOnly=False)
-    timed_methods = [(key.replace("EndCpuTime", "StartCpuTime"), key)
-                     for key in keys if key.endswith(end_key)]
-    if timed_methods:
-        start, end = (metadata.getAsDouble(key) for key in timed_methods[0])
-        meas = lsst.verify.Measurement(metric_name, (end - start) * u.second)
+    timedMethods = [(key.replace("EndCpuTime", "StartCpuTime"), key)
+                    for key in keys if key.endswith(endKey)]
+    if timedMethods:
+        start, end = (metadata.getAsDouble(key) for key in timedMethods[0])
+        meas = lsst.verify.Measurement(metricName, (end - start) * u.second)
         meas.notes['estimator'] = 'pipe.base.timeMethod'
         return meas
     else:

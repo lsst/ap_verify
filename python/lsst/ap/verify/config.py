@@ -28,39 +28,43 @@ from lsst.daf.persistence import Policy
 
 
 class Config(object):
-    """Confuration manager for ap_verify.
+    """Confuration manager for ``ap_verify``.
 
-    This is a singleton Policy that may be accessed from other modules in
-    ap_verify as needed using `Config.instance`. Please do not construct
-    objects of this class directly.
+    This is a singleton `lsst.daf.persistence.Policy` that may be accessed
+    from other modules in ``ap_verify`` as needed using `Config.instance`.
+    Please do not construct objects of this class directly.
     """
 
     def __init__(self):
         path = Policy.defaultPolicyFile('ap_verify', 'dataset_config.yaml', 'config')
-        self._all_info = Policy(path)
+        self._allInfo = Policy(path)
         self._validate()
 
     def _validate(self):
-        """Tests that the loaded configuration is correct, and raises
-        RuntimeError otherwise.
+        """Test that the loaded configuration is correct.
+
+        Raises
+        ------
+        `RuntimeError`
+            Validation failed
         """
         try:
-            dataset_map = self._all_info['datasets']
-            if not isinstance(dataset_map, Policy):
+            datasetMap = self._allInfo['datasets']
+            if not isinstance(datasetMap, Policy):
                 raise TypeError('`datasets` is not a dictionary')
         except (KeyError, TypeError) as e:
             raise_from(RuntimeError('Invalid config file.'), e)
 
         try:
-            measurement_map = self._all_info['measurements']
-            if not isinstance(measurement_map, Policy):
+            measurementMap = self._allInfo['measurements']
+            if not isinstance(measurementMap, Policy):
                 raise TypeError('`measurements` is not a dictionary')
-            timing_map = measurement_map['timing']
-            if not isinstance(timing_map, Policy):
+            timingMap = measurementMap['timing']
+            if not isinstance(timingMap, Policy):
                 raise TypeError('`measurements.timing` is not a dictionary')
         except (KeyError, TypeError) as e:
             raise_from(RuntimeError('Invalid config file.'), e)
 
 
 # Hack, but I don't know how else to make Config.instance act like a dictionary of config options
-Config.instance = Config()._all_info
+Config.instance = Config()._allInfo

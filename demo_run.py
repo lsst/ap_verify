@@ -35,7 +35,7 @@ import shlex
 
 import lsst.log
 from lsst.verify import Job, Measurement
-from lsst.ap.verify import run_ap_verify
+from lsst.ap.verify import runApVerify
 
 visits = [410915, 410929, 410931, 410971, 410985, 410987,
           411021, 411035, 411037, 411055, 411069, 411071, 411255, 411269, 411271,
@@ -65,7 +65,7 @@ def processImage(visit, ccd):
     try:
         dataId = 'visit=%d ccdnum=%d filter=g' % (visit, ccd)
         args = '--dataset HiTS2015 --output temp/ --dataIdString "%s" --silent' % dataId
-        run_ap_verify(shlex.split(args))
+        runApVerify(shlex.split(args))
     finally:
         jobFile = 'ap_verify.verify.json'
         if os.path.isfile(jobFile):

@@ -22,14 +22,14 @@
 
 """Verification metrics handling for the AP pipeline.
 
-This module handles metrics loading and export (via the AutoJob class), but not
+This module handles metrics loading and export (via the `AutoJob` class), but not
 processing of individual measurements. Measurements are handled in the
-ap_verify module or in the appropriate pipeline step, as appropriate.
+``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["AutoJob", "MetricsParser", "check_squash_ready"]
+__all__ = ["AutoJob", "MetricsParser", "checkSquashReady"]
 
 import argparse
 import os
@@ -44,14 +44,14 @@ _ENV_URL = 'SQUASH_URL'
 _SQUASH_DEFAULT_URL = 'https://squash.lsst.codes/dashboard/api'
 
 
-def check_squash_ready(parsed_cmd_line):
+def checkSquashReady(parsedCmdLine):
     """Test whether the program has everything it needs for the SQuaSH API.
 
-    As a special case, this function never raises if `parsed_cmd_line.submit_metrics` is unset.
+    As a special case, this function never raises if `parsedCmdLine.submitMetrics` is unset.
 
     Parameters
     ----------
-    parsed_cmd_line: `argparse.Namespace`
+    parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `MetricsParser`.
 
     Raises
@@ -59,7 +59,7 @@ def check_squash_ready(parsed_cmd_line):
     `RuntimeError`
         A configuration problem would prevent SQuaSH features from being used.
     """
-    if parsed_cmd_line.submit_metrics:
+    if parsedCmdLine.submitMetrics:
         for var in (_ENV_USER, _ENV_PASSWORD):
             if var not in os.environ:
                 raise RuntimeError('Need to define environment variable "%s" to use SQuaSH; '
@@ -76,15 +76,15 @@ class MetricsParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--silent', dest='submit_metrics', action='store_false',
+        self.add_argument('--silent', dest='submitMetrics', action='store_false',
                           help='Do NOT submit metrics to SQuaSH (not yet implemented).')
         # Config info we don't want on the command line
         self.set_defaults(user=os.getenv(_ENV_USER), password=os.getenv(_ENV_PASSWORD),
-                          squash_url=os.getenv(_ENV_URL, _SQUASH_DEFAULT_URL))
+                          squashUrl=os.getenv(_ENV_URL, _SQUASH_DEFAULT_URL))
 
 
 class AutoJob:
-    """A wrapper for an lsst.verify.Job that automatically handles
+    """A wrapper for an `lsst.verify.Job` that automatically handles
     initialization and shutdown.
 
     When used in a `with... as...` statement, the wrapper assigns the
@@ -95,37 +95,38 @@ class AutoJob:
 
     Parameters
     ----------
-    parsed_cmd_line: `argparse.Namespace`
+    args : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `MetricsParser`.
     """
+
     def __init__(self, args):
         self._job = lsst.verify.Job.load_metrics_package()
         # TODO: add Job metadata (camera, filter, etc.) in DM-11321
-        self._submit_metrics = args.submit_metrics
-        self._squash_user = args.user
-        self._squash_password = args.password
-        self._squash_url = args.squash_url
+        self._submitMetrics = args.submitMetrics
+        self._squashUser = args.user
+        self._squashPassword = args.password
+        self._squashUrl = args.squashUrl
 
-    def _save_measurements(self, fileName):
+    def _saveMeasurements(self, fileName):
         """Save a set of measurements for later use.
 
         Parameters
         ----------
-        fileName: `str`
+        fileName : `str`
             The file to which the measurements will be saved.
         """
         self.job.write(fileName)
 
-    def _send_to_squash(self):
+    def _sendToSquash(self):
         """Submit a set of measurements to the SQuaSH system.
 
         Parameters
         ----------
-        fileName: `str`
+        fileName : `str`
             a file containing measurements in lsst.verify format
         """
-        self.job.dispatch(api_user=self._squash_user, api_password=self._squash_password,
-                          api_url=self._squash_url)
+        self.job.dispatch(api_user=self._squashUser, api_password=self._squashPassword,
+                          api_url=self._squashUrl)
 
     @property
     def job(self):
@@ -138,27 +139,27 @@ class AutoJob:
         """
         return self.job
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, excType, excValue, traceback):
         """Package all metric measurements performed during this run.
 
-        The measurements shall be exported to `ap_verify.verify.json`, and the
-        metrics framework shall be shut down. If the context was exited
-        normally and the appropriate flag was passed to this object's
+        The measurements shall be exported to :file:`ap_verify.verify.json`,
+        and the metrics framework shall be shut down. If the context was
+        exited normally and the appropriate flag was passed to this object's
         constructor, the measurements shall be sent to SQuaSH.
         """
         log = lsst.log.Log.getLogger('ap.verify.metrics.AutoJob.__exit__')
 
-        out_file = 'ap_verify.verify.json'
+        outFile = 'ap_verify.verify.json'
         try:
-            self._save_measurements(out_file)
-            log.debug('Wrote measurements to %s', out_file)
+            self._saveMeasurements(outFile)
+            log.debug('Wrote measurements to %s', outFile)
         except IOError:
-            if exc_type is None:
+            if excType is None:
                 raise
             else:
-                return False  # don't suppress `exc_value`
+                return False  # don't suppress `excValue`
 
-        if exc_type is None and self._submit_metrics:
-            self._send_to_squash()
+        if excType is None and self._submitMetrics:
+            self._sendToSquash()
             log.info('Submitted measurements to SQuaSH')
         return False

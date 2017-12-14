@@ -33,15 +33,15 @@ from .config import Config
 
 
 def _nicecopy(src, dst):
-    """Recursively copy a directory from src to dst, ignoring any files
-    that already exist.
+    """Recursively copy a directory, ignoring any files that already exist at
+    the destination.
 
     Parameters
     ----------
-    src: `str`
+    src : `str`
         The directory whose contents will be copied. Symbolic links will
         be duplicated in `dst`, but will not be followed.
-    dst: `str`
+    dst : `str`
         The directory to which `src` and its contents will be copied.
     """
     # Can't use exceptions to distinguish pre-existing directory from I/O failures until Python 3
@@ -63,7 +63,7 @@ def _nicecopy(src, dst):
 
 
 class Dataset(object):
-    """A dataset supported by ap_verify.
+    """A dataset supported by ``ap_verify``.
 
     Any object of this class is guaranteed to represent a ready-for-use
     dataset, barring concurrent changes to the file system or EUPS operations.
@@ -72,30 +72,30 @@ class Dataset(object):
 
     Parameters
     ----------
-    dataset_id : `str`
+    datasetId : `str`
        A tag identifying the dataset.
 
     Raises
     ------
-    `RuntimeError`:
-        `dataset_id` exists, but is not correctly organized or incomplete
-    `ValueError`:
-        `dataset_id` is not a recognized dataset. No side effects if this
+    `RuntimeError`
+        `datasetId` exists, but is not correctly organized or incomplete
+    `ValueError`
+        `datasetId` is not a recognized dataset. No side effects if this
         exception is raised.
     """
 
-    def __init__(self, dataset_id):
+    def __init__(self, datasetId):
         try:
-            dataset_package = self._getDatasetInfo()[dataset_id]
+            datasetPackage = self._getDatasetInfo()[datasetId]
         except KeyError:
-            raise ValueError('Unsupported dataset: ' + dataset_id)
+            raise ValueError('Unsupported dataset: ' + datasetId)
 
-        self._data_root_dir = getPackageDir(dataset_package)
-        self._validate_package()
+        self._dataRootDir = getPackageDir(datasetPackage)
+        self._validatePackage()
 
-        self._init_package(dataset_package)
+        self._initPackage(datasetPackage)
 
-    def _init_package(self, name):
+    def _initPackage(self, name):
         """Load the package backing this dataset.
 
         Parameters
@@ -106,18 +106,19 @@ class Dataset(object):
         Eups().setup(name)
 
     @staticmethod
-    def get_supported_datasets():
+    def getSupportedDatasets():
         """The dataset IDs that can be passed to this class's constructor.
 
         Returns
         -------
-        A set of strings of valid tags
+        datasets : `set` of `str`
+            the set of IDs that will be accepted
 
         Raises
         ------
-        `IoError`:
+        `IoError`
             if the config file does not exist or is not readable
-        `RuntimeError`:
+        `RuntimeError`
             if the config file exists, but does not contain the expected data
         """
         return Dataset._getDatasetInfo().keys()
@@ -130,117 +131,129 @@ class Dataset(object):
 
         Returns
         -------
-        A map from dataset IDs to package names.
+        datasetToPackage : `dict`-like
+            a map from dataset IDs to package names.
 
         Raises
         ------
-        `RuntimeError`:
+        `RuntimeError`
             the config file exists, but does not contain the expected data
         """
-        if not hasattr(Dataset, '_dataset_config'):
-            Dataset._dataset_config = Config.instance['datasets']
+        if not hasattr(Dataset, '_datasetConfig'):
+            Dataset._datasetConfig = Config.instance['datasets']
 
-        return Dataset._dataset_config
+        return Dataset._datasetConfig
 
     @property
-    def dataset_root(self):
+    def datasetRoot(self):
         """The parent directory containing everything related to the dataset.
 
         Returns
         -------
-        a string giving the location of the base directory
+        dir : `str`
+            the location of the base directory
         """
-        return self._data_root_dir
+        return self._dataRootDir
 
     @property
-    def data_location(self):
+    def rawLocation(self):
         """The directory containing the "raw" input data.
 
         Returns
         -------
-        a string giving the location of the top-level directory for telescope output files
+        dir : `str`
+            the location of the science image directory
         """
-        return os.path.join(self.dataset_root, 'raw')
+        return os.path.join(self.datasetRoot, 'raw')
 
     @property
-    def calib_location(self):
+    def calibLocation(self):
         """The directory containing the calibration data.
 
         Returns
         -------
-        a string giving the location of the top-level directory for master calibration files
+        dir : `str`
+            the location of the master calibration directory
         """
-        return os.path.join(self.dataset_root, 'calib')
+        return os.path.join(self.datasetRoot, 'calib')
 
     @property
-    def defect_location(self):
+    def defectLocation(self):
         """The directory containing defect files.
 
         Returns
         -------
-        a string giving the location of the top-level directory for defect files
+        dir : `str`
+            the location of the defect directory
         """
-        return self.calib_location
+        return self.calibLocation
 
     @property
-    def refcats_location(self):
-        """The directory containing external reference catalogs.
+    def refcatsLocation(self):
+        """The directory containing external astrometric and photometric
+        reference catalogs.
 
         Returns
         -------
-        a string giving the location of the top-level directory for astrometric and photometric catalogs
+        dir : `str`
+            the location of the reference catalog directory
         """
-        return os.path.join(self.dataset_root, 'refcats')
+        return os.path.join(self.datasetRoot, 'refcats')
 
     @property
-    def template_location(self):
+    def templateLocation(self):
         """The directory containing the image subtraction templates.
 
         Returns
         -------
-        a string giving the location of the top-level directory for precomputed templates
+        repo : `str`
+            the location of the precomputed template repository.
         """
-        return os.path.join(self.dataset_root, 'templates')
+        return os.path.join(self.datasetRoot, 'templates')
 
     @property
-    def _stub_input_repo(self):
+    def _stubInputRepo(self):
         """The directory containing the data set's input stub.
 
         Returns
         -------
-        a string giving the location of the stub input repo
+        dir : `str`
+            the location of the stub used to generate an ingested input repository
         """
-        return os.path.join(self.dataset_root, 'repo')
+        return os.path.join(self.datasetRoot, 'repo')
 
-    def _validate_package(self):
+    def _validatePackage(self):
         """Confirm that the dataset directory satisfies all assumptions.
-
-        Requires that self._data_root_dir has been initialized.
 
         Raises
         ------
-        `RuntimeError`:
-            if any problems are found with the package
-        """
-        if not os.path.exists(self.dataset_root):
-            raise RuntimeError('Could not find dataset at ' + self.dataset_root)
-        if not os.path.exists(self.data_location):
-            raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing data directory')
-        if not os.path.exists(self.calib_location):
-            raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing calibration directory')
-        if not os.path.exists(self.defect_location):
-            raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing defect directory')
-        # Template and refcat directories might not be subdirectories of self.dataset_root
-        if not os.path.exists(self.template_location):
-            raise RuntimeError('Dataset is missing template directory at ' + self.template_location)
-        if not os.path.exists(self.refcats_location):
-            raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcats_location)
-        if not os.path.exists(self._stub_input_repo):
-            raise RuntimeError('Dataset at ' + self.dataset_root + 'is missing stub repo')
-        if not os.path.exists(os.path.join(self._stub_input_repo, '_mapper')):
-            raise RuntimeError('Stub repo at ' + self._stub_input_repo + 'is missing mapper file')
+        `RuntimeError`
+            the package represented by this object does not conform to the
+            dataset framework
 
-    def make_output_repo(self, output_dir):
+        Notes
+        -----
+        Requires that `self._dataRootDir` has been initialized.
+        """
+        if not os.path.exists(self.datasetRoot):
+            raise RuntimeError('Could not find dataset at ' + self.datasetRoot)
+        if not os.path.exists(self.rawLocation):
+            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing data directory')
+        if not os.path.exists(self.calibLocation):
+            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing calibration directory')
+        if not os.path.exists(self.defectLocation):
+            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing defect directory')
+        # Template and refcat directories might not be subdirectories of self.datasetRoot
+        if not os.path.exists(self.templateLocation):
+            raise RuntimeError('Dataset is missing template directory at ' + self.templateLocation)
+        if not os.path.exists(self.refcatsLocation):
+            raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcatsLocation)
+        if not os.path.exists(self._stubInputRepo):
+            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing stub repo')
+        if not os.path.exists(os.path.join(self._stubInputRepo, '_mapper')):
+            raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
+
+    def makeOutputRepo(self, outputDir):
         """Set up a directory as an output repository compatible with this dataset.
 
         If the directory already exists, any files required by the dataset will
@@ -248,8 +261,8 @@ class Dataset(object):
 
         Parameters
         ----------
-        output_dir: `str`
+        outputDir : `str`
             The directory where the output repository will be created.
         """
         # shutil.copytree has wrong behavior for existing destinations, do it by hand
-        _nicecopy(self._stub_input_repo, output_dir)
+        _nicecopy(self._stubInputRepo, outputDir)

@@ -21,7 +21,7 @@
 # see <http://www.lsstcorp.org/LegalNotices/>.
 #
 
-from lsst.ap.verify import run_ap_verify
+from lsst.ap.verify import runApVerify
 
 if __name__ == "__main__":
-    run_ap_verify()
+    runApVerify()

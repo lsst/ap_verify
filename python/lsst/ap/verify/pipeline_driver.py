@@ -22,7 +22,7 @@
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["ApPipeParser", "run_ap_pipe"]
+__all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
 from future.utils import raise_from
@@ -31,12 +31,12 @@ import json
 
 import lsst.log
 import lsst.daf.base as dafBase
-import lsst.ap.pipe as ap_pipe
+import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
 
 class ApPipeParser(argparse.ArgumentParser):
-    """An argument parser for data needed by ap_pipe activities.
+    """An argument parser for data needed by ``ap_pipe`` activities.
 
     This parser is not complete, and is designed to be passed to another parser
     using the `parent` parameter.
@@ -57,31 +57,31 @@ class MeasurementStorageError(RuntimeError):
     pass
 
 
-def _update_metrics(metadata, job):
-    """Update a Job object with the measurements created from running a Task.
+def _updateMetrics(metadata, job):
+    """Update a Job object with the measurements created from running a task.
 
     The metadata shall be searched for the locations of Job dump files from
-    the most recent run of a Task and its subTasks; the contents of these
+    the most recent run of a task and its subtasks; the contents of these
     files shall be added to `job`. This method is a temporary workaround
     for the `verify` framework's limited persistence support, and will be
     removed in a future version.
 
     Parameters
     ----------
-    metadata: `lsst.daf.base.PropertySet`
-        The metadata from running a Task(s). No action taken if None.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from running a task(s). No action taken if `None`.
         Assumed to contain keys of the form
-        `<standard task prefix>.verify_json_path` that maps to the
-        absolute file location of that Task's serialized measurements.
+        "<standard task prefix>.verify_json_path" that maps to the
+        absolute file location of that task's serialized measurements.
         All other metadata fields are ignored.
-    job: `verify.Job`
+    job : `lsst.verify.Job`
         The Job object to which to add measurements. This object shall be
         left in a consistent state if this method raises exceptions.
 
     Raises
     ------
-    `MeasurementStorageError`
-        A `verify_json_path` key does not map to a string, or serialized
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        A "verify_json_path" key does not map to a string, or serialized
         measurements could not be located or read from disk.
     """
     if metadata is None:
@@ -90,247 +90,253 @@ def _update_metrics(metadata, job):
         keys = metadata.names(topLevelOnly=False)
         files = [metadata.getAsString(key) for key in keys if key.endswith('verify_json_path')]
 
-        for measurement_file in files:
-            with open(measurement_file) as f:
-                task_job = Job.deserialize(**json.load(f))
-            job += task_job
+        for measurementFile in files:
+            with open(measurementFile) as f:
+                taskJob = Job.deserialize(**json.load(f))
+            job += taskJob
     except (IOError, TypeError) as e:
         raise_from(
             MeasurementStorageError('Task metadata could not be read; possible downstream bug'),
             e)
 
 
-def _ingest_raws(dataset, working_repo, metrics_job):
+def _ingestRaws(dataset, workingRepo, metricsJob):
     """Ingest the raw data for use by LSST.
 
     The original data directory shall not be modified.
 
     Parameters
     ----------
-    dataset: `dataset.Dataset`
+    dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    working_repo: `str`
+    workingRepo : `str`
         The repository in which temporary products will be created. Must be
         compatible with `dataset`.
-    metrics_job: `verify.Job`
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
 
     Returns
     -------
-    The metadata from any Tasks called by this method. May be empty.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from any tasks called by this method. May be empty.
 
     Raises
     ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        Measurements were made, but `metricsJob` could not be updated
         with them.
     """
-    metadata = ap_pipe.doIngest(working_repo, dataset.data_location, dataset.refcats_location)
-    _update_metrics(metadata, metrics_job)
+    metadata = apPipe.doIngest(workingRepo, dataset.rawLocation, dataset.refcatsLocation)
+    _updateMetrics(metadata, metricsJob)
     return metadata
 
 
-def _ingest_calibs(dataset, working_repo, metrics_job):
+def _ingestCalibs(dataset, workingRepo, metricsJob):
     """Ingest the raw calibrations for use by LSST.
 
     The original calibration directory shall not be modified.
 
     Parameters
     ----------
-    dataset: `dataset.Dataset`
+    dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    working_repo: `str`
+    workingRepo : `str`
         The repository in which temporary products will be created. Must be
         compatible with `dataset`.
-    metrics_job: `verify.Job`
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
 
     Returns
     -------
-    The metadata from any Tasks called by this method. May be empty.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from any tasks called by this method. May be empty.
 
     Raises
     ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        Measurements were made, but `metricsJob` could not be updated
         with them.
     """
-    metadata = ap_pipe.doIngestCalibs(working_repo, dataset.calib_location, dataset.defect_location)
-    _update_metrics(metadata, metrics_job)
+    metadata = apPipe.doIngestCalibs(workingRepo, dataset.calibLocation, dataset.defectLocation)
+    _updateMetrics(metadata, metricsJob)
     return metadata
 
 
-def _process(working_repo, dataId, parallelization, metrics_job):
+def _process(workingRepo, dataId, parallelization, metricsJob):
     """Run single-frame processing on a dataset.
 
     Parameters
     ----------
-    working_repo: `str`
+    workingRepo : `str`
         The repository containing the input and output data.
-    dataId: `str`
+    dataId : `str`
         Butler identifier naming the data to be processed by the underlying
-        Task(s).
-    parallelization: `int`
-        Parallelization level at which to run underlying Task(s).
-    metrics_job: `verify.Job`
+        task(s).
+    parallelization : `int`
+        Parallelization level at which to run underlying task(s).
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
 
     Returns
     -------
-    The metadata from any Tasks called by this method. May be empty.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from any tasks called by this method. May be empty.
 
     Raises
     ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        Measurements were made, but `metricsJob` could not be updated
         with them.
     """
-    metadata = ap_pipe.doProcessCcd(working_repo, dataId)
-    _update_metrics(metadata, metrics_job)
+    metadata = apPipe.doProcessCcd(workingRepo, dataId)
+    _updateMetrics(metadata, metricsJob)
     return metadata
 
 
-def _difference(dataset, working_repo, dataId, parallelization, metrics_job):
+def _difference(dataset, workingRepo, dataId, parallelization, metricsJob):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
-    dataset: `dataset.Dataset`
+    dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    working_repo: `str`
+    workingRepo : `str`
         The repository containing the input and output data.
-    dataId: `str`
+    dataId : `str`
         Butler identifier naming the data to be processed by the underlying
-        Task(s).
-    parallelization: `int`
-        Parallelization level at which to run underlying Task(s).
-    metrics_job: `verify.Job`
+        task(s).
+    parallelization : `int`
+        Parallelization level at which to run underlying task(s).
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
 
     Returns
     -------
-    The metadata from any Tasks called by this method. May be empty.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from any tasks called by this method. May be empty.
 
     Raises
     ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        Measurements were made, but `metricsJob` could not be updated
         with them.
     """
-    metadata = ap_pipe.doDiffIm(working_repo, dataset.template_location, dataId)
-    _update_metrics(metadata, metrics_job)
+    metadata = apPipe.doDiffIm(workingRepo, dataset.templateLocation, dataId)
+    _updateMetrics(metadata, metricsJob)
     return metadata
 
 
-def _associate(working_repo, dataId, parallelization, metrics_job):
+def _associate(workingRepo, dataId, parallelization, metricsJob):
     """Run source association on a dataset.
 
     Parameters
     ----------
-    working_repo: `str`
+    workingRepo : `str`
         The repository containing the input and output data.
-    dataId: `str`
+    dataId : `str`
         Butler identifier naming the data to be processed by the underlying
-        Task(s).
-    parallelization: `int`
-        Parallelization level at which to run underlying Task(s).
-    metrics_job: `verify.Job`
+        task(s).
+    parallelization : `int`
+        Parallelization level at which to run underlying task(s).
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
 
     Returns
     -------
-    The metadata from any Tasks called by this method. May be empty.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from any tasks called by this method. May be empty.
 
     Raises
     ------
-    `pipeline.MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        Measurements were made, but `metricsJob` could not be updated
         with them.
     """
-    metadata = ap_pipe.doAssociation(working_repo, dataId)
-    _update_metrics(metadata, metrics_job)
+    metadata = apPipe.doAssociation(workingRepo, dataId)
+    _updateMetrics(metadata, metricsJob)
     return metadata
 
 
-def _post_process(working_repo):
+def _postProcess(workingRepo):
     """Run post-processing on a dataset.
 
     This step is called the "afterburner" in some design documents.
 
     Parameters
     ----------
-    working_repo: `str`
+    workingRepo : `str`
         The repository containing the input and output data.
     """
     pass
 
 
-def run_ap_pipe(dataset, working_repo, parsed_cmd_line, metrics_job):
+def runApPipe(dataset, workingRepo, parsedCmdLine, metricsJob):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
     ----------
-    dataset: `dataset.Dataset`
+    dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    working_repo: `str`
+    workingRepo : `str`
         The repository in which temporary products will be created. Must be
         compatible with `dataset`.
-    parsed_cmd_line: `argparse.Namespace`
+    parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
-    metrics_job: `verify.Job`
+    metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
 
     Returns
     -------
-    The metadata from any Tasks called by the pipeline. May be empty.
+    metadata : `lsst.daf.base.PropertySet`
+        The metadata from any tasks called by the pipeline. May be empty.
 
     Raises
     ------
-    `MeasurementStorageError`
-        Measurements were made, but `metrics_job` could not be updated
+    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
+        Measurements were made, but `metricsJob` could not be updated
         with all of them.
     """
-    log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.run_ap_pipe')
+    log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     # Easiest way to defend against None return values
     metadata = dafBase.PropertySet()
-    metadata.combine(_ingest_raws(dataset, working_repo, metrics_job))
-    metadata.combine(_ingest_calibs(dataset, working_repo, metrics_job))
-    _get_ap_pipe_repos(metadata)
+    metadata.combine(_ingestRaws(dataset, workingRepo, metricsJob))
+    metadata.combine(_ingestCalibs(dataset, workingRepo, metricsJob))
+    _getApPipeRepos(metadata)
     log.info('Data ingested')
 
-    dataId = parsed_cmd_line.dataId
-    processes = parsed_cmd_line.processes
-    metadata.combine(_process(working_repo, dataId, processes, metrics_job))
+    dataId = parsedCmdLine.dataId
+    processes = parsedCmdLine.processes
+    metadata.combine(_process(workingRepo, dataId, processes, metricsJob))
     log.info('Single-frame processing complete')
 
-    metadata.combine(_difference(dataset, working_repo, dataId, processes, metrics_job))
+    metadata.combine(_difference(dataset, workingRepo, dataId, processes, metricsJob))
     log.info('Image differencing complete')
-    metadata.combine(_associate(working_repo, dataId, processes, metrics_job))
+    metadata.combine(_associate(workingRepo, dataId, processes, metricsJob))
     log.info('Source association complete')
 
-    _post_process(working_repo)
+    _postProcess(workingRepo)
     log.info('Pipeline complete')
     return metadata
 
 
-def _get_ap_pipe_repos(metadata):
-    """ Retrieve the subdirectories and repos defined in ap_pipe and store them
-    in the metedata.
+def _getApPipeRepos(metadata):
+    """ Retrieve the subdirectories and repos defined in ``ap_pipe`` and store
+    them in the metedata.
 
     Parameters
     ----------
     metadata : `lsst.daf.base.PropertySet`
         A set of metadata to append to.
     """
-    metadata.add("ap_pipe.RAW_DIR", ap_pipe.ap_pipe.RAW_DIR)
-    metadata.add("ap_pipe.MASTERCAL_DIR", ap_pipe.ap_pipe.MASTERCAL_DIR)
-    metadata.add("ap_pipe.DEFECT_DIR", ap_pipe.ap_pipe.DEFECT_DIR)
-    metadata.add("ap_pipe.REFCATS_DIR", ap_pipe.ap_pipe.REFCATS_DIR)
-    metadata.add("ap_pipe.TEMPLATES_DIR", ap_pipe.ap_pipe.TEMPLATES_DIR)
+    metadata.add("ap_pipe.RAW_DIR", apPipe.ap_pipe.RAW_DIR)
+    metadata.add("ap_pipe.MASTERCAL_DIR", apPipe.ap_pipe.MASTERCAL_DIR)
+    metadata.add("ap_pipe.DEFECT_DIR", apPipe.ap_pipe.DEFECT_DIR)
+    metadata.add("ap_pipe.REFCATS_DIR", apPipe.ap_pipe.REFCATS_DIR)
+    metadata.add("ap_pipe.TEMPLATES_DIR", apPipe.ap_pipe.TEMPLATES_DIR)
 
-    metadata.add("ap_pipe.INGESTED_DIR", ap_pipe.ap_pipe.INGESTED_DIR)
-    metadata.add("ap_pipe.CALIBINGESTED_DIR", ap_pipe.ap_pipe.CALIBINGESTED_DIR)
-    metadata.add("ap_pipe.PROCESSED_DIR", ap_pipe.ap_pipe.PROCESSED_DIR)
-    metadata.add("ap_pipe.DIFFIM_DIR", ap_pipe.ap_pipe.DIFFIM_DIR)
-    metadata.add("ap_pipe.DB_DIR", ap_pipe.ap_pipe.DB_DIR)
+    metadata.add("ap_pipe.INGESTED_DIR", apPipe.ap_pipe.INGESTED_DIR)
+    metadata.add("ap_pipe.CALIBINGESTED_DIR", apPipe.ap_pipe.CALIBINGESTED_DIR)
+    metadata.add("ap_pipe.PROCESSED_DIR", apPipe.ap_pipe.PROCESSED_DIR)
+    metadata.add("ap_pipe.DIFFIM_DIR", apPipe.ap_pipe.DIFFIM_DIR)
+    metadata.add("ap_pipe.DB_DIR", apPipe.ap_pipe.DB_DIR)
