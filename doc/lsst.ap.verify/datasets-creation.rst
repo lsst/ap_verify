@@ -26,15 +26,11 @@ This will create empty directories for all data and will add placeholder files f
 Organizing the Data
 -------------------
 
-.. TODO: talk to David/Meredith to confirm details of how this works, and how flexible the system is (DM-12851)
-
 * The :file:`raw` and :file:`calib` directories contain science and calibration data, respectively.
-  The directories must be organized in the same way as the observatory's normal data products, for compatibility with the appropriate ``obs`` package.
-* The :file:`templates` directory contains a :ref:`LSST Butler repository<butler>` containing processed images useable as templates. Template files must be ``TemplateCoadd`` files produced by a compatible version of the LSST science pipeline.
-
-.. TODO: are these more standardized? are they available from somewhere? (DM-12851)
-
-* The :file:`refcats` directory contains one or more tar'd HTM files containing astrometric and photometric reference catalogs.
+  The directories may have any internal structure.
+* The :file:`templates` directory contains an :ref:`LSST Butler repository<butler>` containing processed images useable as templates.
+  Template files must be ``TemplateCoadd`` files produced by a compatible version of the LSST science pipeline.
+* The :file:`refcats` directory contains one or more tar files, each containing containing one or more astrometric or photometric reference catalogs in HTM shard format.
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
 
