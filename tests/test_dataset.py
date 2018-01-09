@@ -27,14 +27,25 @@ import tempfile
 import unittest
 
 import lsst.utils.tests
+import lsst.pex.exceptions as pexExcept
 from lsst.ap.verify.dataset import Dataset
 
 
 class DatasetTestSuite(lsst.utils.tests.TestCase):
 
-    def setUp(self):
-        self._testbed = Dataset('HiTS2015')
+    @classmethod
+    def setUpClass(cls):
+        cls.testDataset = 'ap_verify_hits2015'
+        cls.datasetKey = 'HiTS2015'
+        try:
+            lsst.utils.getPackageDir(cls.testDataset)
+        except pexExcept.NotFoundError:
+            raise unittest.SkipTest(cls.testDataset + ' not set up')
 
+    def setUp(self):
+        self._testbed = Dataset(DatasetTestSuite.datasetKey)
+
+    # TODO: remove after Datasets no longer perform Eups setup (DM-12853)
     def testInit(self):
         """Verify that if a Dataset object exists, the corresponding data are available.
         """
