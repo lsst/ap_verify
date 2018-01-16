@@ -16,7 +16,9 @@ Other configuration options may be added in the future.
 
 ### Setting Up a Dataset
 
-`ap_verify` requires that all data be in a [dataset package](https://github.com/lsst-dm/ap_verify_dataset_template). It will create a workspace modeled after the package's `repo` directory, then process any data found in the `raw` and `ref_cats` in the new workspace. Anything placed in `repo` will be copied to a `ap_verify` run's workspace as-is, and must at least include a `_mapper` file naming the CameraMapper for the data.
+`ap_verify` requires that all data be in a [dataset package](https://github.com/lsst-dm/ap_verify_dataset_template). It will create a workspace modeled after the package's `repo` directory, then process any data found in the `raw` and `ref_cats` in the new workspace.
+
+`ap_verify` can be built without installing any datasets, although [ap_verify_hits2015](https://github.com/lsst/ap_verify_hits2015/) is needed to test dataset support.
 
 The dataset package must work with eups, and must be registered in `config/dataset_config.yaml` in order for `ap_verify` to support it. `ap_verify` will use `eups setup` to prepare the dataset package and any dependencies; typically, they will include the `obs_` package for the instrument that took the data.
 
