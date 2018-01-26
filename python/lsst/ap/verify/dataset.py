@@ -24,9 +24,9 @@ from __future__ import absolute_import, division, print_function
 
 import os
 import shutil
+from future.utils import raise_from
 
-from eups import Eups
-
+import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
 from .config import Config
@@ -90,20 +90,28 @@ class Dataset(object):
         except KeyError:
             raise ValueError('Unsupported dataset: ' + datasetId)
 
-        self._dataRootDir = getPackageDir(datasetPackage)
-        self._validatePackage()
+        try:
+            self._dataRootDir = getPackageDir(datasetPackage)
+        except pexExcept.NotFoundError as e:
+            raise_from(
+                RuntimeError('Dataset %s requires the %s package, which has not been set up.'
+                             % (datasetId, datasetPackage)),
+                e)
+        else:
+            self._validatePackage()
 
         self._initPackage(datasetPackage)
 
     def _initPackage(self, name):
-        """Load the package backing this dataset.
+        """Prepare the package backing this dataset.
 
         Parameters
         ----------
         name : `str`
            The EUPS package identifier for the desired package.
         """
-        Eups().setup(name)
+        # No initialization required at present
+        pass
 
     @staticmethod
     def getSupportedDatasets():

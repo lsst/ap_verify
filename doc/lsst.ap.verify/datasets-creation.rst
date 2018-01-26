@@ -52,5 +52,5 @@ The observatory package must be named in two files:
 Registering a Dataset Name
 --------------------------
 
-In order to be supported by ``ap_verify``, datasets must be registered in the package's :ref:`configuration file<ap-verify-configuration-dataset>`.
+In order to be supported by ``ap_verify``, datasets must be registered in the package's :ref:`configuration file<ap-verify-configuration-dataset>` and registered as an *optional* EUPS dependency of ``ap_verify``.
 The line for the new dataset should be committed to the ``ap_verify`` Git repository.
