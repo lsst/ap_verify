@@ -25,8 +25,6 @@ Installation Procedure
 Use Git LFS to clone the desired dataset's GitHub repository.
 To get the URL, see the :ref:`package documentation<ap-verify-datasets-index>` for the dataset in question.
 
-.. TODO: should we have a proper versioning system for datasets? (DM-12853)
-
 Once the dataset has been installed, use :command:`eups declare` to register the downloaded directory.
 The product name given to EUPS must match the repository name; the version can be anything.
 It is also possible to register the dataset using :command:`setup`, but this is recommended only for temporary tests.
