@@ -15,7 +15,7 @@ The basic call signature of ``ap_verify`` is:
 
 .. code-block:: sh
 
-   python ap_verify.py --dataset DATASET --output OUTPUTREPO --dataIdString DATAID
+   python ap_verify.py --dataset DATASET --output OUTPUTREPO --id DATAID
 
 These three arguments (or replacing ``--output`` with ``--rerun``) are mandatory, all others are optional.
 
@@ -30,16 +30,16 @@ If the pipeline fails, the status code will be an interpreter-dependent nonzero 
 Named arguments
 ===============
 
-Required arguments are :option:`--dataset`, :option:`--dataIdString`, and exactly one of :option:`--output` or :option:`--rerun`.
+Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :option:`--output` or :option:`--rerun`.
 
-.. option:: --dataIdString <dataId>
+.. option:: --id <dataId>
 
    **Butler data ID.**
 
    The input data ID is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
 
    Specify data ID to process using data ID syntax.
-   For example, ``--dataIdString "visit=12345 ccd=1 filter=g"``.
+   For example, ``--id "visit=12345 ccd=1 filter=g"``.
    
    Currently this argument is heavily restricted compared to its :ref:`command line task counterpart<command-line-task-dataid-howto>`.
    In particular, the dataId must specify exactly one visit and exactly one CCD, and may not be left blank to mean "all data".
