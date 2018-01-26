@@ -16,10 +16,9 @@ Datasets as Input Arguments
 
 Since ``ap_verify`` begins with an uningested :ref:`dataset<ap-verify-datasets>`, the input argument is a dataset name rather than a repository.
 
-.. TODO: is the abstraction of having a separate `dataset` name useful, or does it just impose more work on the user (who needs the repo name anyway to install the dataset)? (DM-12853)
-
 Datasets are identified by a name that gets mapped to an :ref:`eups-registered directory <ap-verify-datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
+The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
 
 .. _ap-verify-run-output:
 
