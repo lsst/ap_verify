@@ -60,7 +60,7 @@ def ingestDataset(dataset, repository):
     """
     # TODO: generalize to support arbitrary URIs (DM-11482)
     log = lsst.log.Log.getLogger('ap.verify.ingestion.ingestDataset')
-    dataset.makeOutputRepo(repository)
+    dataset.makeCompatibleRepo(repository)
     log.info('Output repo at %s created.', repository)
     metadata = dafBase.PropertySet()
     temp = _ingestRaws(dataset, repository)
