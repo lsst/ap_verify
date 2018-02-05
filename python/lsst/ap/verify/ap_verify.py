@@ -36,6 +36,7 @@ import re
 
 import lsst.log
 from .dataset import Dataset
+from .ingestion import ingestDataset
 from .metrics import MetricsParser, checkSquashReady, AutoJob
 from .pipeline_driver import ApPipeParser, runApPipe
 from .measurements import measureFromMetadata, \
@@ -186,8 +187,7 @@ def runApVerify(cmdLine=None):
     testData = Dataset(args.dataset)
     log.info('Dataset %s set up.', args.dataset)
     output = _getOutputDir(testData.datasetRoot, args.output, args.rerun)
-    testData.makeOutputRepo(output)
-    log.info('Output repo at %s created.', output)
+    ingestDataset(testData, output)
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')

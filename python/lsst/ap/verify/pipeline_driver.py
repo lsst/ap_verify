@@ -140,50 +140,6 @@ def _MetricsRecovery(pipelineStep):
 
 
 @_MetricsRecovery
-def _ingestRaws(dataset, workingRepo):
-    """Ingest the raw data for use by LSST.
-
-    The original data directory shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
-    """
-    return apPipe.doIngest(workingRepo, dataset.rawLocation, dataset.refcatsLocation)
-
-
-@_MetricsRecovery
-def _ingestCalibs(dataset, workingRepo):
-    """Ingest the raw calibrations for use by LSST.
-
-    The original calibration directory shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
-    """
-    return apPipe.doIngestCalibs(workingRepo, dataset.calibLocation, dataset.defectLocation)
-
-
-@_MetricsRecovery
 def _process(workingRepo, dataId, parallelization):
     """Run single-frame processing on a dataset.
 
@@ -292,12 +248,8 @@ def runApPipe(metricsJob, dataset, workingRepo, parsedCmdLine):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
-    # Easiest way to defend against None return values
     metadata = dafBase.PropertySet()
-    metadata.combine(_ingestRaws(metricsJob, dataset, workingRepo))
-    metadata.combine(_ingestCalibs(metricsJob, dataset, workingRepo))
     _getApPipeRepos(metadata)
-    log.info('Data ingested')
 
     dataId = parsedCmdLine.dataId
     processes = parsedCmdLine.processes
