@@ -22,8 +22,6 @@ These three arguments (or replacing ``--output`` with ``--rerun``) are mandatory
 Status code
 ===========
 
-.. TODO: should we require that ap_verify and ap_pipe follow the CmdLineTask convention? (DM-12853)
-
 ``ap_verify`` returns a status code of ``0`` if the pipeline ran to completion.
 If the pipeline fails, the status code will be an interpreter-dependent nonzero value.
 
