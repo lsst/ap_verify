@@ -84,7 +84,7 @@ Required arguments are :option:`--dataset`, :option:`--dataIdString`, and exactl
 
    See :doc:`command-line-task-data-repo-howto` for background.
 
-   .. TODO: I think the --rerun argument may have been a mistake -- it's almost entirely not quite unlike its command line task equivalent  (DM-12853)
+   .. TODO: Rework or remove --rerun (DM-13492)
 
 .. option:: --rerun <output>
 
