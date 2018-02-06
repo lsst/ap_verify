@@ -275,12 +275,6 @@ def _getApPipeRepos(metadata):
     metadata : `lsst.daf.base.PropertySet`
         A set of metadata to append to.
     """
-    metadata.add("ap_pipe.RAW_DIR", apPipe.ap_pipe.RAW_DIR)
-    metadata.add("ap_pipe.MASTERCAL_DIR", apPipe.ap_pipe.MASTERCAL_DIR)
-    metadata.add("ap_pipe.DEFECT_DIR", apPipe.ap_pipe.DEFECT_DIR)
-    metadata.add("ap_pipe.REFCATS_DIR", apPipe.ap_pipe.REFCATS_DIR)
-    metadata.add("ap_pipe.TEMPLATES_DIR", apPipe.ap_pipe.TEMPLATES_DIR)
-
     metadata.add("ap_pipe.INGESTED_DIR", apPipe.ap_pipe.INGESTED_DIR)
     metadata.add("ap_pipe.CALIBINGESTED_DIR", apPipe.ap_pipe.CALIBINGESTED_DIR)
     metadata.add("ap_pipe.PROCESSED_DIR", apPipe.ap_pipe.PROCESSED_DIR)
