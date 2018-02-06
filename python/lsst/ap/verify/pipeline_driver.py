@@ -162,13 +162,11 @@ def _process(workingRepo, dataId, parallelization):
 
 
 @_MetricsRecovery
-def _difference(dataset, workingRepo, dataId, parallelization):
+def _difference(workingRepo, dataId, parallelization):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
     workingRepo : `str`
         The repository containing the input and output data.
     dataId : `str`
@@ -182,7 +180,7 @@ def _difference(dataset, workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doDiffIm(workingRepo, dataset.templateLocation, dataId)
+    return apPipe.doDiffIm(workingRepo, dataId)
 
 
 @_MetricsRecovery
@@ -220,16 +218,13 @@ def _postProcess(workingRepo):
     pass
 
 
-def runApPipe(metricsJob, dataset, workingRepo, parsedCmdLine):
+def runApPipe(metricsJob, workingRepo, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
     ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
     workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
+        The repository in which temporary products will be created.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
     metricsJob : `lsst.verify.Job`
@@ -256,7 +251,7 @@ def runApPipe(metricsJob, dataset, workingRepo, parsedCmdLine):
     metadata.combine(_process(metricsJob, workingRepo, dataId, processes))
     log.info('Single-frame processing complete')
 
-    metadata.combine(_difference(metricsJob, dataset, workingRepo, dataId, processes))
+    metadata.combine(_difference(metricsJob, workingRepo, dataId, processes))
     log.info('Image differencing complete')
     metadata.combine(_associate(metricsJob, workingRepo, dataId, processes))
     log.info('Source association complete')

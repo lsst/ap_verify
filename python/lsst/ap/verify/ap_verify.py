@@ -191,5 +191,5 @@ def runApVerify(cmdLine=None):
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        metadata = runApPipe(job, testData, output, args)
+        metadata = runApPipe(job, output, args)
         _measureFinalProperties(job, metadata, output, args)

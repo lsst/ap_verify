@@ -46,6 +46,7 @@ from lsst.pipe.tasks.ingest import IngestConfig
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsConfig, IngestCalibsTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsArgumentParser
 import lsst.daf.base as dafBase
+from lsst.ap.pipe import doIngestTemplates
 
 # Names of directories to be created in specified repository
 INGESTED_DIR = 'ingested'
@@ -87,6 +88,9 @@ def ingestDataset(dataset, repository):
     if temp is not None:
         metadata.combine(temp)
     log.info('Data ingested')
+    temp = _ingestTemplates(dataset, repository)
+    if temp is not None:
+        metadata.combine(temp)
     return metadata
 
 
@@ -130,6 +134,29 @@ def _ingestCalibs(dataset, workingRepo):
         The full metadata from any Tasks called by this method, or `None`.
     """
     return doIngestCalibs(workingRepo, dataset.calibLocation, dataset.defectLocation)
+
+
+def _ingestTemplates(dataset, workingRepo):
+    """Ingest the templates for use by LSST.
+
+    The original template repository shall not be modified.
+
+    Parameters
+    ----------
+    dataset : `lsst.ap.verify.dataset.Dataset`
+        The dataset on which the pipeline will be run.
+    workingRepo : `str`
+        The repository in which temporary products will be created. Must be
+        compatible with `dataset`.
+
+    Returns
+    -------
+    metadata : `lsst.daf.base.PropertySet`
+        The full metadata from any Tasks called by this method, or `None`.
+    """
+    # TODO: move doIngestTemplates to this module once DM-11865 resolved
+    rawRepo = get_output_repo(workingRepo, INGESTED_DIR)
+    return doIngestTemplates(rawRepo, rawRepo, dataset.templateLocation)
 
 
 def doIngest(base_repo, raw_dir, refcat_dir):
