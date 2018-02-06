@@ -79,18 +79,13 @@ def ingestDataset(dataset, repository):
     # TODO: generalize to support arbitrary URIs (DM-11482)
     log = lsst.log.Log.getLogger('ap.verify.ingestion.ingestDataset')
     dataset.makeCompatibleRepo(repository)
-    log.info('Output repo at %s created.', repository)
+    log.info('Input repo at %s created.', repository)
+
     metadata = dafBase.PropertySet()
-    temp = _ingestRaws(dataset, repository)
-    if temp is not None:
-        metadata.combine(temp)
-    temp = _ingestCalibs(dataset, repository)
-    if temp is not None:
-        metadata.combine(temp)
+    metadata.combine(_ingestRaws(dataset, repository))
+    metadata.combine(_ingestCalibs(dataset, repository))
+    metadata.combine(_ingestTemplates(dataset, repository))
     log.info('Data ingested')
-    temp = _ingestTemplates(dataset, repository)
-    if temp is not None:
-        metadata.combine(temp)
     return metadata
 
 
@@ -112,7 +107,9 @@ def _ingestRaws(dataset, workingRepo):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return doIngest(workingRepo, dataset.rawLocation, dataset.refcatsLocation)
+    raw_repo = _get_output_repo(workingRepo, INGESTED_DIR)
+    datafiles = _get_datafiles(dataset.rawLocation)
+    return _doIngest(raw_repo, dataset.refcatsLocation, datafiles)
 
 
 def _ingestCalibs(dataset, workingRepo):
@@ -133,7 +130,11 @@ def _ingestCalibs(dataset, workingRepo):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return doIngestCalibs(workingRepo, dataset.calibLocation, dataset.defectLocation)
+    repo = _get_output_repo(workingRepo, INGESTED_DIR)
+    calib_repo = _get_output_repo(workingRepo, CALIBINGESTED_DIR)
+    calib_datafiles = _get_calib_datafiles(dataset.calibLocation)
+    defectfiles = _get_defectfiles(dataset.defectLocation)
+    return _doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles)
 
 
 def _ingestTemplates(dataset, workingRepo):
@@ -155,37 +156,8 @@ def _ingestTemplates(dataset, workingRepo):
         The full metadata from any Tasks called by this method, or `None`.
     """
     # TODO: move doIngestTemplates to this module once DM-11865 resolved
-    rawRepo = get_output_repo(workingRepo, INGESTED_DIR)
+    rawRepo = _get_output_repo(workingRepo, INGESTED_DIR)
     return doIngestTemplates(rawRepo, rawRepo, dataset.templateLocation)
-
-
-def doIngest(base_repo, raw_dir, refcat_dir):
-    '''
-    Ingest raw DECam images and reference catalogs into a repository
-
-    Parameters
-    ----------
-    base_repo: `str`
-        The output repository location on disk.
-    raw_dir: `str`
-        A directory containing raw image files.
-    refcats: `str`
-        A directory containing two .tar.gz files with LSST-formatted astrometric
-        and photometric reference catalog information. The filenames are set below.
-
-    Returns
-    -------
-    ingest_metadata: `PropertySet` or None
-        Metadata from the IngestTask for use by ap_verify
-
-    Notes
-    -----
-    This function ingests *all* the images, not just the ones for the
-    specified visits and/or filters. We may want to revisit this in the future.
-    '''
-    raw_repo = get_output_repo(base_repo, INGESTED_DIR)
-    datafiles = get_datafiles(raw_dir)
-    return _doIngest(raw_repo, refcat_dir, datafiles)
 
 
 def _doIngest(repo, refcats, datafiles):
@@ -265,7 +237,7 @@ def _doIngest(repo, refcats, datafiles):
     return ingest_metadata
 
 
-def flatBiasIngest(repo, calib_repo, calib_datafiles):
+def _flatBiasIngest(repo, calib_repo, calib_datafiles):
     '''
     Ingest DECam flats and biases (called by _doIngestCalibs)
 
@@ -286,7 +258,7 @@ def flatBiasIngest(repo, calib_repo, calib_datafiles):
     BASH EQUIVALENT:
     $ ingestCalibs.py repo --calib calib_repo --mode=link --validity 999 calib_datafiles
     '''
-    log = lsst.log.Log.getLogger('ap.pipe.flatBiasIngest')
+    log = lsst.log.Log.getLogger('ap.pipe._flatBiasIngest')
     log.info('Ingesting flats and biases...')
     args = [repo, '--calib', calib_repo, '--mode', 'link', '--validity', '999']
     args.extend(calib_datafiles)
@@ -308,7 +280,7 @@ def flatBiasIngest(repo, calib_repo, calib_datafiles):
     return flatBias_metadata
 
 
-def defectIngest(repo, calib_repo, defectfiles):
+def _defectIngest(repo, calib_repo, defectfiles):
     '''
     Ingest DECam defect images (called by _doIngestCalibs)
 
@@ -340,7 +312,7 @@ def defectIngest(repo, calib_repo, defectfiles):
     - They will be added to the calib registry, but not linked like the flats and biases
     '''
     # TODO: clean up implementation after DM-5467 resolved
-    log = lsst.log.Log.getLogger('ap.pipe.defectIngest')
+    log = lsst.log.Log.getLogger('ap.pipe._defectIngest')
     absRepo = os.path.abspath(repo)
     defect_tarball = os.path.abspath(defectfiles[0] + '.tar.gz')
     startDir = os.path.abspath(os.getcwd())
@@ -373,38 +345,6 @@ def defectIngest(repo, calib_repo, defectfiles):
     finally:
         os.chdir(startDir)
     return defect_metadata
-
-
-def doIngestCalibs(base_repo, calib_dir, defect_dir):
-    '''
-    Ingest DECam MasterCal biases, flats, and defects into the working
-    repository.
-
-    Parameters
-    ----------
-    base_repo: `str`
-        The output repository location on disk.
-    calib_dir: `str`
-        The input directory containing the flat and bias image files.
-    defect_dir: `str`
-        The input directory containing the defect image files.
-
-    Returns
-    -------
-    calibingest_metadata: `PropertySet` or None
-        Metadata from the IngestCalibTask (flats and biases) and from the
-        IngestCalibTask (defects) for use by ap_verify
-
-    Notes
-    -----
-    calib ingestion ingests *all* the calibs, not just the ones needed
-    for certain visits. We may want to ...revisit... this in the future.
-    '''
-    repo = get_output_repo(base_repo, INGESTED_DIR)
-    calib_repo = get_output_repo(base_repo, CALIBINGESTED_DIR)
-    calib_datafiles = get_calib_datafiles(calib_dir)
-    defectfiles = get_defectfiles(defect_dir)
-    return _doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles)
 
 
 def _doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles):
@@ -444,15 +384,15 @@ def _doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles):
     log = lsst.log.Log.getLogger('ap.pipe._doIngestCalibs')
     if not os.path.isdir(calib_repo):
         os.mkdir(calib_repo)
-        flatBias_metadata = flatBiasIngest(repo, calib_repo, calib_datafiles)
-        defect_metadata = defectIngest(repo, calib_repo, defectfiles)
+        flatBias_metadata = _flatBiasIngest(repo, calib_repo, calib_datafiles)
+        defect_metadata = _defectIngest(repo, calib_repo, defectfiles)
     elif os.path.exists(os.path.join(calib_repo, 'cpBIAS')):
         log.warn('Flats and biases were previously ingested, skipping...')
         flatBias_metadata = None
-        defect_metadata = defectIngest(repo, calib_repo, defectfiles)
+        defect_metadata = _defectIngest(repo, calib_repo, defectfiles)
     else:
-        flatBias_metadata = flatBiasIngest(repo, calib_repo, calib_datafiles)
-        defect_metadata = defectIngest(repo, calib_repo, defectfiles)
+        flatBias_metadata = _flatBiasIngest(repo, calib_repo, calib_datafiles)
+        defect_metadata = _defectIngest(repo, calib_repo, defectfiles)
     # Handle the case where one or both of the calib metadatas may be None
     if flatBias_metadata is not None:
         calibingest_metadata = flatBias_metadata
@@ -463,7 +403,7 @@ def _doIngestCalibs(repo, calib_repo, calib_datafiles, defectfiles):
     return calibingest_metadata
 
 
-def get_datafiles(raw_location):
+def _get_datafiles(raw_location):
     '''
     Retrieve a list of the raw DECam images for use during ingestion.
 
@@ -484,7 +424,7 @@ def get_datafiles(raw_location):
     return datafiles
 
 
-def get_calib_datafiles(calib_location):
+def _get_calib_datafiles(calib_location):
     '''
     Retrieve a list of the DECam MasterCal flat and bias files for use during ingestion.
 
@@ -513,7 +453,7 @@ def get_calib_datafiles(calib_location):
     return calib_datafiles
 
 
-def get_defectfiles(defect_location, defect_tarball=DEFECT_TARBALL):
+def _get_defectfiles(defect_location, defect_tarball=DEFECT_TARBALL):
     '''
     Retrieve a list of the DECam defect files for use during ingestion.
 
@@ -538,7 +478,7 @@ def get_defectfiles(defect_location, defect_tarball=DEFECT_TARBALL):
     return defectfiles
 
 
-def get_output_repo(output_root, output_dir):
+def _get_output_repo(output_root, output_dir):
     '''
     Return location on disk for one output repository used by ap_pipe.
 
