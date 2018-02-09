@@ -74,7 +74,7 @@ def ingestDataset(dataset, repository):
 
 
 def _ingestRaws(dataset, workingRepo):
-    """Ingest the raw data for use by LSST.
+    """Ingest the science data for use by LSST.
 
     The original data directory shall not be modified.
 
@@ -95,7 +95,7 @@ def _ingestRaws(dataset, workingRepo):
 
 
 def _ingestCalibs(dataset, workingRepo):
-    """Ingest the raw calibrations for use by LSST.
+    """Ingest the calibration files for use by LSST.
 
     The original calibration directory shall not be modified.
 
