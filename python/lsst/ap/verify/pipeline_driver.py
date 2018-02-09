@@ -54,7 +54,7 @@ class ApPipeParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--dataIdString', dest='dataId', required=True,
+        self.add_argument('--id', dest='dataId', required=True,
                           help='An identifier for the data to process. '
                           'May not support all features of a Butler dataId; '
                           'see the ap_pipe documentation for details.')

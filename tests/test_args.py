@@ -52,7 +52,7 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testMinimum(self):
         """Verify that a command line consisting only of required arguments parses correctly.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --dataIdString "visit=54123"'
+        args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123"'
         parsed = self._parseString(args)
         self.assertIn('dataset', dir(parsed))
         self.assertIn('output', dir(parsed))
@@ -61,7 +61,7 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testRerun(self):
         """Verify that a command line with reruns is handled correctly.
         """
-        args = '--dataset HiTS2015 --rerun me --dataIdString "visit=54123"'
+        args = '--dataset HiTS2015 --rerun me --id "visit=54123"'
         parsed = self._parseString(args)
         out = ap_verify._getOutputDir('non_lsst_repo/', parsed.output, parsed.rerun)
         self.assertEqual(out, 'non_lsst_repo/rerun/me')
@@ -69,28 +69,28 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testRerunInput(self):
         """Verify that a command line trying to redirect input is rejected.
         """
-        args = '--dataset HiTS2015 --rerun from:to --dataIdString "visit=54123"'
+        args = '--dataset HiTS2015 --rerun from:to --id "visit=54123"'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
     def testTwoOutputs(self):
         """Verify that a command line with both --output and --rerun is rejected.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --rerun me --dataIdString "visit=54123"'
+        args = '--dataset HiTS2015 --output tests/output/foo --rerun me --id "visit=54123"'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
     def testBadDataset(self):
         """Verify that a command line with an unregistered dataset is rejected.
         """
-        args = '--dataset FooScope --output tests/output/foo --dataIdString "visit=54123"'
+        args = '--dataset FooScope --output tests/output/foo --id "visit=54123"'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
     def testBadKey(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --dataIdString "visit=54123" --clobber'
+        args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123" --clobber'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 

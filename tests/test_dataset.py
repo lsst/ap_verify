@@ -45,13 +45,6 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
     def setUp(self):
         self._testbed = Dataset(DatasetTestSuite.datasetKey)
 
-    # TODO: remove after Datasets no longer perform Eups setup (DM-12853)
-    def testInit(self):
-        """Verify that if a Dataset object exists, the corresponding data are available.
-        """
-        # EUPS does not provide many guarantees about what setting up a package means
-        self.assertIsNotNone(os.getenv('AP_VERIFY_HITS2015_DIR'))
-
     def testDatasets(self):
         """Verify that a Dataset knows its supported datasets.
         """

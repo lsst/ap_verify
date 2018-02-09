@@ -16,10 +16,9 @@ Datasets as Input Arguments
 
 Since ``ap_verify`` begins with an uningested :ref:`dataset<ap-verify-datasets>`, the input argument is a dataset name rather than a repository.
 
-.. TODO: is the abstraction of having a separate `dataset` name useful, or does it just impose more work on the user (who needs the repo name anyway to install the dataset)? (DM-12853)
-
 Datasets are identified by a name that gets mapped to an :ref:`eups-registered directory <ap-verify-datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
+The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
 
 .. _ap-verify-run-output:
 
@@ -28,11 +27,9 @@ How to Run ap_verify in a New Workspace
 
 Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ap_verify`` as follows:
 
-.. TODO: why dataIdString instead of id or dataId? (DM-12853)
-
 .. prompt:: bash
 
-   python ap_verify/bin/ap_verify.py --dataset HiTS2015 --output workspace/hits/ --dataIdString "visit=54123 ccd=25 filter=g" --silent
+   python ap_verify/bin/ap_verify.py --dataset HiTS2015 --output workspace/hits/ --id "visit=54123 ccd=25 filter=g" --silent
 
 Here:
 
@@ -65,7 +62,7 @@ It is also possible to place a workspace in a subdirectory of a dataset director
 
 .. prompt:: bash
 
-   python python/lsst/ap/verify/ap_verify.py --dataset HiTS2015 --rerun run1 --dataIdString "visit=54123 ccd=25 filter=g" --silent
+   python python/lsst/ap/verify/ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccd=25 filter=g" --silent
 
 The :command:`--rerun run1` argument will create a workspace in :file:`<hits-data>/rerun/run1/`.
 Since datasets are :ref:`not, in general, repositories<ap-verify-datasets-butler>`, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.

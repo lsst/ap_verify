@@ -15,14 +15,12 @@ The basic call signature of ``ap_verify`` is:
 
 .. code-block:: sh
 
-   python ap_verify.py --dataset DATASET --output OUTPUTREPO --dataIdString DATAID
+   python ap_verify.py --dataset DATASET --output OUTPUTREPO --id DATAID
 
 These three arguments (or replacing ``--output`` with ``--rerun``) are mandatory, all others are optional.
 
 Status code
 ===========
-
-.. TODO: should we require that ap_verify and ap_pipe follow the CmdLineTask convention? (DM-12853)
 
 ``ap_verify`` returns a status code of ``0`` if the pipeline ran to completion.
 If the pipeline fails, the status code will be an interpreter-dependent nonzero value.
@@ -30,16 +28,16 @@ If the pipeline fails, the status code will be an interpreter-dependent nonzero 
 Named arguments
 ===============
 
-Required arguments are :option:`--dataset`, :option:`--dataIdString`, and exactly one of :option:`--output` or :option:`--rerun`.
+Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :option:`--output` or :option:`--rerun`.
 
-.. option:: --dataIdString <dataId>
+.. option:: --id <dataId>
 
    **Butler data ID.**
 
    The input data ID is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
 
    Specify data ID to process using data ID syntax.
-   For example, ``--dataIdString "visit=12345 ccd=1 filter=g"``.
+   For example, ``--id "visit=12345 ccd=1 filter=g"``.
    
    Currently this argument is heavily restricted compared to its :ref:`command line task counterpart<command-line-task-dataid-howto>`.
    In particular, the dataId must specify exactly one visit and exactly one CCD, and may not be left blank to mean "all data".
@@ -84,7 +82,7 @@ Required arguments are :option:`--dataset`, :option:`--dataIdString`, and exactl
 
    See :doc:`command-line-task-data-repo-howto` for background.
 
-   .. TODO: I think the --rerun argument may have been a mistake -- it's almost entirely not quite unlike its command line task equivalent  (DM-12853)
+   .. TODO: Rework or remove --rerun (DM-13492)
 
 .. option:: --rerun <output>
 
