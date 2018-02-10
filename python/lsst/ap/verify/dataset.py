@@ -68,7 +68,7 @@ class Dataset(object):
     Any object of this class is guaranteed to represent a ready-for-use
     dataset, barring concurrent changes to the file system or EUPS operations.
     Constructing a Dataset does not create a compatible output repository(ies),
-    which can be done by calling `makeOutputRepo`.
+    which can be done by calling `makeCompatibleRepo`.
 
     Parameters
     ----------
@@ -261,16 +261,16 @@ class Dataset(object):
         if not os.path.exists(os.path.join(self._stubInputRepo, '_mapper')):
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
-    def makeOutputRepo(self, outputDir):
-        """Set up a directory as an output repository compatible with this dataset.
+    def makeCompatibleRepo(self, repoDir):
+        """Set up a directory as a repository compatible with this dataset.
 
         If the directory already exists, any files required by the dataset will
         be added if absent; otherwise the directory will remain unchanged.
 
         Parameters
         ----------
-        outputDir : `str`
+        repoDir : `str`
             The directory where the output repository will be created.
         """
         # shutil.copytree has wrong behavior for existing destinations, do it by hand
-        _nicecopy(self._stubInputRepo, outputDir)
+        _nicecopy(self._stubInputRepo, repoDir)

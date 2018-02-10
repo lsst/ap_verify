@@ -72,7 +72,7 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         outputDir = os.path.join(testDir, 'hitsOut')
 
         try:
-            self._testbed.makeOutputRepo(outputDir)
+            self._testbed.makeCompatibleRepo(outputDir)
             self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
             self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
             self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')),
@@ -94,7 +94,7 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
             with open(output, 'w') as dummy:
                 dummy.write('This is a test!')
 
-            self._testbed.makeOutputRepo(outputDir)
+            self._testbed.makeCompatibleRepo(outputDir)
             self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
             self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
             self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')),

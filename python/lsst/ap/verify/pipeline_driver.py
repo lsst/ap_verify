@@ -140,50 +140,6 @@ def _MetricsRecovery(pipelineStep):
 
 
 @_MetricsRecovery
-def _ingestRaws(dataset, workingRepo):
-    """Ingest the raw data for use by LSST.
-
-    The original data directory shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
-    """
-    return apPipe.doIngest(workingRepo, dataset.rawLocation, dataset.refcatsLocation)
-
-
-@_MetricsRecovery
-def _ingestCalibs(dataset, workingRepo):
-    """Ingest the raw calibrations for use by LSST.
-
-    The original calibration directory shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
-    """
-    return apPipe.doIngestCalibs(workingRepo, dataset.calibLocation, dataset.defectLocation)
-
-
-@_MetricsRecovery
 def _process(workingRepo, dataId, parallelization):
     """Run single-frame processing on a dataset.
 
@@ -206,13 +162,11 @@ def _process(workingRepo, dataId, parallelization):
 
 
 @_MetricsRecovery
-def _difference(dataset, workingRepo, dataId, parallelization):
+def _difference(workingRepo, dataId, parallelization):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
     workingRepo : `str`
         The repository containing the input and output data.
     dataId : `str`
@@ -226,7 +180,7 @@ def _difference(dataset, workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doDiffIm(workingRepo, dataset.templateLocation, dataId)
+    return apPipe.doDiffIm(workingRepo, dataId)
 
 
 @_MetricsRecovery
@@ -264,16 +218,13 @@ def _postProcess(workingRepo):
     pass
 
 
-def runApPipe(metricsJob, dataset, workingRepo, parsedCmdLine):
+def runApPipe(metricsJob, workingRepo, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
     ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
     workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with `dataset`.
+        The repository in which temporary products will be created.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
     metricsJob : `lsst.verify.Job`
@@ -292,19 +243,15 @@ def runApPipe(metricsJob, dataset, workingRepo, parsedCmdLine):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
-    # Easiest way to defend against None return values
     metadata = dafBase.PropertySet()
-    metadata.combine(_ingestRaws(metricsJob, dataset, workingRepo))
-    metadata.combine(_ingestCalibs(metricsJob, dataset, workingRepo))
     _getApPipeRepos(metadata)
-    log.info('Data ingested')
 
     dataId = parsedCmdLine.dataId
     processes = parsedCmdLine.processes
     metadata.combine(_process(metricsJob, workingRepo, dataId, processes))
     log.info('Single-frame processing complete')
 
-    metadata.combine(_difference(metricsJob, dataset, workingRepo, dataId, processes))
+    metadata.combine(_difference(metricsJob, workingRepo, dataId, processes))
     log.info('Image differencing complete')
     metadata.combine(_associate(metricsJob, workingRepo, dataId, processes))
     log.info('Source association complete')
@@ -323,12 +270,6 @@ def _getApPipeRepos(metadata):
     metadata : `lsst.daf.base.PropertySet`
         A set of metadata to append to.
     """
-    metadata.add("ap_pipe.RAW_DIR", apPipe.ap_pipe.RAW_DIR)
-    metadata.add("ap_pipe.MASTERCAL_DIR", apPipe.ap_pipe.MASTERCAL_DIR)
-    metadata.add("ap_pipe.DEFECT_DIR", apPipe.ap_pipe.DEFECT_DIR)
-    metadata.add("ap_pipe.REFCATS_DIR", apPipe.ap_pipe.REFCATS_DIR)
-    metadata.add("ap_pipe.TEMPLATES_DIR", apPipe.ap_pipe.TEMPLATES_DIR)
-
     metadata.add("ap_pipe.INGESTED_DIR", apPipe.ap_pipe.INGESTED_DIR)
     metadata.add("ap_pipe.CALIBINGESTED_DIR", apPipe.ap_pipe.CALIBINGESTED_DIR)
     metadata.add("ap_pipe.PROCESSED_DIR", apPipe.ap_pipe.PROCESSED_DIR)
