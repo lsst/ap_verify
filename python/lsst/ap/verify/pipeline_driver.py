@@ -32,6 +32,7 @@ from __future__ import absolute_import, division, print_function
 
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
+import os
 import argparse
 from functools import wraps
 from future.utils import raise_from
@@ -42,6 +43,8 @@ import lsst.log
 import lsst.daf.base as dafBase
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
+
+_OUTPUT_REPO = 'output'
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -158,7 +161,10 @@ def _process(workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doProcessCcd(workingRepo, dataId)
+    dataRepo = os.path.join(workingRepo, apPipe.ap_pipe.INGESTED_DIR)
+    calibRepo = os.path.join(workingRepo, apPipe.ap_pipe.CALIBINGESTED_DIR)
+    outputRepo = os.path.join(workingRepo, _OUTPUT_REPO)
+    return apPipe.doProcessCcd(dataRepo, calibRepo, outputRepo, dataId, skip=False)
 
 
 @_MetricsRecovery
@@ -180,7 +186,9 @@ def _difference(workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doDiffIm(workingRepo, dataId)
+    templateRepo = os.path.join(workingRepo, apPipe.ap_pipe.INGESTED_DIR)
+    outputRepo = os.path.join(workingRepo, _OUTPUT_REPO)
+    return apPipe.doDiffIm(outputRepo, dataId, 'coadd', templateRepo, outputRepo, skip=False)
 
 
 @_MetricsRecovery
@@ -202,7 +210,8 @@ def _associate(workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doAssociation(workingRepo, dataId)
+    outputRepo = os.path.join(workingRepo, _OUTPUT_REPO)
+    return apPipe.doAssociation(outputRepo, dataId, outputRepo, skip=False)
 
 
 def _postProcess(workingRepo):
@@ -272,6 +281,6 @@ def _getApPipeRepos(metadata):
     """
     metadata.add("ap_pipe.INGESTED_DIR", apPipe.ap_pipe.INGESTED_DIR)
     metadata.add("ap_pipe.CALIBINGESTED_DIR", apPipe.ap_pipe.CALIBINGESTED_DIR)
-    metadata.add("ap_pipe.PROCESSED_DIR", apPipe.ap_pipe.PROCESSED_DIR)
-    metadata.add("ap_pipe.DIFFIM_DIR", apPipe.ap_pipe.DIFFIM_DIR)
-    metadata.add("ap_pipe.DB_DIR", apPipe.ap_pipe.DB_DIR)
+    metadata.add("ap_pipe.PROCESSED_DIR", _OUTPUT_REPO)
+    metadata.add("ap_pipe.DIFFIM_DIR", _OUTPUT_REPO)
+    metadata.add("ap_pipe.DB_DIR", _OUTPUT_REPO)
