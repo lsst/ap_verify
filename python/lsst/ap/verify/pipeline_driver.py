@@ -32,7 +32,6 @@ from __future__ import absolute_import, division, print_function
 
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
-import os
 import argparse
 from functools import wraps
 from future.utils import raise_from
@@ -43,8 +42,6 @@ import lsst.log
 import lsst.daf.base as dafBase
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
-
-_OUTPUT_REPO = 'output'
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -143,13 +140,13 @@ def _MetricsRecovery(pipelineStep):
 
 
 @_MetricsRecovery
-def _process(workingRepo, dataId, parallelization):
+def _process(workspace, dataId, parallelization):
     """Run single-frame processing on a dataset.
 
     Parameters
     ----------
-    workingRepo : `str`
-        The repository containing the input and output data.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing input and output repositories.
     dataId : `str`
         Butler identifier naming the data to be processed by the underlying
         task(s).
@@ -161,20 +158,21 @@ def _process(workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    dataRepo = os.path.join(workingRepo, apPipe.ap_pipe.INGESTED_DIR)
-    calibRepo = os.path.join(workingRepo, apPipe.ap_pipe.CALIBINGESTED_DIR)
-    outputRepo = os.path.join(workingRepo, _OUTPUT_REPO)
-    return apPipe.doProcessCcd(dataRepo, calibRepo, outputRepo, dataId, skip=False)
+    return apPipe.doProcessCcd(workspace.dataRepo,
+                               workspace.calibRepo,
+                               workspace.outputRepo,
+                               dataId,
+                               skip=False)
 
 
 @_MetricsRecovery
-def _difference(workingRepo, dataId, parallelization):
+def _difference(workspace, dataId, parallelization):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
-    workingRepo : `str`
-        The repository containing the input and output data.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing input and output repositories.
     dataId : `str`
         Butler identifier naming the data to be processed by the underlying
         task(s).
@@ -186,19 +184,22 @@ def _difference(workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    templateRepo = os.path.join(workingRepo, apPipe.ap_pipe.INGESTED_DIR)
-    outputRepo = os.path.join(workingRepo, _OUTPUT_REPO)
-    return apPipe.doDiffIm(outputRepo, dataId, 'coadd', templateRepo, outputRepo, skip=False)
+    return apPipe.doDiffIm(workspace.outputRepo,
+                           dataId,
+                           'coadd',
+                           workspace.templateRepo,
+                           workspace.outputRepo,
+                           skip=False)
 
 
 @_MetricsRecovery
-def _associate(workingRepo, dataId, parallelization):
+def _associate(workspace, dataId, parallelization):
     """Run source association on a dataset.
 
     Parameters
     ----------
-    workingRepo : `str`
-        The repository containing the input and output data.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing output repositories.
     dataId : `str`
         Butler identifier naming the data to be processed by the underlying
         task(s).
@@ -210,34 +211,33 @@ def _associate(workingRepo, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    outputRepo = os.path.join(workingRepo, _OUTPUT_REPO)
-    return apPipe.doAssociation(outputRepo, dataId, outputRepo, skip=False)
+    return apPipe.doAssociation(workspace.outputRepo, dataId, workspace.outputRepo, skip=False)
 
 
-def _postProcess(workingRepo):
+def _postProcess(workspace):
     """Run post-processing on a dataset.
 
     This step is called the "afterburner" in some design documents.
 
     Parameters
     ----------
-    workingRepo : `str`
-        The repository containing the input and output data.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing output repositories.
     """
     pass
 
 
-def runApPipe(metricsJob, workingRepo, parsedCmdLine):
+def runApPipe(metricsJob, workspace, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
     ----------
-    workingRepo : `str`
-        The repository in which temporary products will be created.
-    parsedCmdLine : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `ApPipeParser`.
     metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing input and output repositories.
+    parsedCmdLine : `argparse.Namespace`
+        Command-line arguments, including all arguments supported by `ApPipeParser`.
 
     Returns
     -------
@@ -253,34 +253,17 @@ def runApPipe(metricsJob, workingRepo, parsedCmdLine):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     metadata = dafBase.PropertySet()
-    _getApPipeRepos(metadata)
 
     dataId = parsedCmdLine.dataId
     processes = parsedCmdLine.processes
-    metadata.combine(_process(metricsJob, workingRepo, dataId, processes))
+    metadata.combine(_process(metricsJob, workspace, dataId, processes))
     log.info('Single-frame processing complete')
 
-    metadata.combine(_difference(metricsJob, workingRepo, dataId, processes))
+    metadata.combine(_difference(metricsJob, workspace, dataId, processes))
     log.info('Image differencing complete')
-    metadata.combine(_associate(metricsJob, workingRepo, dataId, processes))
+    metadata.combine(_associate(metricsJob, workspace, dataId, processes))
     log.info('Source association complete')
 
-    _postProcess(workingRepo)
+    _postProcess(workspace)
     log.info('Pipeline complete')
     return metadata
-
-
-def _getApPipeRepos(metadata):
-    """ Retrieve the subdirectories and repos defined in ``ap_pipe`` and store
-    them in the metedata.
-
-    Parameters
-    ----------
-    metadata : `lsst.daf.base.PropertySet`
-        A set of metadata to append to.
-    """
-    metadata.add("ap_pipe.INGESTED_DIR", apPipe.ap_pipe.INGESTED_DIR)
-    metadata.add("ap_pipe.CALIBINGESTED_DIR", apPipe.ap_pipe.CALIBINGESTED_DIR)
-    metadata.add("ap_pipe.PROCESSED_DIR", _OUTPUT_REPO)
-    metadata.add("ap_pipe.DIFFIM_DIR", _OUTPUT_REPO)
-    metadata.add("ap_pipe.DB_DIR", _OUTPUT_REPO)

@@ -42,6 +42,7 @@ from .pipeline_driver import ApPipeParser, runApPipe
 from .measurements import measureFromMetadata, \
     measureFromButlerRepo, \
     measureFromL1DbSqlite
+from .workspace import Workspace
 
 
 class _VerifyApParser(argparse.ArgumentParser):
@@ -59,14 +60,14 @@ class _VerifyApParser(argparse.ArgumentParser):
                           help='The source of data to pass through the pipeline.')
 
         output = self.add_mutually_exclusive_group(required=True)
-        output.add_argument('--output', help='The location of the repository to use for program output.')
+        output.add_argument('--output', help='The location of the workspace to use for pipeline repositories.')
         output.add_argument(
             '--rerun', metavar='OUTPUT',
             type=_FormattedType('[^:]+',
                                 'Invalid name "%s"; ap_verify supports only output reruns. '
                                 'You have entered something that appears to be of the form INPUT:OUTPUT. '
                                 'Please specify only OUTPUT.'),
-            help='The location of the repository to use for program output, as DATASET/rerun/OUTPUT')
+            help='The location of the workspace to use for pipeline repositories, as DATASET/rerun/OUTPUT')
 
         self.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
@@ -130,7 +131,7 @@ def _getOutputDir(inputDir, outputArg, rerunArg):
         return os.path.join(inputDir, "rerun", rerunArg)
 
 
-def _measureFinalProperties(metricsJob, metadata, outputDir, args):
+def _measureFinalProperties(metricsJob, metadata, workspace, args):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
@@ -140,8 +141,8 @@ def _measureFinalProperties(metricsJob, metadata, outputDir, args):
         The Job object to which to add any metric measurements made.
     metadata : `lsst.daf.base.PropertySet`
         The metadata produced by the AP pipeline.
-    outputDir : `str`
-        The location of the final processed data repository.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing input and output repositories.
     args : `argparse.Namespace`
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
@@ -152,10 +153,8 @@ def _measureFinalProperties(metricsJob, metadata, outputDir, args):
     # In the current version of ap_pipe, DIFFIM_DIR has a parent of
     # PROCESSED_DIR. This means that a butler created from the DIFFIM_DIR reop
     # includes data from PROCESSED_DIR.
-    measurements.extend(measureFromButlerRepo(
-        os.path.join(outputDir, metadata.getAsString('ap_pipe.DIFFIM_DIR')), args.dataId))
-    measurements.extend(measureFromL1DbSqlite(
-        os.path.join(outputDir, metadata.getAsString('ap_pipe.DB_DIR'), "association.db")))
+    measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
+    measurements.extend(measureFromL1DbSqlite(os.path.join(workspace.outputRepo, "association.db")))
 
     for measurement in measurements:
         metricsJob.measurements.insert(measurement)
@@ -186,10 +185,10 @@ def runApVerify(cmdLine=None):
 
     testData = Dataset(args.dataset)
     log.info('Dataset %s set up.', args.dataset)
-    output = _getOutputDir(testData.datasetRoot, args.output, args.rerun)
-    ingestDataset(testData, output)
+    workspace = Workspace(_getOutputDir(testData.datasetRoot, args.output, args.rerun))
+    ingestDataset(testData, workspace)
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        metadata = runApPipe(job, output, args)
-        _measureFinalProperties(job, metadata, output, args)
+        metadata = runApPipe(job, workspace, args)
+        _measureFinalProperties(job, metadata, workspace, args)
