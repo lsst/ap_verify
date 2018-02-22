@@ -47,7 +47,6 @@ from lsst.pipe.tasks.ingest import IngestConfig
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsConfig, IngestCalibsTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsArgumentParser
 import lsst.daf.base as dafBase
-from lsst.ap.pipe import doIngestTemplates
 
 # Name of defects tarball residing in dataset's defects directory
 _DEFECT_TARBALL = 'defects_2014-12-05.tar.gz'
@@ -145,8 +144,42 @@ def _ingestTemplates(dataset, workspace):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this function, or `None`.
     """
-    # TODO: move doIngestTemplates to this module once DM-11865 resolved
-    return doIngestTemplates(workspace.dataRepo, workspace.templateRepo, dataset.templateLocation)
+    return _doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
+
+
+def _doIngestTemplates(templateRepo, inputTemplates):
+    '''Ingest templates into the input repository, so that
+    GetCoaddAsTemplateTask can find them.
+
+    After this method returns, butler queries against `templateRepo` can find the
+    templates in `inputTemplates`.
+
+    Parameters
+    ----------
+    templateRepo: `str`
+        The output repository location on disk where ingested templates live.
+    inputTemplates: `str`
+        The input repository location where templates have been previously computed.
+
+    Returns
+    -------
+    calibingest_metadata: `PropertySet` or None
+        Metadata from any tasks run by this method
+    '''
+    log = lsst.log.Log.getLogger('ap.verify.ingestion._doIngestTemplates')
+    # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
+    if os.path.exists(os.path.join(templateRepo, 'deepCoadd')):
+        log.warn('Templates were previously ingested, skipping...')
+        return None
+    else:
+        # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
+        if not os.path.isdir(templateRepo):
+            os.mkdir(templateRepo)
+        for baseName in os.listdir(inputTemplates):
+            oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
+            if os.path.isdir(oldDir):
+                os.symlink(oldDir, os.path.join(templateRepo, baseName))
+        return None
 
 
 def _doIngest(repo, refcats, dataFiles):
