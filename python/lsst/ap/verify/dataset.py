@@ -1,9 +1,11 @@
 #
-# LSST Data Management System
-# Copyright 2017 LSST Corporation.
+# This file is part of ap_verify.
 #
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (http://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +17,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 from __future__ import absolute_import, division, print_function
@@ -154,79 +155,44 @@ class Dataset(object):
 
     @property
     def datasetRoot(self):
-        """The parent directory containing everything related to the dataset.
-
-        Returns
-        -------
-        dir : `str`
-            the location of the base directory
+        """The parent directory containing everything related to the dataset (`str`, read-only).
         """
         return self._dataRootDir
 
     @property
     def rawLocation(self):
-        """The directory containing the "raw" input data.
-
-        Returns
-        -------
-        dir : `str`
-            the location of the science image directory
+        """The directory containing the "raw" input data (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'raw')
 
     @property
     def calibLocation(self):
-        """The directory containing the calibration data.
-
-        Returns
-        -------
-        dir : `str`
-            the location of the master calibration directory
+        """The directory containing the calibration data (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'calib')
 
     @property
     def defectLocation(self):
-        """The directory containing defect files.
-
-        Returns
-        -------
-        dir : `str`
-            the location of the defect directory
+        """The directory containing defect files (`str`, read-only).
         """
         return self.calibLocation
 
     @property
     def refcatsLocation(self):
         """The directory containing external astrometric and photometric
-        reference catalogs.
-
-        Returns
-        -------
-        dir : `str`
-            the location of the reference catalog directory
+        reference catalogs (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'refcats')
 
     @property
     def templateLocation(self):
-        """The directory containing the image subtraction templates.
-
-        Returns
-        -------
-        repo : `str`
-            the location of the precomputed template repository.
+        """The directory containing the image subtraction templates (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'templates')
 
     @property
     def _stubInputRepo(self):
-        """The directory containing the data set's input stub.
-
-        Returns
-        -------
-        dir : `str`
-            the location of the stub used to generate an ingested input repository
+        """The directory containing the data set's input stub (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'repo')
 

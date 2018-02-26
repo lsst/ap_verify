@@ -15,7 +15,7 @@ The basic call signature of ``ap_verify`` is:
 
 .. code-block:: sh
 
-   python ap_verify.py --dataset DATASET --output OUTPUTREPO --id DATAID
+   python ap_verify.py --dataset DATASET --output WORKSPACE --id DATAID
 
 These three arguments (or replacing ``--output`` with ``--rerun``) are mandatory, all others are optional.
 
@@ -69,13 +69,13 @@ Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :
 
       This option is provided for forward-compatibility, but is not yet supported by ``ap_pipe``.
 
-.. option:: --output <output_repo>
+.. option:: --output <workspace_dir>
 
-   **Output data repository URI or path.**
+   **Output and intermediate product path.**
 
-   The output dataset or :option:`--rerun` is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
+   The output argument or :option:`--rerun` is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
 
-   The output data repository will be created if it does not exist.
+   The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
    The path may be absolute or relative to the current working directory.
 
    ``--output`` may not be used with the :option:`--rerun` argument.
@@ -84,14 +84,14 @@ Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :
 
    .. TODO: Rework or remove --rerun (DM-13492)
 
-.. option:: --rerun <output>
+.. option:: --rerun <workspace_dir>
 
    **Specify output "rerun".**
 
    The rerun or :option:`--output` is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
 
-   For ``ap_verify``, a rerun is an output repository relative to the dataset directory (as determined by :option:`--dataset`).
-   This is different from command-line task reruns, which have an input repository and chain the rerun to it.
+   For ``ap_verify``, a rerun is a workspace directory relative to the dataset directory (as determined by :option:`--dataset`).
+   This is different from command-line task reruns, which are output repositories chained to an input repository.
    An input rerun cannot be specified.
 
    ``--rerun`` may not be used with the :option:`--output` argument.

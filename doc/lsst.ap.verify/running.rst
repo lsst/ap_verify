@@ -29,16 +29,20 @@ Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, o
 
 .. prompt:: bash
 
-   python ap_verify/bin/ap_verify.py --dataset HiTS2015 --output workspace/hits/ --id "visit=54123 ccd=25 filter=g" --silent
+   python ap_verify/bin/ap_verify.py --dataset HiTS2015 --id "visit=54123 ccd=25 filter=g" --output workspaces/hits/ --silent
 
-Here:
+Here the inputs are:
 
 * :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
-* :command:`workspace/hits/` is the location of the :ref:`Butler repository<command-line-task-data-repo-using-uris>` in which the pipeline will work,
-* :command:`visit=54123 ccd=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process, and
-* :command:`--silent` disables SQuaSH metrics reporting.
+* :command:`visit=54123 ccd=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
-This will create a workspace (a Butler repository) in :file:`workspace/hits` based on :file:`<hits-data>/data/`, ingest the HiTS data into it, then run visit 54123 through the entire AP pipeline.
+while the output is:
+
+* :command:`workspaces/hits/` is the location where the pipeline will create any :ref:`Butler repositories<command-line-task-data-repo-using-uris>` necessary,
+
+. :command:`--silent` disables SQuaSH metrics reporting.
+
+This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 54123 through the entire AP pipeline.
 
 .. note::
 
@@ -51,7 +55,7 @@ This will create a workspace (a Butler repository) in :file:`workspace/hits` bas
 .. warning::
 
    ``ap_verify.py`` does not support running multiple instances concurrently.
-   Attempting to run two or more programs, particularly from the same working directory, may cause them to compete for access to the workspace or to overwrite each others' metrics.
+   Attempting to run two or more programs, particularly from the same working directory, may cause them to compete for access to the output directories or to overwrite each others' metrics.
 
 .. _ap-verify-run-rerun:
 
@@ -64,8 +68,8 @@ It is also possible to place a workspace in a subdirectory of a dataset director
 
    python python/lsst/ap/verify/ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccd=25 filter=g" --silent
 
-The :command:`--rerun run1` argument will create a workspace in :file:`<hits-data>/rerun/run1/`.
-Since datasets are :ref:`not, in general, repositories<ap-verify-datasets-butler>`, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
+The :command:`--rerun run1` argument will create a directory at :file:`<hits-data>/rerun/run1/`.
+Since neither :ref:`datasets<ap-verify-datasets-butler>` nor ``ap_verify`` output directories are repositories, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
 In particular, ``ap_verify``'s ``--rerun`` does not support repository chaining (as in :command:`--rerun input:output`); the input for ``ap_verify`` will always be determined by the :option:`--dataset <ap_verify.py --dataset>`.
 
 .. _ap-verify-results:
@@ -73,7 +77,7 @@ In particular, ``ap_verify``'s ``--rerun`` does not support repository chaining 
 How to Use Measurements of Metrics
 ----------------------------------
 
-After ``ap_verify`` has run, it will produce a file named :file:`ap_verify.verify.json` in the working directory.
+After ``ap_verify`` has run, it will produce a file named :file:`ap_verify.verify.json` in the caller's directory.
 This file contains metric measurements in `lsst.verify` format, and can be loaded and read as described in the `lsst.verify` documentation or in `SQR-019 <https://sqr-019.lsst.io>`_.
 The file name is currently hard-coded, but may be customizable in a future version.
 

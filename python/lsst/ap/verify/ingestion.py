@@ -1,9 +1,11 @@
 #
-# LSST Data Management System
-# Copyright 2017 LSST Corporation.
+# This file is part of ap_verify.
 #
-# This product includes software developed by the
-# LSST Project (http://www.lsst.org/).
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (http://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,9 +17,8 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the LSST License Statement and
-# the GNU General Public License along with this program.  If not,
-# see <http://www.lsstcorp.org/LegalNotices/>.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 """Data ingestion for ap_verify.
@@ -48,15 +49,11 @@ from lsst.pipe.tasks.ingestCalibs import IngestCalibsArgumentParser
 import lsst.daf.base as dafBase
 from lsst.ap.pipe import doIngestTemplates
 
-# Names of directories to be created in specified repository
-_INGESTED_DIR = 'ingested'
-_CALIBINGESTED_DIR = 'calibingested'
-
 # Name of defects tarball residing in dataset's defects directory
 _DEFECT_TARBALL = 'defects_2014-12-05.tar.gz'
 
 
-def ingestDataset(dataset, repository):
+def ingestDataset(dataset, workspace):
     """Ingest the contents of a dataset into a Butler repository.
 
     The original data directory shall not be modified.
@@ -65,11 +62,11 @@ def ingestDataset(dataset, repository):
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset to be ingested.
-    repository : `str`
-        The file location of a repository to which the data will be ingested.
-        Shall be created if it does not exist. If ``repository`` does exist, it
-        must be compatible with ``dataset`` (in particular, it must support the
-        relevant ``obs`` package).
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location where ingestion repositories will be created.
+        If the repositories already exist, they must be compatible with
+        ``dataset`` (in particular, they must support the relevant
+        ``obs`` package).
 
     Returns
     -------
@@ -78,18 +75,16 @@ def ingestDataset(dataset, repository):
     """
     # TODO: generalize to support arbitrary URIs (DM-11482)
     log = lsst.log.Log.getLogger('ap.verify.ingestion.ingestDataset')
-    dataset.makeCompatibleRepo(repository)
-    log.info('Input repo at %s created.', repository)
 
     metadata = dafBase.PropertySet()
-    metadata.combine(_ingestRaws(dataset, repository))
-    metadata.combine(_ingestCalibs(dataset, repository))
-    metadata.combine(_ingestTemplates(dataset, repository))
+    metadata.combine(_ingestRaws(dataset, workspace))
+    metadata.combine(_ingestCalibs(dataset, workspace))
+    metadata.combine(_ingestTemplates(dataset, workspace))
     log.info('Data ingested')
     return metadata
 
 
-def _ingestRaws(dataset, workingRepo):
+def _ingestRaws(dataset, workspace):
     """Ingest the science data for use by LSST.
 
     The original data directory shall not be modified.
@@ -98,21 +93,20 @@ def _ingestRaws(dataset, workingRepo):
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with ``dataset``.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location where ingestion repositories will be created.
 
     Returns
     -------
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this function, or `None`.
     """
-    rawRepo = _getOutputRepo(workingRepo, _INGESTED_DIR)
+    dataset.makeCompatibleRepo(workspace.dataRepo)
     dataFiles = _getDataFiles(dataset.rawLocation)
-    return _doIngest(rawRepo, dataset.refcatsLocation, dataFiles)
+    return _doIngest(workspace.dataRepo, dataset.refcatsLocation, dataFiles)
 
 
-def _ingestCalibs(dataset, workingRepo):
+def _ingestCalibs(dataset, workspace):
     """Ingest the calibration files for use by LSST.
 
     The original calibration directory shall not be modified.
@@ -121,23 +115,20 @@ def _ingestCalibs(dataset, workingRepo):
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with ``dataset``.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location where ingestion repositories will be created.
 
     Returns
     -------
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this function, or `None`.
     """
-    repo = _getOutputRepo(workingRepo, _INGESTED_DIR)
-    calibRepo = _getOutputRepo(workingRepo, _CALIBINGESTED_DIR)
     calibDataFiles = _getCalibDataFiles(dataset.calibLocation)
     defectFiles = _getDefectFiles(dataset.defectLocation)
-    return _doIngestCalibs(repo, calibRepo, calibDataFiles, defectFiles)
+    return _doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
 
 
-def _ingestTemplates(dataset, workingRepo):
+def _ingestTemplates(dataset, workspace):
     """Ingest the templates for use by LSST.
 
     The original template repository shall not be modified.
@@ -146,9 +137,8 @@ def _ingestTemplates(dataset, workingRepo):
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset on which the pipeline will be run.
-    workingRepo : `str`
-        The repository in which temporary products will be created. Must be
-        compatible with ``dataset``.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location where ingestion repositories will be created.
 
     Returns
     -------
@@ -156,8 +146,7 @@ def _ingestTemplates(dataset, workingRepo):
         The full metadata from any Tasks called by this function, or `None`.
     """
     # TODO: move doIngestTemplates to this module once DM-11865 resolved
-    rawRepo = _getOutputRepo(workingRepo, _INGESTED_DIR)
-    return doIngestTemplates(rawRepo, rawRepo, dataset.templateLocation)
+    return doIngestTemplates(workspace.dataRepo, workspace.templateRepo, dataset.templateLocation)
 
 
 def _doIngest(repo, refcats, dataFiles):
