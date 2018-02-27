@@ -34,6 +34,7 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
+import re
 from functools import wraps
 from future.utils import raise_from
 
@@ -268,3 +269,41 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     _postProcess(workspace)
     log.info('Pipeline complete')
     return metadata
+
+
+def _deStringDataId(dataId):
+    '''
+    Replace a dataId's values with numbers, where appropriate.
+
+    Parameters
+    ----------
+    dataId: `dict`
+        The dataId to be cleaned up.
+    '''
+    try:
+        basestring
+    except NameError:
+        basestring = str
+    integer = re.compile('^\s*[+-]?\d+\s*$')
+    for key, value in dataId.items():
+        if isinstance(value, basestring) and integer.match(value) is not None:
+            dataId[key] = int(value)
+
+
+def _parseDataId(rawDataId):
+    """Convert a dataId from a command-line string to a dict.
+
+    Parameters
+    ----------
+    rawDataId : `str`
+        A string in a format like "visit=54321 ccdnum=7".
+
+    Returns
+    -------
+    dataId: `dict` from `str` to any type
+        A dataId ready for passing to Stack operations.
+    """
+    dataIdItems = re.split('[ +=]', rawDataId)
+    dataId = dict(zip(dataIdItems[::2], dataIdItems[1::2]))
+    _deStringDataId(dataId)
+    return dataId
