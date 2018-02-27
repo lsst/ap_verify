@@ -26,6 +26,8 @@ from __future__ import absolute_import, division, print_function
 import os
 import stat
 
+import lsst.daf.persistence as dafPersist
+
 
 class Workspace(object):
     """A directory used by ``ap_verify`` to handle data.
@@ -33,8 +35,7 @@ class Workspace(object):
     Any object of this class represents a plan for organizing a working
     directory. At present, constructing a Workspace does not initialize its
     repositories; for compatibility reasons, this is best deferred to
-    individual tasks. This class may later provide Butler objects if this
-    becomes a useful feature.
+    individual tasks.
 
     Parameters
     ----------
@@ -81,3 +82,40 @@ class Workspace(object):
         """The URI to a Butler repo for AP pipeline products (`str`, read-only).
         """
         return os.path.join(self._location, 'output')
+
+    @property
+    def workButler(self):
+        """A Butler that can produce pipeline inputs and outputs
+        (`lsst.daf.persistence.Butler`, read-only).
+        """
+        return self._makeButler()
+
+    def _makeButler(self):
+        """Create a butler for accessing the entire workspace.
+
+        Returns
+        -------
+        butler : `lsst.daf.persistence.Butler`
+            A butler accepting `dataRepo`, `calibRepo`, and `templateRepo` as
+            inputs, and `outputRepo` as an output.
+
+        Notes
+        -----
+        Assumes all `*Repo` properties have been initialized.
+        """
+        # common arguments for butler elements
+        mapperArgs = {"calibRoot": self.calibRepo}
+
+        inputs = [{"root": self.dataRepo, "mapperArgs": mapperArgs}]
+        outputs = [{"root": self.outputRepo, "mode": "rw", "mapperArgs": mapperArgs}]
+
+        if not os.path.samefile(self.dataRepo, self.templateRepo):
+            inputs.append({'root': self.templateRepo, 'mode': 'r', 'mapperArgs': mapperArgs})
+
+        return dafPersist.Butler(inputs=inputs, outputs=outputs)
+
+    @property
+    def analysisButler(self):
+        """A Butler that can read pipeline outputs (`lsst.daf.persistence.Butler`, read-only).
+        """
+        return dafPersist.Butler(inputs={"root": self.outputRepo, "mode": "r"})
