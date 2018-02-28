@@ -58,6 +58,9 @@ class Workspace(object):
             os.makedirs(location, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
 
         self._location = location
+        # Lazy evaluation to optimize workButler and analysisButler
+        self._workButler = None
+        self._analysisButler = None
 
     @property
     def dataRepo(self):
@@ -88,7 +91,9 @@ class Workspace(object):
         """A Butler that can produce pipeline inputs and outputs
         (`lsst.daf.persistence.Butler`, read-only).
         """
-        return self._makeButler()
+        if self._workButler is None:
+            self._workButler = self._makeButler()
+        return self._workButler
 
     def _makeButler(self):
         """Create a butler for accessing the entire workspace.
@@ -104,7 +109,7 @@ class Workspace(object):
         Assumes all `*Repo` properties have been initialized.
         """
         # common arguments for butler elements
-        mapperArgs = {"calibRoot": self.calibRepo}
+        mapperArgs = {"calibRoot": os.path.abspath(self.calibRepo)}
 
         inputs = [{"root": self.dataRepo, "mapperArgs": mapperArgs}]
         outputs = [{"root": self.outputRepo, "mode": "rw", "mapperArgs": mapperArgs}]
@@ -118,4 +123,6 @@ class Workspace(object):
     def analysisButler(self):
         """A Butler that can read pipeline outputs (`lsst.daf.persistence.Butler`, read-only).
         """
-        return dafPersist.Butler(inputs={"root": self.outputRepo, "mode": "r"})
+        if self._analysisButler is None:
+            self._analysisButler = dafPersist.Butler(inputs={"root": self.outputRepo, "mode": "r"})
+        return self._analysisButler

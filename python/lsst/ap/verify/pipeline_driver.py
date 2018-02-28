@@ -34,6 +34,7 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
+import os
 import re
 from functools import wraps
 from future.utils import raise_from
@@ -142,14 +143,16 @@ def _MetricsRecovery(pipelineStep):
 
 
 @_MetricsRecovery
-def _process(workspace, dataId, parallelization):
+def _process(pipeline, workspace, dataId, parallelization):
     """Run single-frame processing on a dataset.
 
     Parameters
     ----------
+    pipeline : `lsst.ap.pipe.ApPipeTask`
+        An instance of the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
-    dataId : `str`
+    dataId : `dict` from `str` to any
         Butler identifier naming the data to be processed by the underlying
         task(s).
     parallelization : `int`
@@ -160,22 +163,21 @@ def _process(workspace, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doProcessCcd(workspace.dataRepo,
-                               workspace.calibRepo,
-                               workspace.outputRepo,
-                               dataId,
-                               skip=False)
+    dataRef = workspace.workButler.dataRef('raw', **dataId)
+    return pipeline.runProcessCcd(dataRef).fullMetadata
 
 
 @_MetricsRecovery
-def _difference(workspace, dataId, parallelization):
+def _difference(pipeline, workspace, dataId, parallelization):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
+    pipeline : `lsst.ap.pipe.ApPipeTask`
+        An instance of the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
-    dataId : `str`
+    dataId : `dict` from `str` to any
         Butler identifier naming the data to be processed by the underlying
         task(s).
     parallelization : `int`
@@ -186,23 +188,21 @@ def _difference(workspace, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doDiffIm(workspace.outputRepo,
-                           dataId,
-                           'coadd',
-                           workspace.templateRepo,
-                           workspace.outputRepo,
-                           skip=False)
+    dataRef = workspace.workButler.dataRef('calexp', **dataId)
+    return pipeline.runDiffIm(dataRef).fullMetadata
 
 
 @_MetricsRecovery
-def _associate(workspace, dataId, parallelization):
+def _associate(pipeline, workspace, dataId, parallelization):
     """Run source association on a dataset.
 
     Parameters
     ----------
+    pipeline : `lsst.ap.pipe.ApPipeTask`
+        An instance of the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing output repositories.
-    dataId : `str`
+    dataId : `dict` from `str` to any
         Butler identifier naming the data to be processed by the underlying
         task(s).
     parallelization : `int`
@@ -213,7 +213,8 @@ def _associate(workspace, dataId, parallelization):
     metadata : `lsst.daf.base.PropertySet`
         The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doAssociation(workspace.outputRepo, dataId, workspace.outputRepo, skip=False)
+    dataRef = workspace.workButler.dataRef('calexp', **dataId)
+    return pipeline.runDiffIm(dataRef).fullMetadata
 
 
 def _postProcess(workspace):
@@ -256,14 +257,18 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
 
     metadata = dafBase.PropertySet()
 
-    dataId = parsedCmdLine.dataId
+    dataId = _parseDataId(parsedCmdLine.dataId)
     processes = parsedCmdLine.processes
-    metadata.combine(_process(metricsJob, workspace, dataId, processes))
+
+    pipeline = apPipe.ApPipeTask(workspace.workButler,
+                                 os.path.join(workspace.outputRepo, 'association.db'))
+
+    metadata.combine(_process(metricsJob, pipeline, workspace, dataId, processes))
     log.info('Single-frame processing complete')
 
-    metadata.combine(_difference(metricsJob, workspace, dataId, processes))
+    metadata.combine(_difference(metricsJob, pipeline, workspace, dataId, processes))
     log.info('Image differencing complete')
-    metadata.combine(_associate(metricsJob, workspace, dataId, processes))
+    metadata.combine(_associate(metricsJob, pipeline, workspace, dataId, processes))
     log.info('Source association complete')
 
     _postProcess(workspace)
@@ -277,7 +282,7 @@ def _deStringDataId(dataId):
 
     Parameters
     ----------
-    dataId: `dict`
+    dataId: `dict` from `str` to any
         The dataId to be cleaned up.
     '''
     try:
