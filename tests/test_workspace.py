@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function
 
 # Needed for urllib
 from future.standard_library import install_aliases
-install_aliases()
+install_aliases()  # noqa: E402
 
 import os
 import shutil

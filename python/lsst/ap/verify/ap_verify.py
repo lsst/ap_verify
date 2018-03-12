@@ -61,7 +61,8 @@ class _VerifyApParser(argparse.ArgumentParser):
                           help='The source of data to pass through the pipeline.')
 
         output = self.add_mutually_exclusive_group(required=True)
-        output.add_argument('--output', help='The location of the workspace to use for pipeline repositories.')
+        output.add_argument('--output',
+                            help='The location of the workspace to use for pipeline repositories.')
         output.add_argument(
             '--rerun', metavar='OUTPUT',
             type=_FormattedType('[^:]+',
