@@ -33,7 +33,6 @@ import sqlite3
 import tempfile
 
 import lsst.daf.persistence as dafPersist
-from lsst.afw.coord import Coord
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 from lsst.ap.association import \
@@ -132,10 +131,10 @@ def createTestSources(nSources=5,
     for srcIdx in range(nSources):
         src = sources.addNew()
         src['id'] = srcIdx + startId
-        coord = Coord(sourceLocsDeg[srcIdx][0] * afwGeom.degrees,
-                      sourceLocsDeg[srcIdx][1] * afwGeom.degrees)
+        coord = afwGeom.SpherePoint(sourceLocsDeg[srcIdx][0],
+                                    sourceLocsDeg[srcIdx][1], afwGeom.degrees)
         if scatterArcsec > 0.0:
-            coord.offset(
+            coord = coord.offset(
                 np.random.rand() * 360 * afwGeom.degrees,
                 np.random.rand() * scatterArcsec * afwGeom.arcseconds)
         src.setCoord(coord)
