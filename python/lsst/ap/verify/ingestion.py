@@ -342,7 +342,11 @@ def _defectIngest(repo, calibRepo, defectFiles):
         defectargs = [absRepo, '--calib', '.', '--calibType', 'defect',
                       '--mode', 'skip', '--validity', '999']
         tarfile.open(defectTarball, 'r').extractall('defects')
-        defectFiles = glob(os.path.join('defects', os.path.basename(defectFiles[0]), '*.fits'))
+        defectFiles = []
+        for path, dirs, files in os.walk('defects'):
+            for file in files:
+                if file.endswith('.fits'):
+                    defectFiles.append(os.path.join(path, file))
         defectargs.extend(defectFiles)
         defectArgumentParser = IngestCalibsArgumentParser(name='ingestCalibs')
         defectConfig = IngestCalibsConfig()
