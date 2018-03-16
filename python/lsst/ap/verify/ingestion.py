@@ -304,8 +304,8 @@ def _defectIngest(repo, calibRepo, defectFiles):
         The output repository location on disk where ingested calibration images live.
     defectFiles : `list` of `str`
         A list of the filenames of each defect image file.
-        The first element in this list must be the name of a .tar.gz file
-        which contains all the compressed defect images.
+        The first element in this list must be the name of a .tar.gz file,
+        without the extension, which contains all the compressed defect images.
 
     Returns
     -------
