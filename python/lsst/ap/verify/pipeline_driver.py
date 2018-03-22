@@ -34,13 +34,13 @@ from __future__ import absolute_import, division, print_function
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
-from functools import wraps
+import os
+import re
 from future.utils import raise_from
 
 import json
 
 import lsst.log
-import lsst.daf.base as dafBase
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
@@ -107,112 +107,61 @@ def _updateMetrics(metadata, job):
             e)
 
 
-def _MetricsRecovery(pipelineStep):
-    """Carry out a pipeline step while handling metrics defensively.
-
-    Parameters
-    ----------
-    pipelineStep: callable
-        The pipeline step to decorate. Must return metadata from the task(s)
-        executed, or `None`.
-
-    Returns
-    -------
-    A callable that expects a `verify.Job` as its first parameter,
-    followed by the arguments to `pipelineStep`, in order. Its
-    behavior shall be to execute `pipelineStep`, update the `Job`
-    object with any metrics produced by `pipelineStep`, and return
-    (possibly empty) metadata.
-
-    The returned callable shall raise `pipeline.MeasurementStorageError`
-    if measurements were made, but the `Job` object could not be
-    updated with them. Any side effects of `pipelineStep` shall
-    remain in effect in the event of this exception.
-    """
-    @wraps(pipelineStep)
-    def wrapper(job, *args, **kwargs):
-        metadata = pipelineStep(*args, **kwargs)
-        if metadata is None:
-            metadata = dafBase.PropertySet()
-
-        _updateMetrics(metadata, job)
-        return metadata
-    return wrapper
-
-
-@_MetricsRecovery
-def _process(workspace, dataId, parallelization):
+def _process(pipeline, workspace, dataId, parallelization):
     """Run single-frame processing on a dataset.
 
     Parameters
     ----------
+    pipeline : `lsst.ap.pipe.ApPipeTask`
+        An instance of the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
-    dataId : `str`
+    dataId : `dict` from `str` to any
         Butler identifier naming the data to be processed by the underlying
         task(s).
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doProcessCcd(workspace.dataRepo,
-                               workspace.calibRepo,
-                               workspace.outputRepo,
-                               dataId,
-                               skip=False)
+    dataRef = workspace.workButler.dataRef('raw', **dataId)
+    pipeline.runProcessCcd(dataRef)
 
 
-@_MetricsRecovery
-def _difference(workspace, dataId, parallelization):
+def _difference(pipeline, workspace, dataId, parallelization):
     """Run image differencing on a dataset.
 
     Parameters
     ----------
+    pipeline : `lsst.ap.pipe.ApPipeTask`
+        An instance of the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
-    dataId : `str`
+    dataId : `dict` from `str` to any
         Butler identifier naming the data to be processed by the underlying
         task(s).
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doDiffIm(workspace.outputRepo,
-                           dataId,
-                           'coadd',
-                           workspace.templateRepo,
-                           workspace.outputRepo,
-                           skip=False)
+    dataRef = workspace.workButler.dataRef('calexp', **dataId)
+    pipeline.runDiffIm(dataRef)
 
 
-@_MetricsRecovery
-def _associate(workspace, dataId, parallelization):
+def _associate(pipeline, workspace, dataId, parallelization):
     """Run source association on a dataset.
 
     Parameters
     ----------
+    pipeline : `lsst.ap.pipe.ApPipeTask`
+        An instance of the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing output repositories.
-    dataId : `str`
+    dataId : `dict` from `str` to any
         Butler identifier naming the data to be processed by the underlying
         task(s).
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this method, or `None`.
     """
-    return apPipe.doAssociation(workspace.outputRepo, dataId, workspace.outputRepo, skip=False)
+    dataRef = workspace.workButler.dataRef('calexp', **dataId)
+    pipeline.runDiffIm(dataRef)
 
 
 def _postProcess(workspace):
@@ -249,22 +198,66 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     ------
     `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
         Measurements were made, but `metricsJob` could not be updated
-        with all of them.
+        with all of them. This exception may suppress exceptions raised by
+        the pipeline itself.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
-    metadata = dafBase.PropertySet()
-
-    dataId = parsedCmdLine.dataId
+    dataId = _parseDataId(parsedCmdLine.dataId)
     processes = parsedCmdLine.processes
-    metadata.combine(_process(metricsJob, workspace, dataId, processes))
-    log.info('Single-frame processing complete')
 
-    metadata.combine(_difference(metricsJob, workspace, dataId, processes))
-    log.info('Image differencing complete')
-    metadata.combine(_associate(metricsJob, workspace, dataId, processes))
-    log.info('Source association complete')
+    pipeline = apPipe.ApPipeTask(workspace.workButler,
+                                 os.path.join(workspace.outputRepo, 'association.db'))
+    try:
+        _process(pipeline, workspace, dataId, processes)
+        log.info('Single-frame processing complete')
 
-    _postProcess(workspace)
-    log.info('Pipeline complete')
-    return metadata
+        _difference(pipeline, workspace, dataId, processes)
+        log.info('Image differencing complete')
+        _associate(pipeline, workspace, dataId, processes)
+        log.info('Source association complete')
+
+        _postProcess(workspace)
+        log.info('Pipeline complete')
+        return pipeline.getFullMetadata()
+    finally:
+        # Recover any metrics from completed pipeline steps, even if the pipeline fails
+        _updateMetrics(pipeline.getFullMetadata(), metricsJob)
+
+
+def _deStringDataId(dataId):
+    '''
+    Replace a dataId's values with numbers, where appropriate.
+
+    Parameters
+    ----------
+    dataId: `dict` from `str` to any
+        The dataId to be cleaned up.
+    '''
+    try:
+        basestring
+    except NameError:
+        basestring = str
+    integer = re.compile('^\s*[+-]?\d+\s*$')
+    for key, value in dataId.items():
+        if isinstance(value, basestring) and integer.match(value) is not None:
+            dataId[key] = int(value)
+
+
+def _parseDataId(rawDataId):
+    """Convert a dataId from a command-line string to a dict.
+
+    Parameters
+    ----------
+    rawDataId : `str`
+        A string in a format like "visit=54321 ccdnum=7".
+
+    Returns
+    -------
+    dataId: `dict` from `str` to any type
+        A dataId ready for passing to Stack operations.
+    """
+    dataIdItems = re.split('[ +=]', rawDataId)
+    dataId = dict(zip(dataIdItems[::2], dataIdItems[1::2]))
+    _deStringDataId(dataId)
+    return dataId

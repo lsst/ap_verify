@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function
 
 # Needed for urllib
 from future.standard_library import install_aliases
-install_aliases()
+install_aliases()  # noqa: E402
 
 import os
 import shutil
@@ -34,6 +34,8 @@ import unittest
 from urllib.request import url2pathname
 
 import lsst.utils.tests
+from lsst.daf.persistence import Butler
+import lsst.obs.test
 from lsst.ap.verify.workspace import Workspace
 
 
@@ -78,6 +80,19 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         self._assertInDir(url2pathname(self._testbed.calibRepo), root)
         self._assertInDir(url2pathname(self._testbed.templateRepo), root)
         self._assertInDir(url2pathname(self._testbed.outputRepo), root)
+
+    def testButlers(self):
+        with self.assertRaises(EnvironmentError):
+            self._testbed.workButler
+
+        with self.assertRaises(RuntimeError):
+            self._testbed.analysisButler
+
+        # Give `workButler` a well-defined input
+        Butler(outputs={'root': self._testbed.dataRepo, 'mapper': lsst.obs.test.TestMapper})
+
+        self._testbed.workButler
+        self._testbed.analysisButler
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
