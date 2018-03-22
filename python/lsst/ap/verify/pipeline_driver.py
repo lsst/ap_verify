@@ -161,7 +161,7 @@ def _associate(pipeline, workspace, dataId, parallelization):
         Parallelization level at which to run underlying task(s).
     """
     dataRef = workspace.workButler.dataRef('calexp', **dataId)
-    pipeline.runDiffIm(dataRef)
+    pipeline.runAssociation(dataRef)
 
 
 def _postProcess(workspace):
