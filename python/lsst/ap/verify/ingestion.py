@@ -304,8 +304,8 @@ def _defectIngest(repo, calibRepo, defectFiles):
         The output repository location on disk where ingested calibration images live.
     defectFiles : `list` of `str`
         A list of the filenames of each defect image file.
-        The first element in this list must be the name of a .tar.gz file
-        which contains all the compressed defect images.
+        The first element in this list must be the name of a .tar.gz file,
+        without the extension, which contains all the compressed defect images.
 
     Returns
     -------
@@ -342,7 +342,11 @@ def _defectIngest(repo, calibRepo, defectFiles):
         defectargs = [absRepo, '--calib', '.', '--calibType', 'defect',
                       '--mode', 'skip', '--validity', '999']
         tarfile.open(defectTarball, 'r').extractall('defects')
-        defectFiles = glob(os.path.join('defects', os.path.basename(defectFiles[0]), '*.fits'))
+        defectFiles = []
+        for path, dirs, files in os.walk('defects'):
+            for file in files:
+                if file.endswith('.fits'):
+                    defectFiles.append(os.path.join(path, file))
         defectargs.extend(defectFiles)
         defectArgumentParser = IngestCalibsArgumentParser(name='ingestCalibs')
         defectConfig = IngestCalibsConfig()
