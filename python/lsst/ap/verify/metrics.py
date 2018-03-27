@@ -77,6 +77,9 @@ class MetricsParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
+        self.add_argument('--metrics-file', default='ap_verify.verify.json',
+                          help='The file to which to output metrics in lsst.verify format. '
+                               'Defaults to ap_verify.verify.json.')
         self.add_argument('--silent', dest='submitMetrics', action='store_false',
                           help='Do NOT submit metrics to SQuaSH (not yet implemented).')
         # Config info we don't want on the command line
@@ -104,6 +107,7 @@ class AutoJob:
         self._job = lsst.verify.Job.load_metrics_package()
         # TODO: add Job metadata (camera, filter, etc.) in DM-11321
         self._submitMetrics = args.submitMetrics
+        self._outputFile = args.metrics_file
         self._squashUser = args.user
         self._squashPassword = args.password
         self._squashUrl = args.squashUrl
@@ -150,10 +154,9 @@ class AutoJob:
         """
         log = lsst.log.Log.getLogger('ap.verify.metrics.AutoJob.__exit__')
 
-        outFile = 'ap_verify.verify.json'
         try:
-            self._saveMeasurements(outFile)
-            log.debug('Wrote measurements to %s', outFile)
+            self._saveMeasurements(self._outputFile)
+            log.debug('Wrote measurements to %s', self._outputFile)
         except IOError:
             if excType is None:
                 raise
