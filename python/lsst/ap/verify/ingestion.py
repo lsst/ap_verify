@@ -45,7 +45,6 @@ from lsst.obs.decam import ingestCalibs
 from lsst.obs.decam.ingest import DecamParseTask
 from lsst.pipe.tasks.ingest import IngestConfig
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsConfig, IngestCalibsTask
-from lsst.pipe.tasks.ingestCalibs import IngestCalibsArgumentParser
 import lsst.daf.base as dafBase
 
 # Name of defects tarball residing in dataset's defects directory
@@ -233,7 +232,7 @@ def _doIngest(repo, refcats, dataFiles):
     args.extend(dataFiles)
     # set up the decam ingest task so it can take arguments
     # ('name' says which file in obs_decam/config to use)
-    argumentParser = ingest.DecamIngestArgumentParser(name='ingest')
+    argumentParser = ingest.DecamIngestTask.ArgumentParser(name='ingest')
     # create an instance of ingest configuration
     # the retarget command is from line 2 of obs_decam/config/ingest.py
     config = IngestConfig()
@@ -275,7 +274,7 @@ def _flatBiasIngest(repo, calibRepo, calibDataFiles):
     log.info('Ingesting flats and biases...')
     args = [repo, '--calib', calibRepo, '--mode', 'link', '--validity', '999']
     args.extend(calibDataFiles)
-    argumentParser = IngestCalibsArgumentParser(name='ingestCalibs')
+    argumentParser = IngestCalibsTask.ArgumentParser(name='ingestCalibs')
     config = IngestCalibsConfig()
     config.parse.retarget(ingestCalibs.DecamCalibsParseTask)
     calibIngestTask = IngestCalibsTask(config=config, name='ingestCalibs')
@@ -348,7 +347,7 @@ def _defectIngest(repo, calibRepo, defectFiles):
                 if file.endswith('.fits'):
                     defectFiles.append(os.path.join(path, file))
         defectargs.extend(defectFiles)
-        defectArgumentParser = IngestCalibsArgumentParser(name='ingestCalibs')
+        defectArgumentParser = IngestCalibsTask.ArgumentParser(name='ingestCalibs')
         defectConfig = IngestCalibsConfig()
         defectConfig.parse.retarget(ingestCalibs.DecamCalibsParseTask)
         DefectIngestTask = IngestCalibsTask(config=defectConfig, name='ingestCalibs')
