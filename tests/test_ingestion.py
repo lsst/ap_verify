@@ -103,7 +103,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         testDir = os.path.join(IngestionTestSuite.testData, 'rawData', '2013-09-01', 'z')
         files = [os.path.join(testDir, 'decam0229388.fits.fz')]
-        ingestion._doIngest(self._repo, IngestionTestSuite.testApVerifyData, files)
+        ingestion._doIngest(self._repo, files)
 
         butler = self._rawButler()
         self.assertTrue(butler.datasetExists('raw', dataId=IngestionTestSuite.rawDataId))
@@ -141,7 +141,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         files = []
 
-        ingestion._doIngest(self._repo, IngestionTestSuite.testApVerifyData, files)
+        ingestion._doIngest(self._repo, files)
         ingestion._flatBiasIngest(self._repo, self._calibRepo, files)
 
         files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects')]

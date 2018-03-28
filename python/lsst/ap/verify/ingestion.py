@@ -77,6 +77,7 @@ def ingestDataset(dataset, workspace):
     metadata = dafBase.PropertySet()
     metadata.combine(_ingestRaws(dataset, workspace))
     metadata.combine(_ingestCalibs(dataset, workspace))
+    metadata.combine(_ingestRefcats(dataset, workspace))
     metadata.combine(_ingestTemplates(dataset, workspace))
     log.info('Data ingested')
     return metadata
@@ -101,7 +102,7 @@ def _ingestRaws(dataset, workspace):
     """
     dataset.makeCompatibleRepo(workspace.dataRepo)
     dataFiles = _getDataFiles(dataset.rawLocation)
-    return _doIngest(workspace.dataRepo, dataset.refcatsLocation, dataFiles)
+    return _doIngest(workspace.dataRepo, dataFiles)
 
 
 def _ingestCalibs(dataset, workspace):
@@ -196,7 +197,7 @@ def _runIngestTask(task, args):
     task.run(parsedCmd)
 
 
-def _doIngest(repo, refcats, dataFiles):
+def _doIngest(repo, dataFiles):
     """Ingest raw DECam images into a repository with a corresponding registry
 
     ``repo`` shall be populated with *links* to ``dataFiles``.
@@ -205,10 +206,6 @@ def _doIngest(repo, refcats, dataFiles):
     ----------
     repo : `str`
         The output repository location on disk where ingested raw images live.
-    refcats : `str`
-        A directory containing two .tar.gz files with LSST-formatted astrometric
-        and photometric reference catalog information. The files must be named
-        :file:`gaia_HiTS_2015.tar.gz` and :file:`ps1_HiTS_2015.tar.gz`.
     dataFiles : `list` of `str`
         A list of the filenames of each raw image file.
 
@@ -222,14 +219,6 @@ def _doIngest(repo, refcats, dataFiles):
     This function ingests *all* the images, not just the ones for the
     specified visits and/or filters. We may want to revisit this in the future.
     """
-    # Names of tarballs containing astrometric and photometric reference catalog files
-    ASTROM_REFCAT_TAR = 'gaia_HiTS_2015.tar.gz'
-    PHOTOM_REFCAT_TAR = 'ps1_HiTS_2015.tar.gz'
-
-    # Names of reference catalog directories processCcd expects to find in repo
-    ASTROM_REFCAT_DIR = 'ref_cats/gaia'
-    PHOTOM_REFCAT_DIR = 'ref_cats/pan-starrs'
-
     log = lsst.log.Log.getLogger('ap.pipe._doIngest')
     if os.path.exists(os.path.join(repo, 'registry.sqlite3')):
         log.warn('Raw images were previously ingested, skipping...')
@@ -253,14 +242,56 @@ def _doIngest(repo, refcats, dataFiles):
     ingestTask = ingest.DecamIngestTask(config=config)
     _runIngestTask(ingestTask, args)
 
+    log.info('Images are now ingested in {0}'.format(repo))
+    metadata = ingestTask.getFullMetadata()
+    return metadata
+
+
+def _ingestRefcats(dataset, workspace):
+    """Ingest the refcats for use by LSST.
+
+    The original template repository shall not be modified.
+
+    Parameters
+    ----------
+    dataset : `lsst.ap.verify.dataset.Dataset`
+        The dataset on which the pipeline will be run.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location where ingestion repositories will be created.
+    """
+    _doIngestRefcats(workspace.dataRepo, dataset.refcatsLocation)
+
+
+def _doIngestRefcats(repo, refcats):
+    """Ingest refcats so they are visible to a particular repository.
+
+    Parameters
+    ----------
+    repo : `str`
+        The output repository location on disk where ingested raw images live.
+    refcats : `str`
+        A directory containing two .tar.gz files with LSST-formatted astrometric
+        and photometric reference catalog information. The files must be named
+        :file:`gaia_HiTS_2015.tar.gz` and :file:`ps1_HiTS_2015.tar.gz`.
+
+    Notes
+    -----
+    Refcats are not, at present, registered as part of the repository. They
+    are not guaranteed to be visible to anything other than a ``refObjLoader``.
+    """
+    # Names of tarballs containing astrometric and photometric reference catalog files
+    ASTROM_REFCAT_TAR = 'gaia_HiTS_2015.tar.gz'
+    PHOTOM_REFCAT_TAR = 'ps1_HiTS_2015.tar.gz'
+
+    # Names of reference catalog directories processCcd expects to find in repo
+    ASTROM_REFCAT_DIR = 'ref_cats/gaia'
+    PHOTOM_REFCAT_DIR = 'ref_cats/pan-starrs'
+
     # Copy refcats files to repo (needed for doProcessCcd)
     astrometryTarball = os.path.join(refcats, ASTROM_REFCAT_TAR)
     photometryTarball = os.path.join(refcats, PHOTOM_REFCAT_TAR)
     tarfile.open(astrometryTarball, 'r').extractall(os.path.join(repo, ASTROM_REFCAT_DIR))
     tarfile.open(photometryTarball, 'r').extractall(os.path.join(repo, PHOTOM_REFCAT_DIR))
-    log.info('Images are now ingested in {0}'.format(repo))
-    metadata = ingestTask.getFullMetadata()
-    return metadata
 
 
 def _flatBiasIngest(repo, calibRepo, calibDataFiles):
