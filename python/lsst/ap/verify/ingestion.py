@@ -181,6 +181,21 @@ def _doIngestTemplates(templateRepo, inputTemplates):
         return None
 
 
+def _runIngestTask(task, args):
+    """Run an ingestion task on a set of inputs.
+
+    Parameters
+    ----------
+    task : `lsst.pipe.tasks.IngestTask`
+        The task to run.
+    args : list of command-line arguments, split using Python conventions
+        The command-line arguments for ``task``. Must be compatible with ``task.ArgumentParser``.
+    """
+    argumentParser = task.ArgumentParser(name=task.getName())
+    parsedCmd = argumentParser.parse_args(config=task.config, args=args)
+    task.run(parsedCmd)
+
+
 def _doIngest(repo, refcats, dataFiles):
     """Ingest raw DECam images into a repository with a corresponding registry
 
@@ -230,19 +245,14 @@ def _doIngest(repo, refcats, dataFiles):
     # (extend the list with all the filenames as the last set of arguments)
     args = [repo, '--filetype', 'raw', '--mode', 'link']
     args.extend(dataFiles)
-    # set up the decam ingest task so it can take arguments
-    # ('name' says which file in obs_decam/config to use)
-    argumentParser = ingest.DecamIngestTask.ArgumentParser(name='ingest')
     # create an instance of ingest configuration
     # the retarget command is from line 2 of obs_decam/config/ingest.py
     config = IngestConfig()
     config.parse.retarget(DecamParseTask)
     # create an *instance* of the decam ingest task
     ingestTask = ingest.DecamIngestTask(config=config)
-    # feed everything to the argument parser
-    parsedCmd = argumentParser.parse_args(config=config, args=args)
-    # finally, run the ingestTask
-    ingestTask.run(parsedCmd)
+    _runIngestTask(ingestTask, args)
+
     # Copy refcats files to repo (needed for doProcessCcd)
     astrometryTarball = os.path.join(refcats, ASTROM_REFCAT_TAR)
     photometryTarball = os.path.join(refcats, PHOTOM_REFCAT_TAR)
@@ -274,13 +284,11 @@ def _flatBiasIngest(repo, calibRepo, calibDataFiles):
     log.info('Ingesting flats and biases...')
     args = [repo, '--calib', calibRepo, '--mode', 'link', '--validity', '999']
     args.extend(calibDataFiles)
-    argumentParser = IngestCalibsTask.ArgumentParser(name='ingestCalibs')
     config = IngestCalibsConfig()
     config.parse.retarget(ingestCalibs.DecamCalibsParseTask)
     calibIngestTask = IngestCalibsTask(config=config, name='ingestCalibs')
-    parsedCmd = argumentParser.parse_args(config=config, args=args)
     try:
-        calibIngestTask.run(parsedCmd)
+        _runIngestTask(calibIngestTask, args)
     except sqlite3.IntegrityError as detail:
         log.error('sqlite3.IntegrityError: ', detail)
         log.error('(sqlite3 doesn\'t think all the calibration files are unique)')
@@ -347,12 +355,10 @@ def _defectIngest(repo, calibRepo, defectFiles):
                 if file.endswith('.fits'):
                     defectFiles.append(os.path.join(path, file))
         defectargs.extend(defectFiles)
-        defectArgumentParser = IngestCalibsTask.ArgumentParser(name='ingestCalibs')
         defectConfig = IngestCalibsConfig()
         defectConfig.parse.retarget(ingestCalibs.DecamCalibsParseTask)
         DefectIngestTask = IngestCalibsTask(config=defectConfig, name='ingestCalibs')
-        defectParsedCmd = defectArgumentParser.parse_args(config=defectConfig, args=defectargs)
-        DefectIngestTask.run(defectParsedCmd)
+        _runIngestTask(DefectIngestTask, defectargs)
         metadata = DefectIngestTask.getFullMetadata()
     finally:
         os.chdir(startDir)
