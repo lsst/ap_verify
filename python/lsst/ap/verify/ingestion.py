@@ -202,7 +202,10 @@ def _ingestCalibs(dataset, workspace):
     """
     config = _getConfig(dataset)
     calibDataFiles = _getCalibDataFiles(config, dataset.calibLocation)
-    defectFiles = _getDefectFiles(dataset.defectLocation, config.defectTarball)
+    if config.defectTarball:
+        defectFiles = _getDefectFiles(dataset.defectLocation, config.defectTarball)
+    else:
+        defectFiles = []
     return _doIngestCalibs(config, workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
 
 
@@ -430,6 +433,10 @@ def _defectIngest(config, repo, calibRepo, defectFiles):
     """
     # TODO: clean up implementation after DM-5467 resolved
     log = lsst.log.Log.getLogger('ap.pipe._defectIngest')
+    if not defectFiles:
+        log.info("No defects to ingest, skipping...")
+        return None
+
     absRepo = os.path.abspath(repo)
     defectTarball = os.path.abspath(defectFiles[0] + '.tar.gz')
     startDir = os.path.abspath(os.getcwd())
