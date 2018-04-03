@@ -75,12 +75,13 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         # Making the directory appears to be both necessary and sufficient
         os.mkdir(self._calibRepo)
 
-        self._config = ingestion.DatasetIngestConfig()
-        self._config.dataIngester.retarget(DecamIngestTask)
-        self._config.dataIngester.parse.retarget(DecamParseTask)
-        self._config.calibIngester.parse.retarget(DecamCalibsParseTask)
-        self._config.defectIngester.parse.retarget(DecamCalibsParseTask)
-        self._config.defectTarball = 'defects_2014-12-05.tar.gz'
+        config = ingestion.DatasetIngestConfig()
+        config.dataIngester.retarget(DecamIngestTask)
+        config.dataIngester.parse.retarget(DecamParseTask)
+        config.calibIngester.parse.retarget(DecamCalibsParseTask)
+        config.defectIngester.parse.retarget(DecamCalibsParseTask)
+        config.defectTarball = 'defects_2014-12-05.tar.gz'
+        self._task = ingestion.DatasetIngestTask(config=config)
 
     def tearDown(self):
         shutil.rmtree(self._repo, ignore_errors=True)
@@ -113,7 +114,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         testDir = os.path.join(IngestionTestSuite.testData, 'rawData', '2013-09-01', 'z')
         files = [os.path.join(testDir, 'decam0229388.fits.fz')]
-        ingestion._doIngest(self._config, self._repo, files, [])
+        self._task._doIngest(self._repo, files, [])
 
         butler = self._rawButler()
         self.assertTrue(butler.datasetExists('raw', dataId=IngestionTestSuite.rawDataId))
@@ -127,7 +128,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                   'zci.fits']
                  ]
 
-        ingestion._flatBiasIngest(self._config, self._repo, self._calibRepo, files)
+        self._task._flatBiasIngest(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('cpBias', dataId=IngestionTestSuite.calibDataId))
@@ -139,7 +140,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects'),
                  os.path.basename(IngestionTestSuite.defectDataId['path'])]
 
-        ingestion._defectIngest(self._config, self._repo, self._calibRepo, files)
+        self._task._defectIngest(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('defects', dataId=IngestionTestSuite.defectDataId))
@@ -151,11 +152,11 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         files = []
 
-        ingestion._doIngest(self._config, self._repo, files, [])
-        ingestion._flatBiasIngest(self._config, self._repo, self._calibRepo, files)
+        self._task._doIngest(self._repo, files, [])
+        self._task._flatBiasIngest(self._repo, self._calibRepo, files)
 
         files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects')]
-        ingestion._defectIngest(self._config, self._repo, self._calibRepo, files)
+        self._task._defectIngest(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))

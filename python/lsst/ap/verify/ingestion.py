@@ -42,9 +42,10 @@ import sqlite3
 
 import lsst.log
 import lsst.pex.config as pexConfig
+import lsst.pipe.base as pipeBase
+
 from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
-import lsst.daf.base as dafBase
 
 
 class DatasetIngestConfig(pexConfig.Config):
@@ -117,6 +118,360 @@ class DatasetIngestConfig(pexConfig.Config):
     )
 
 
+class DatasetIngestTask(pipeBase.Task):
+    """Task for automating ingestion of a dataset.
+
+    Each dataset configures this task as appropriate for the files it provides
+    and the target instrument. Therefore, this task takes no input besides the
+    dataset to load and the repositories to ingest to.
+    """
+
+    ConfigClass = DatasetIngestConfig
+    _DefaultName = "datasetIngest"
+
+    def __init__(self, *args, **kwargs):
+        pipeBase.Task.__init__(self, *args, **kwargs)
+
+    def run(self, dataset, workspace):
+        """Ingest the contents of a dataset into a Butler repository.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset to be ingested.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+            If the repositories already exist, they must support the same
+            ``obs`` package as this task's subtasks.
+        """
+        self._ingestRaws(dataset, workspace)
+        self._ingestCalibs(dataset, workspace)
+        self._ingestRefcats(dataset, workspace)
+        self._ingestTemplates(dataset, workspace)
+
+    def _ingestRaws(self, dataset, workspace):
+        """Ingest the science data for use by LSST.
+
+        The original data directory shall not be modified.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset on which the pipeline will be run.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+
+        Returns
+        -------
+        metadata : `lsst.daf.base.PropertySet`
+            The full metadata from any Tasks called by this function, or `None`.
+        """
+        dataset.makeCompatibleRepo(workspace.dataRepo)
+        dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in self.config.dataFiles]
+        return self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+
+    def _doIngest(self, repo, dataFiles, badFiles):
+        """Ingest raw images into a repository.
+
+        ``repo`` shall be populated with *links* to ``dataFiles``.
+
+        Parameters
+        ----------
+        repo : `str`
+            The output repository location on disk for raw images.
+        dataFiles : `list` of `str`
+            A list of filenames to ingest. May contain wildcards.
+        badFiles : `list` of `str`
+            A list of filenames to exclude from ingestion. Must not contain paths.
+            May contain wildcards.
+
+        Returns
+        -------
+        metadata : `PropertySet` or `None`
+            Metadata from the `IngestTask` for use by ``ap_verify``
+        """
+        if os.path.exists(os.path.join(repo, "registry.sqlite3")):
+            self.log.info("Raw images were previously ingested, skipping...")
+            return None
+        # TODO: make this a new-style repository (DM-12662)
+        if not os.path.isdir(repo):
+            os.mkdir(repo)
+        # make a text file that handles the mapper, per the obs_decam github README
+        with open(os.path.join(repo, "_mapper"), "w") as f:
+            print("lsst.obs.decam.DecamMapper", file=f)
+
+        self.log.info("Ingesting raw images...")
+        args = [repo, "--filetype", "raw", "--mode", "link"]
+        args.extend(dataFiles)
+        if badFiles:
+            args.append('--badFile')
+            args.extend(badFiles)
+        ingestTask = self.config.dataIngester.apply()
+        _runIngestTask(ingestTask, args)
+
+        self.log.info("Images are now ingested in {0}".format(repo))
+        metadata = ingestTask.getFullMetadata()
+        return metadata
+
+    def _ingestCalibs(self, dataset, workspace):
+        """Ingest the calibration files for use by LSST.
+
+        The original calibration directory shall not be modified.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset on which the pipeline will be run.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+
+        Returns
+        -------
+        metadata : `lsst.daf.base.PropertySet`
+            The full metadata from any Tasks called by this function, or `None`.
+        """
+        calibDataFiles = _getCalibDataFiles(self.config, dataset.calibLocation)
+        if self.config.defectTarball:
+            defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
+        else:
+            defectFiles = []
+        return self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
+
+    def _doIngestCalibs(self, repo, calibRepo, calibDataFiles, defectFiles):
+        """Ingest calibration files into a calibration repository.
+
+        ``calibRepo`` shall be populated with *links* to ``calibDataFiles``.
+        Defect images shall be registered in ``calibRepo`` but not linked.
+
+        Parameters
+        ----------
+        repo : `str`
+            The output repository location on disk for raw images.
+        calibRepo : `str`
+            The output repository location on disk for calibration files.
+        calibDataFiles : `list` of `str`
+            A list of non-defect filenames to ingest. Supported files vary by
+            instrument but may include flats, biases, darks, fringes, or sky.
+            May contain wildcards.
+        defectFiles : `list` of `str`
+            A list of defect filenames. The first element in this list must be
+            the name of a .tar.gz file that contains all the compressed
+            defect images, while the remaining elements are the defect images
+            themselves.
+
+        Returns
+        -------
+        metadata : `PropertySet` or `None`
+            Metadata from the `IngestCalibTask` (flats and biases) and from the
+            `IngestCalibTask` (defects) for use by ``ap_verify``
+        """
+        if not os.path.isdir(calibRepo):
+            os.mkdir(calibRepo)
+            flatBiasMetadata = self._flatBiasIngest(repo, calibRepo, calibDataFiles)
+            defectMetadata = self._defectIngest(repo, calibRepo, defectFiles)
+        elif os.path.exists(os.path.join(calibRepo, "cpBIAS")):
+            self.log.info("Flats and biases were previously ingested, skipping...")
+            flatBiasMetadata = None
+            defectMetadata = self._defectIngest(repo, calibRepo, defectFiles)
+        else:
+            flatBiasMetadata = self._flatBiasIngest(repo, calibRepo, calibDataFiles)
+            defectMetadata = self._defectIngest(repo, calibRepo, defectFiles)
+        # Handle the case where one or both of the calib metadatas may be None
+        if flatBiasMetadata is not None:
+            calibIngestMetadata = flatBiasMetadata
+            if defectMetadata is not None:
+                calibIngestMetadata.combine(defectMetadata)
+        else:
+            calibIngestMetadata = defectMetadata
+        return calibIngestMetadata
+
+    def _flatBiasIngest(self, repo, calibRepo, calibDataFiles):
+        """Ingest flats and biases into a calibration repository.
+
+        Parameters
+        ----------
+        repo : `str`
+            The output repository location on disk for raw images.
+        calibRepo : `str`
+            The output repository location on disk for calibration files.
+        calibDataFiles : `list` of `str`
+            A list of filenames to ingest. May contain wildcards.
+
+        Returns
+        -------
+        metadata : `PropertySet` or `None`
+            Metadata from the `IngestCalibTask` (flats and biases) for use by ``ap_verify``
+        """
+        self.log.info("Ingesting flats and biases...")
+        args = [repo, "--calib", calibRepo, "--mode", "link", "--validity", str(self.config.calibValidity)]
+        args.extend(calibDataFiles)
+        calibIngestTask = self.config.calibIngester.apply()
+        try:
+            _runIngestTask(calibIngestTask, args)
+        except sqlite3.IntegrityError as detail:
+            self.log.error("sqlite3.IntegrityError: ", detail)
+            self.log.error("(sqlite3 doesn't think all the calibration files are unique)")
+            raise
+        else:
+            self.log.info("Success!")
+            self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(repo, calibRepo))
+            metadata = calibIngestTask.getFullMetadata()
+        return metadata
+
+    def _defectIngest(self, repo, calibRepo, defectFiles):
+        """Ingest defect images.
+
+        Parameters
+        ----------
+        repo : `str`
+            The output repository location on disk for raw images.
+        calibRepo : `str`
+            The output repository location on disk for calibration files.
+        defectFiles : `list` of `str`
+            A list of defect filenames. The first element in this list must be
+            the name of a .tar.gz file that contains all the compressed
+            defect images, while the remaining elements are the defect images
+            themselves.
+
+        Returns
+        -------
+        metadata : `PropertySet` or `None`
+            Metadata from the `IngestCalibTask` (defects) for use by ``ap_verify``
+
+        Notes
+        -----
+        This function assumes very particular things about defect ingestion:
+        - They must live in a .tar.gz file in the same location on disk as the other calibs
+        - They will be ingested using ingestCalibs.py run from the ``calibRepo`` directory
+        - They will be manually uncompressed and saved in :file:`calibRepo/defects/<tarballname>/`.
+        - They will be added to the calib registry, but not linked like the flats and biases
+        """
+        # TODO: clean up implementation after DM-5467 resolved
+        if not defectFiles:
+            self.log.info("No defects to ingest, skipping...")
+            return None
+
+        absRepo = os.path.abspath(repo)
+        defectTarball = os.path.abspath(defectFiles[0] + ".tar.gz")
+        startDir = os.path.abspath(os.getcwd())
+        # CameraMapper does not accept absolute paths
+        os.chdir(calibRepo)
+        try:
+            os.mkdir("defects")
+        except OSError:
+            # most likely the defects directory already exists
+            if os.path.isdir("defects"):
+                self.log.info("Defects were previously ingested, skipping...")
+                metadata = None
+            else:
+                self.log.error("Defect ingestion failed because 'defects' dir could not be created")
+                raise
+        else:
+            self.log.info("Ingesting defects...")
+            defectargs = [absRepo, "--calib", ".", "--calibType", "defect",
+                          "--mode", "skip", "--validity", str(self.config.defectValidity)]
+            tarfile.open(defectTarball, "r").extractall("defects")
+            defectFiles = []
+            for path, dirs, files in os.walk("defects"):
+                for file in files:
+                    if file.endswith(".fits"):
+                        defectFiles.append(os.path.join(path, file))
+            defectargs.extend(defectFiles)
+            defectIngestTask = self.config.defectIngester.apply()
+            _runIngestTask(defectIngestTask, defectargs)
+            metadata = defectIngestTask.getFullMetadata()
+        finally:
+            os.chdir(startDir)
+        return metadata
+
+    def _ingestRefcats(self, dataset, workspace):
+        """Ingest the refcats for use by LSST.
+
+        The original template repository shall not be modified.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset on which the pipeline will be run.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+        """
+        self._doIngestRefcats(workspace.dataRepo, dataset.refcatsLocation)
+
+    def _doIngestRefcats(self, repo, refcats):
+        """Ingest refcats so they are visible to a particular repository.
+
+        Parameters
+        ----------
+        repo : `str`
+            The output repository location on disk for raw images.
+        refcats : `str`
+            A directory containing .tar.gz files with LSST-formatted astrometric
+            or photometric reference catalog information.
+
+        Notes
+        -----
+        Refcats are not, at present, registered as part of the repository. They
+        are not guaranteed to be visible to anything other than a ``refObjLoader``.
+        """
+        for refcatName, tarball in self.config.refcats.items():
+            tarball = os.path.join(refcats, tarball)
+            refcatDir = os.path.join(repo, "ref_cats", refcatName)
+            tarfile.open(tarball, "r").extractall(refcatDir)
+
+    def _ingestTemplates(self, dataset, workspace):
+        """Ingest the templates for use by LSST.
+
+        The original template repository shall not be modified.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset on which the pipeline will be run.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+
+        Returns
+        -------
+        metadata : `lsst.daf.base.PropertySet`
+            The full metadata from any Tasks called by this function, or `None`.
+        """
+        return self._doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
+
+    def _doIngestTemplates(self, templateRepo, inputTemplates):
+        """Ingest templates into the input repository, so that
+        GetCoaddAsTemplateTask can find them.
+
+        After this method returns, butler queries against `templateRepo` can find the
+        templates in `inputTemplates`.
+
+        Parameters
+        ----------
+        templateRepo: `str`
+            The output repository location on disk for templates.
+        inputTemplates: `str`
+            The input repository location where templates have been previously computed.
+
+        Returns
+        -------
+        calibingest_metadata: `PropertySet` or None
+            Metadata from any tasks run by this method
+        """
+        # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
+        if os.path.exists(os.path.join(templateRepo, "deepCoadd")):
+            self.log.info("Templates were previously ingested, skipping...")
+            return None
+        else:
+            # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
+            if not os.path.isdir(templateRepo):
+                os.mkdir(templateRepo)
+            for baseName in os.listdir(inputTemplates):
+                oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
+                if os.path.isdir(oldDir):
+                    os.symlink(oldDir, os.path.join(templateRepo, baseName))
+            return None
+
+
 def ingestDataset(dataset, workspace):
     """Ingest the contents of a dataset into a Butler repository.
 
@@ -138,15 +493,12 @@ def ingestDataset(dataset, workspace):
         The full metadata from any Tasks called by this function.
     """
     # TODO: generalize to support arbitrary URIs (DM-11482)
-    log = lsst.log.Log.getLogger('ap.verify.ingestion.ingestDataset')
+    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
 
-    metadata = dafBase.PropertySet()
-    metadata.combine(_ingestRaws(dataset, workspace))
-    metadata.combine(_ingestCalibs(dataset, workspace))
-    metadata.combine(_ingestRefcats(dataset, workspace))
-    metadata.combine(_ingestTemplates(dataset, workspace))
-    log.info('Data ingested')
-    return metadata
+    ingester = DatasetIngestTask(config=_getConfig(dataset))
+    ingester.run(dataset, workspace)
+    log.info("Data ingested")
+    return ingester.getFullMetadata()
 
 
 def _getConfig(dataset):
@@ -164,112 +516,8 @@ def _getConfig(dataset):
     """
     path = dataset.configLocation
     config = DatasetIngestConfig()
-    config.load(os.path.join(path, 'datasetIngest.py'))
+    config.load(os.path.join(path, "datasetIngest.py"))
     return config
-
-
-def _ingestRaws(dataset, workspace):
-    """Ingest the science data for use by LSST.
-
-    The original data directory shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location where ingestion repositories will be created.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this function, or `None`.
-    """
-    dataset.makeCompatibleRepo(workspace.dataRepo)
-    config = _getConfig(dataset)
-    dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in config.dataFiles]
-    return _doIngest(config, workspace.dataRepo, dataFiles, config.dataBadFiles)
-
-
-def _ingestCalibs(dataset, workspace):
-    """Ingest the calibration files for use by LSST.
-
-    The original calibration directory shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location where ingestion repositories will be created.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this function, or `None`.
-    """
-    config = _getConfig(dataset)
-    calibDataFiles = _getCalibDataFiles(config, dataset.calibLocation)
-    if config.defectTarball:
-        defectFiles = _getDefectFiles(dataset.defectLocation, config.defectTarball)
-    else:
-        defectFiles = []
-    return _doIngestCalibs(config, workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
-
-
-def _ingestTemplates(dataset, workspace):
-    """Ingest the templates for use by LSST.
-
-    The original template repository shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location where ingestion repositories will be created.
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this function, or `None`.
-    """
-    return _doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
-
-
-def _doIngestTemplates(templateRepo, inputTemplates):
-    '''Ingest templates into the input repository, so that
-    GetCoaddAsTemplateTask can find them.
-
-    After this method returns, butler queries against `templateRepo` can find the
-    templates in `inputTemplates`.
-
-    Parameters
-    ----------
-    templateRepo: `str`
-        The output repository location on disk where ingested templates live.
-    inputTemplates: `str`
-        The input repository location where templates have been previously computed.
-
-    Returns
-    -------
-    calibingest_metadata: `PropertySet` or None
-        Metadata from any tasks run by this method
-    '''
-    log = lsst.log.Log.getLogger('ap.verify.ingestion._doIngestTemplates')
-    # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
-    if os.path.exists(os.path.join(templateRepo, 'deepCoadd')):
-        log.warn('Templates were previously ingested, skipping...')
-        return None
-    else:
-        # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
-        if not os.path.isdir(templateRepo):
-            os.mkdir(templateRepo)
-        for baseName in os.listdir(inputTemplates):
-            oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
-            if os.path.isdir(oldDir):
-                os.symlink(oldDir, os.path.join(templateRepo, baseName))
-        return None
 
 
 def _runIngestTask(task, args):
@@ -287,262 +535,8 @@ def _runIngestTask(task, args):
     task.run(parsedCmd)
 
 
-def _doIngest(config, repo, dataFiles, badFiles):
-    """Ingest raw DECam images into a repository with a corresponding registry
-
-    ``repo`` shall be populated with *links* to ``dataFiles``.
-
-    Parameters
-    ----------
-    config : `DatasetIngestConfig`
-        The ingestion configuration.
-    repo : `str`
-        The output repository location on disk where ingested raw images live.
-    dataFiles : `list` of `str`
-        A list of the filenames of each raw image file.
-    badFiles : `list` of `str`
-        A list of filenames to exclude from ingestion. Must not contain paths.
-        May contain wildcards.
-
-    Returns
-    -------
-    metadata : `PropertySet` or `None`
-        Metadata from the `IngestTask` for use by ``ap_verify``
-
-    Notes
-    -----
-    This function ingests *all* the images, not just the ones for the
-    specified visits and/or filters. We may want to revisit this in the future.
-    """
-    log = lsst.log.Log.getLogger('ap.pipe._doIngest')
-    if os.path.exists(os.path.join(repo, 'registry.sqlite3')):
-        log.warn('Raw images were previously ingested, skipping...')
-        return None
-    # TODO: make this a new-style repository (DM-12662)
-    if not os.path.isdir(repo):
-        os.mkdir(repo)
-    # make a text file that handles the mapper, per the obs_decam github README
-    with open(os.path.join(repo, '_mapper'), 'w') as f:
-        print('lsst.obs.decam.DecamMapper', file=f)
-    log.info('Ingesting raw images...')
-    # save arguments you'd put on the command line after 'ingestImagesDecam.py'
-    # (extend the list with all the filenames as the last set of arguments)
-    args = [repo, '--filetype', 'raw', '--mode', 'link']
-    if badFiles:
-        args.append('--badFile')
-        args.extend(badFiles)
-    args.extend(dataFiles)
-    ingestTask = config.dataIngester.apply()
-    _runIngestTask(ingestTask, args)
-
-    log.info('Images are now ingested in {0}'.format(repo))
-    metadata = ingestTask.getFullMetadata()
-    return metadata
-
-
-def _ingestRefcats(dataset, workspace):
-    """Ingest the refcats for use by LSST.
-
-    The original template repository shall not be modified.
-
-    Parameters
-    ----------
-    dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset on which the pipeline will be run.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location where ingestion repositories will be created.
-    """
-    _doIngestRefcats(_getConfig(dataset), workspace.dataRepo, dataset.refcatsLocation)
-
-
-def _doIngestRefcats(config, repo, refcats):
-    """Ingest refcats so they are visible to a particular repository.
-
-    Parameters
-    ----------
-    config : `DatasetIngestConfig`
-        The ingestion configuration.
-    repo : `str`
-        The output repository location on disk where ingested raw images live.
-    refcats : `str`
-        A directory containing .tar.gz files with LSST-formatted astrometric
-        or photometric reference catalog information.
-
-    Notes
-    -----
-    Refcats are not, at present, registered as part of the repository. They
-    are not guaranteed to be visible to anything other than a ``refObjLoader``.
-    """
-    for refcatName, tarball in config.refcats.items():
-        tarball = os.path.join(refcats, tarball)
-        refcatDir = os.path.join(repo, 'ref_cats', refcatName)
-        tarfile.open(tarball, 'r').extractall(refcatDir)
-
-
-def _flatBiasIngest(config, repo, calibRepo, calibDataFiles):
-    """Ingest DECam flats and biases
-
-    Parameters
-    ----------
-    config : `DatasetIngestConfig`
-        The ingestion configuration.
-    repo : `str`
-        The output repository location on disk where ingested raw images live.
-    calibRepo : `str`
-        The output repository location on disk where ingested calibration images live.
-    calibDataFiles : `list` of `str`
-        A list of the filenames of each flat and bias image file.
-
-    Returns
-    -------
-    metadata : `PropertySet` or `None`
-        Metadata from the `IngestCalibTask` (flats and biases) for use by ``ap_verify``
-    """
-    log = lsst.log.Log.getLogger('ap.pipe._flatBiasIngest')
-    log.info('Ingesting flats and biases...')
-    args = [repo, '--calib', calibRepo, '--mode', 'link', '--validity', str(config.calibValidity)]
-    args.extend(calibDataFiles)
-    calibIngestTask = config.calibIngester.apply()
-    try:
-        _runIngestTask(calibIngestTask, args)
-    except sqlite3.IntegrityError as detail:
-        log.error('sqlite3.IntegrityError: ', detail)
-        log.error('(sqlite3 doesn\'t think all the calibration files are unique)')
-        raise
-    else:
-        log.info('Success!')
-        log.info('Calibrations corresponding to {0} are now ingested in {1}'.format(repo, calibRepo))
-        metadata = calibIngestTask.getFullMetadata()
-    return metadata
-
-
-def _defectIngest(config, repo, calibRepo, defectFiles):
-    """Ingest DECam defect images
-
-    Parameters
-    ----------
-    config : `DatasetIngestConfig`
-        The ingestion configuration.
-    repo : `str`
-        The output repository location on disk where ingested raw images live.
-    calibRepo : `str`
-        The output repository location on disk where ingested calibration images live.
-    defectFiles : `list` of `str`
-        A list of the filenames of each defect image file.
-        The first element in this list must be the name of a .tar.gz file,
-        without the extension, which contains all the compressed defect images.
-
-    Returns
-    -------
-    metadata : `PropertySet` or `None`
-        Metadata from the `IngestCalibTask` (defects) for use by ``ap_verify``
-
-    Notes
-    -----
-    This function assumes very particular things about defect ingestion:
-    - They must live in a .tar.gz file in the same location on disk as the other calibs
-    - They will be ingested using ingestCalibs.py run from the ``calibRepo`` directory
-    - They will be manually uncompressed and saved in :file:`calibRepo/defects/<tarballname>/`.
-    - They will be added to the calib registry, but not linked like the flats and biases
-    """
-    # TODO: clean up implementation after DM-5467 resolved
-    log = lsst.log.Log.getLogger('ap.pipe._defectIngest')
-    if not defectFiles:
-        log.info("No defects to ingest, skipping...")
-        return None
-
-    absRepo = os.path.abspath(repo)
-    defectTarball = os.path.abspath(defectFiles[0] + '.tar.gz')
-    startDir = os.path.abspath(os.getcwd())
-    # CameraMapper does not accept absolute paths
-    os.chdir(calibRepo)
-    try:
-        os.mkdir('defects')
-    except OSError:
-        # most likely the defects directory already exists
-        if os.path.isdir('defects'):
-            log.warn('Defects were previously ingested, skipping...')
-            metadata = None
-        else:
-            log.error('Defect ingestion failed because \'defects\' dir could not be created')
-            raise
-    else:
-        log.info('Ingesting defects...')
-        defectargs = [absRepo, '--calib', '.', '--calibType', 'defect',
-                      '--mode', 'skip', '--validity', str(config.defectValidity)]
-        tarfile.open(defectTarball, 'r').extractall('defects')
-        defectFiles = []
-        for path, dirs, files in os.walk('defects'):
-            for file in files:
-                if file.endswith('.fits'):
-                    defectFiles.append(os.path.join(path, file))
-        defectargs.extend(defectFiles)
-        defectIngestTask = config.defectIngester.apply()
-        _runIngestTask(defectIngestTask, defectargs)
-        metadata = defectIngestTask.getFullMetadata()
-    finally:
-        os.chdir(startDir)
-    return metadata
-
-
-def _doIngestCalibs(config, repo, calibRepo, calibDataFiles, defectFiles):
-    """Ingest DECam MasterCal biases, flats, and defects into a calibration
-    repository with a corresponding registry.
-
-    ``calibRepo`` shall populated with *links* to ``calibDataFiles`` (bias and
-    flat images only). Defect images shall be registered in ``calibRepo`` but
-    not linked.
-
-    Parameters
-    ----------
-    config : `DatasetIngestConfig`
-        The ingestion configuration.
-    repo : `str`
-        The output repository location on disk where ingested raw images live.
-    calibRepo : `str`
-        The output repository location on disk where ingested calibration images live.
-    calibDataFiles : `list` of `str`
-        A list of the filenames of each flat and bias image file.
-    defectFiles : `list` of `str`
-            A list of the filenames of each defect image file.
-            The first element in this list must be the name of a .tar.gz file
-            which contains all the compressed defect images.
-
-    Returns
-    -------
-    metadata : `PropertySet` or `None`
-        Metadata from the `IngestCalibTask` (flats and biases) and from the
-        `IngestCalibTask` (defects) for use by ``ap_verify``
-
-    Notes
-    -----
-    calib ingestion ingests *all* the calibs, not just the ones needed
-    for certain visits. We may want to ...revisit... this in the future.
-    """
-    log = lsst.log.Log.getLogger('ap.pipe._doIngestCalibs')
-    if not os.path.isdir(calibRepo):
-        os.mkdir(calibRepo)
-        flatBiasMetadata = _flatBiasIngest(config, repo, calibRepo, calibDataFiles)
-        defectMetadata = _defectIngest(config, repo, calibRepo, defectFiles)
-    elif os.path.exists(os.path.join(calibRepo, 'cpBIAS')):
-        log.warn('Flats and biases were previously ingested, skipping...')
-        flatBiasMetadata = None
-        defectMetadata = _defectIngest(config, repo, calibRepo, defectFiles)
-    else:
-        flatBiasMetadata = _flatBiasIngest(config, repo, calibRepo, calibDataFiles)
-        defectMetadata = _defectIngest(config, repo, calibRepo, defectFiles)
-    # Handle the case where one or both of the calib metadatas may be None
-    if flatBiasMetadata is not None:
-        calibIngestMetadata = flatBiasMetadata
-        if defectMetadata is not None:
-            calibIngestMetadata.combine(defectMetadata)
-    else:
-        calibIngestMetadata = defectMetadata
-    return calibIngestMetadata
-
-
 def _getCalibDataFiles(config, calibLocation):
-    """Retrieve a list of the DECam MasterCal flat and bias files for use during ingestion.
+    """Retrieve a list of the flat and bias files for use during ingestion.
 
     Parameters
     ----------
@@ -569,7 +563,7 @@ def _getCalibDataFiles(config, calibLocation):
 
 
 def _getDefectFiles(defectLocation, defectTarball):
-    """Retrieve a list of the DECam defect files for use during ingestion.
+    """Retrieve a list of the defect files for use during ingestion.
 
     Parameters
     ----------
