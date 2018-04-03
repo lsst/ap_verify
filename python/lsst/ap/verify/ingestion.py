@@ -180,7 +180,7 @@ def _ingestRaws(dataset, workspace):
     dataset.makeCompatibleRepo(workspace.dataRepo)
     config = _getConfig(dataset)
     dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in config.dataFiles]
-    return _doIngest(config, workspace.dataRepo, dataFiles)
+    return _doIngest(config, workspace.dataRepo, dataFiles, config.dataBadFiles)
 
 
 def _ingestCalibs(dataset, workspace):
@@ -279,7 +279,7 @@ def _runIngestTask(task, args):
     task.run(parsedCmd)
 
 
-def _doIngest(config, repo, dataFiles):
+def _doIngest(config, repo, dataFiles, badFiles):
     """Ingest raw DECam images into a repository with a corresponding registry
 
     ``repo`` shall be populated with *links* to ``dataFiles``.
@@ -292,6 +292,9 @@ def _doIngest(config, repo, dataFiles):
         The output repository location on disk where ingested raw images live.
     dataFiles : `list` of `str`
         A list of the filenames of each raw image file.
+    badFiles : `list` of `str`
+        A list of filenames to exclude from ingestion. Must not contain paths.
+        May contain wildcards.
 
     Returns
     -------
@@ -317,6 +320,9 @@ def _doIngest(config, repo, dataFiles):
     # save arguments you'd put on the command line after 'ingestImagesDecam.py'
     # (extend the list with all the filenames as the last set of arguments)
     args = [repo, '--filetype', 'raw', '--mode', 'link']
+    if badFiles:
+        args.append('--badFile')
+        args.extend(badFiles)
     args.extend(dataFiles)
     ingestTask = config.dataIngester.apply()
     _runIngestTask(ingestTask, args)
