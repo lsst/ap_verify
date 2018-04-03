@@ -191,6 +191,12 @@ class Dataset(object):
         return os.path.join(self.datasetRoot, 'templates')
 
     @property
+    def configLocation(self):
+        """The directory containing configs that can be used to process the dataset (`str`, read-only).
+        """
+        return os.path.join(self.datasetRoot, 'config')
+
+    @property
     def _stubInputRepo(self):
         """The directory containing the data set's input stub (`str`, read-only).
         """
