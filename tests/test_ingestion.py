@@ -28,13 +28,13 @@ import shutil
 import tempfile
 import unittest
 
+from lsst.utils import getPackageDir
 import lsst.utils.tests
 import lsst.pex.exceptions as pexExcept
 import lsst.daf.persistence as dafPersist
 import lsst.ap.verify.ingestion as ingestion
 
-from lsst.obs.decam.ingest import DecamIngestTask, DecamParseTask
-from lsst.obs.decam.ingestCalibs import DecamCalibsParseTask
+from lsst.obs.decam.ingest import DecamIngestTask
 
 
 # TODO: convert test data to obs_test in DM-13849
@@ -75,11 +75,12 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         # Making the directory appears to be both necessary and sufficient
         os.mkdir(self._calibRepo)
 
+        decamDir = os.path.join(getPackageDir('obs_decam'), 'config')
         config = ingestion.DatasetIngestConfig()
         config.dataIngester.retarget(DecamIngestTask)
-        config.dataIngester.parse.retarget(DecamParseTask)
-        config.calibIngester.parse.retarget(DecamCalibsParseTask)
-        config.defectIngester.parse.retarget(DecamCalibsParseTask)
+        config.dataIngester.load(os.path.join(decamDir, 'ingest.py'))
+        config.calibIngester.load(os.path.join(decamDir, 'ingestCalibs.py'))
+        config.defectIngester.load(os.path.join(decamDir, 'ingestCalibs.py'))
         config.defectTarball = 'defects_2014-12-05.tar.gz'
         self._task = ingestion.DatasetIngestTask(config=config)
 

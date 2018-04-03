@@ -132,6 +132,9 @@ class DatasetIngestTask(pipeBase.Task):
 
     def __init__(self, *args, **kwargs):
         pipeBase.Task.__init__(self, *args, **kwargs)
+        self.makeSubtask("dataIngester")
+        self.makeSubtask("calibIngester")
+        self.makeSubtask("defectIngester")
 
     def run(self, dataset, workspace):
         """Ingest the contents of a dataset into a Butler repository.
@@ -161,15 +164,10 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The abstract location where ingestion repositories will be created.
-
-        Returns
-        -------
-        metadata : `lsst.daf.base.PropertySet`
-            The full metadata from any Tasks called by this function, or `None`.
         """
         dataset.makeCompatibleRepo(workspace.dataRepo)
         dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in self.config.dataFiles]
-        return self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+        self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
 
     def _doIngest(self, repo, dataFiles, badFiles):
         """Ingest raw images into a repository.
@@ -185,15 +183,10 @@ class DatasetIngestTask(pipeBase.Task):
         badFiles : `list` of `str`
             A list of filenames to exclude from ingestion. Must not contain paths.
             May contain wildcards.
-
-        Returns
-        -------
-        metadata : `PropertySet` or `None`
-            Metadata from the `IngestTask` for use by ``ap_verify``
         """
         if os.path.exists(os.path.join(repo, "registry.sqlite3")):
             self.log.info("Raw images were previously ingested, skipping...")
-            return None
+            return
         # TODO: make this a new-style repository (DM-12662)
         if not os.path.isdir(repo):
             os.mkdir(repo)
@@ -207,12 +200,9 @@ class DatasetIngestTask(pipeBase.Task):
         if badFiles:
             args.append('--badFile')
             args.extend(badFiles)
-        ingestTask = self.config.dataIngester.apply()
-        _runIngestTask(ingestTask, args)
+        _runIngestTask(self.dataIngester, args)
 
         self.log.info("Images are now ingested in {0}".format(repo))
-        metadata = ingestTask.getFullMetadata()
-        return metadata
 
     def _ingestCalibs(self, dataset, workspace):
         """Ingest the calibration files for use by LSST.
@@ -225,18 +215,13 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The abstract location where ingestion repositories will be created.
-
-        Returns
-        -------
-        metadata : `lsst.daf.base.PropertySet`
-            The full metadata from any Tasks called by this function, or `None`.
         """
         calibDataFiles = _getCalibDataFiles(self.config, dataset.calibLocation)
         if self.config.defectTarball:
             defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
         else:
             defectFiles = []
-        return self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
+        self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
 
     def _doIngestCalibs(self, repo, calibRepo, calibDataFiles, defectFiles):
         """Ingest calibration files into a calibration repository.
@@ -259,32 +244,17 @@ class DatasetIngestTask(pipeBase.Task):
             the name of a .tar.gz file that contains all the compressed
             defect images, while the remaining elements are the defect images
             themselves.
-
-        Returns
-        -------
-        metadata : `PropertySet` or `None`
-            Metadata from the `IngestCalibTask` (flats and biases) and from the
-            `IngestCalibTask` (defects) for use by ``ap_verify``
         """
         if not os.path.isdir(calibRepo):
             os.mkdir(calibRepo)
-            flatBiasMetadata = self._flatBiasIngest(repo, calibRepo, calibDataFiles)
-            defectMetadata = self._defectIngest(repo, calibRepo, defectFiles)
+            self._flatBiasIngest(repo, calibRepo, calibDataFiles)
+            self._defectIngest(repo, calibRepo, defectFiles)
         elif os.path.exists(os.path.join(calibRepo, "cpBIAS")):
             self.log.info("Flats and biases were previously ingested, skipping...")
-            flatBiasMetadata = None
-            defectMetadata = self._defectIngest(repo, calibRepo, defectFiles)
+            self._defectIngest(repo, calibRepo, defectFiles)
         else:
-            flatBiasMetadata = self._flatBiasIngest(repo, calibRepo, calibDataFiles)
-            defectMetadata = self._defectIngest(repo, calibRepo, defectFiles)
-        # Handle the case where one or both of the calib metadatas may be None
-        if flatBiasMetadata is not None:
-            calibIngestMetadata = flatBiasMetadata
-            if defectMetadata is not None:
-                calibIngestMetadata.combine(defectMetadata)
-        else:
-            calibIngestMetadata = defectMetadata
-        return calibIngestMetadata
+            self._flatBiasIngest(repo, calibRepo, calibDataFiles)
+            self._defectIngest(repo, calibRepo, defectFiles)
 
     def _flatBiasIngest(self, repo, calibRepo, calibDataFiles):
         """Ingest flats and biases into a calibration repository.
@@ -297,18 +267,12 @@ class DatasetIngestTask(pipeBase.Task):
             The output repository location on disk for calibration files.
         calibDataFiles : `list` of `str`
             A list of filenames to ingest. May contain wildcards.
-
-        Returns
-        -------
-        metadata : `PropertySet` or `None`
-            Metadata from the `IngestCalibTask` (flats and biases) for use by ``ap_verify``
         """
         self.log.info("Ingesting flats and biases...")
         args = [repo, "--calib", calibRepo, "--mode", "link", "--validity", str(self.config.calibValidity)]
         args.extend(calibDataFiles)
-        calibIngestTask = self.config.calibIngester.apply()
         try:
-            _runIngestTask(calibIngestTask, args)
+            _runIngestTask(self.calibIngester, args)
         except sqlite3.IntegrityError as detail:
             self.log.error("sqlite3.IntegrityError: ", detail)
             self.log.error("(sqlite3 doesn't think all the calibration files are unique)")
@@ -316,8 +280,6 @@ class DatasetIngestTask(pipeBase.Task):
         else:
             self.log.info("Success!")
             self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(repo, calibRepo))
-            metadata = calibIngestTask.getFullMetadata()
-        return metadata
 
     def _defectIngest(self, repo, calibRepo, defectFiles):
         """Ingest defect images.
@@ -334,11 +296,6 @@ class DatasetIngestTask(pipeBase.Task):
             defect images, while the remaining elements are the defect images
             themselves.
 
-        Returns
-        -------
-        metadata : `PropertySet` or `None`
-            Metadata from the `IngestCalibTask` (defects) for use by ``ap_verify``
-
         Notes
         -----
         This function assumes very particular things about defect ingestion:
@@ -350,7 +307,7 @@ class DatasetIngestTask(pipeBase.Task):
         # TODO: clean up implementation after DM-5467 resolved
         if not defectFiles:
             self.log.info("No defects to ingest, skipping...")
-            return None
+            return
 
         absRepo = os.path.abspath(repo)
         defectTarball = os.path.abspath(defectFiles[0] + ".tar.gz")
@@ -363,7 +320,6 @@ class DatasetIngestTask(pipeBase.Task):
             # most likely the defects directory already exists
             if os.path.isdir("defects"):
                 self.log.info("Defects were previously ingested, skipping...")
-                metadata = None
             else:
                 self.log.error("Defect ingestion failed because 'defects' dir could not be created")
                 raise
@@ -378,12 +334,9 @@ class DatasetIngestTask(pipeBase.Task):
                     if file.endswith(".fits"):
                         defectFiles.append(os.path.join(path, file))
             defectargs.extend(defectFiles)
-            defectIngestTask = self.config.defectIngester.apply()
-            _runIngestTask(defectIngestTask, defectargs)
-            metadata = defectIngestTask.getFullMetadata()
+            _runIngestTask(self.defectIngester, defectargs)
         finally:
             os.chdir(startDir)
-        return metadata
 
     def _ingestRefcats(self, dataset, workspace):
         """Ingest the refcats for use by LSST.
@@ -431,13 +384,8 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The abstract location where ingestion repositories will be created.
-
-        Returns
-        -------
-        metadata : `lsst.daf.base.PropertySet`
-            The full metadata from any Tasks called by this function, or `None`.
         """
-        return self._doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
+        self._doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
 
     def _doIngestTemplates(self, templateRepo, inputTemplates):
         """Ingest templates into the input repository, so that
@@ -452,16 +400,10 @@ class DatasetIngestTask(pipeBase.Task):
             The output repository location on disk for templates.
         inputTemplates: `str`
             The input repository location where templates have been previously computed.
-
-        Returns
-        -------
-        calibingest_metadata: `PropertySet` or None
-            Metadata from any tasks run by this method
         """
         # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
         if os.path.exists(os.path.join(templateRepo, "deepCoadd")):
             self.log.info("Templates were previously ingested, skipping...")
-            return None
         else:
             # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
             if not os.path.isdir(templateRepo):
@@ -470,7 +412,6 @@ class DatasetIngestTask(pipeBase.Task):
                 oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
                 if os.path.isdir(oldDir):
                     os.symlink(oldDir, os.path.join(templateRepo, baseName))
-            return None
 
 
 def ingestDataset(dataset, workspace):
