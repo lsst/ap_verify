@@ -32,7 +32,7 @@ instruments in the future.
 
 from __future__ import absolute_import, division, print_function
 
-__all__ = ["ingestDataset"]
+__all__ = ["DatasetIngestConfig", "ingestDataset"]
 
 import os
 import tarfile
@@ -40,15 +40,78 @@ from glob import glob
 import sqlite3
 
 import lsst.log
+import lsst.pex.config as pexConfig
 from lsst.obs.decam import ingest
 from lsst.obs.decam import ingestCalibs
 from lsst.obs.decam.ingest import DecamParseTask
-from lsst.pipe.tasks.ingest import IngestConfig
+from lsst.pipe.tasks.ingest import IngestConfig, IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsConfig, IngestCalibsTask
 import lsst.daf.base as dafBase
 
 # Name of defects tarball residing in dataset's defects directory
 _DEFECT_TARBALL = 'defects_2014-12-05.tar.gz'
+
+
+class DatasetIngestConfig(pexConfig.Config):
+    """Settings and defaults for `DatasetIngestTask`.
+
+    The correct targets for this task's subtasks can be found in the
+    documentation of the appropriate ``obs`` package.
+
+    Because `DatasetIngestTask` is not designed to be run from the command line,
+    and its arguments are completely determined by the choice of dataset,
+    this config includes settings that would normally be passed as command-line
+    arguments to `IngestTask`.
+    """
+
+    dataIngester = pexConfig.ConfigurableField(
+        target=IngestTask,
+        doc="Task used to perform raw data ingestion.",
+    )
+    dataFiles = pexConfig.ListField(
+        dtype=str,
+        default=["*.fits", "*.fz"],
+        doc="Names of raw science files (no path; wildcards allowed) to ingest from the dataset.",
+    )
+    dataBadFiles = pexConfig.ListField(
+        dtype=str,
+        default=[],
+        doc="Names of raw science files (no path; wildcards allowed) to not ingest, "
+            "supersedes ``dataFiles``.",
+    )
+
+    calibIngester = pexConfig.ConfigurableField(
+        target=IngestCalibsTask,
+        doc="Task used to ingest flats, biases, darks, fringes, or sky.",
+    )
+    calibFiles = pexConfig.ListField(
+        dtype=str,
+        default=["*.fits", "*.fz"],
+        doc="Names of calib files (no path; wildcards allowed) to ingest from the dataset.",
+    )
+    calibBadFiles = pexConfig.ListField(
+        dtype=str,
+        default=[],
+        doc="Names of calib files (no path; wildcards allowed) to not ingest, supersedes ``calibFiles``.",
+    )
+
+    defectIngester = pexConfig.ConfigurableField(
+        target=IngestCalibsTask,
+        doc="Task used to ingest defects.",
+    )
+    defectTarball = pexConfig.Field(
+        dtype=str,
+        default=None,
+        doc="Name of tar.gz file containing defects. May be empty. Defect files may be in any format and "
+            "directory layout supported by the obs package.",
+    )
+
+    refcats = pexConfig.DictField(
+        keytype=str,
+        itemtype=str,
+        default={},
+        doc="Map from a refcat name to a tar.gz file containing the sharded catalog. May be empty.",
+    )
 
 
 def ingestDataset(dataset, workspace):
