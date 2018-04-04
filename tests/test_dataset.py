@@ -85,8 +85,9 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
             self._testbed.makeCompatibleRepo(outputDir)
             self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
             self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')),
-                            'Output directory must have a _mapper file.')
+            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')) or
+                            os.path.exists(os.path.join(outputDir, 'repositoryCfg.yaml')),
+                            'Output directory must have a _mapper or repositoryCfg.yaml file.')
         finally:
             if os.path.exists(testDir):
                 shutil.rmtree(testDir, ignore_errors=True)
@@ -107,8 +108,9 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
             self._testbed.makeCompatibleRepo(outputDir)
             self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
             self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')),
-                            'Output directory must have a _mapper file.')
+            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')) or
+                            os.path.exists(os.path.join(outputDir, 'repositoryCfg.yaml')),
+                            'Output directory must have a _mapper or repositoryCfg.yaml file.')
         finally:
             if os.path.exists(testDir):
                 shutil.rmtree(testDir, ignore_errors=True)

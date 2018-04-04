@@ -150,7 +150,6 @@ class DatasetIngestTask(pipeBase.Task):
         self._ingestCalibs(dataset, workspace)
         self._ingestDefects(dataset, workspace)
         self._ingestRefcats(dataset, workspace)
-        self._ingestTemplates(dataset, workspace)
 
     def _makeRepos(self, dataset, workspace):
         """Create empty repositories to ingest into.
@@ -260,7 +259,9 @@ class DatasetIngestTask(pipeBase.Task):
             but may include flats, biases, darks, fringes, or sky. May contain
             wildcards.
         """
-        args = [repo, "--calib", calibRepo, "--mode", "link", "--validity", str(self.config.calibValidity)]
+        # TODO: --output is workaround for DM-11668
+        args = [repo, "--calib", calibRepo, "--output", os.path.join(calibRepo, "dummy"),
+                "--mode", "link", "--validity", str(self.config.calibValidity)]
         args.extend(calibDataFiles)
         try:
             _runIngestTask(self.calibIngester, args)
@@ -316,7 +317,9 @@ class DatasetIngestTask(pipeBase.Task):
         tarfile.open(defectTarball, "r").extractall(defectDir)
         defectFiles = _findMatchingFiles(defectDir, ["*.*"])
 
-        defectargs = [repo, "--calib", calibRepo, "--calibType", "defect",
+        # TODO: --output is workaround for DM-11668
+        defectargs = [repo, "--calib", calibRepo, "--output", os.path.join(calibRepo, "dummy"),
+                      "--calibType", "defect",
                       "--mode", "skip", "--validity", str(self.config.defectValidity)]
         defectargs.extend(defectFiles)
         try:
@@ -367,46 +370,6 @@ class DatasetIngestTask(pipeBase.Task):
             tarball = os.path.join(refcats, tarball)
             refcatDir = os.path.join(repo, "ref_cats", refcatName)
             tarfile.open(tarball, "r").extractall(refcatDir)
-
-    def _ingestTemplates(self, dataset, workspace):
-        """Ingest the templates for use by LSST.
-
-        After this method returns, the data repository in ``workspace`` shall
-        contain the templates from ``dataset``. Butler operations on the
-        repository shall not be able to modify ``dataset`` or its template
-        repository.
-
-        Parameters
-        ----------
-        dataset : `lsst.ap.verify.dataset.Dataset`
-            The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
-            The location containing all ingestion repositories.
-        """
-        # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
-        if os.path.exists(os.path.join(workspace.templateRepo, "deepCoadd")) \
-                or os.path.exists(os.path.join(workspace.templateRepo, "goodSeeingCoadd")):
-            self.log.info("Templates were previously ingested, skipping...")
-        else:
-            self.log.info("Ingesting templates...")
-            self._doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
-            self.log.info("Templates are now visible to {0}".format(workspace.dataRepo))
-
-    def _doIngestTemplates(self, templateRepo, inputTemplates):
-        """Ingest templates into the input repository.
-
-        Parameters
-        ----------
-        templateRepo: `str`
-            The output repository location on disk for templates. Must exist.
-        inputTemplates: `str`
-            The input repository location where templates have been previously computed.
-        """
-        # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
-        for baseName in os.listdir(inputTemplates):
-            oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
-            if os.path.isdir(oldDir):
-                os.symlink(oldDir, os.path.join(templateRepo, baseName))
 
 
 def ingestDataset(dataset, workspace):

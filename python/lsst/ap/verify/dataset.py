@@ -24,7 +24,6 @@
 from __future__ import absolute_import, division, print_function
 
 import os
-import shutil
 from future.utils import raise_from
 
 from lsst.daf.persistence import Butler
@@ -32,36 +31,6 @@ import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
 from .config import Config
-
-
-def _nicecopy(src, dst):
-    """Recursively copy a directory, ignoring any files that already exist at
-    the destination.
-
-    Parameters
-    ----------
-    src : `str`
-        The directory whose contents will be copied. Symbolic links will
-        be duplicated in `dst`, but will not be followed.
-    dst : `str`
-        The directory to which `src` and its contents will be copied.
-    """
-    # Can't use exceptions to distinguish pre-existing directory from I/O failures until Python 3
-    if not os.path.exists(dst):
-        os.makedirs(dst)
-
-    for baseName in os.listdir(src):
-        old = os.path.join(src, baseName)
-        new = os.path.join(dst, baseName)
-
-        if not os.path.islink(old) and os.path.isdir(old):
-            _nicecopy(old, new)
-        elif not os.path.exists(new):
-            if os.path.islink(old):
-                target = os.readlink(old)
-                os.symlink(target, new)
-            else:
-                shutil.copy2(old, new)
 
 
 class Dataset(object):
@@ -243,7 +212,7 @@ class Dataset(object):
             raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcatsLocation)
         if not os.path.exists(self._stubInputRepo):
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing stub repo')
-        if not os.path.exists(os.path.join(self._stubInputRepo, '_mapper')):
+        if not _isRepo(self._stubInputRepo):
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
     def makeCompatibleRepo(self, repoDir):
@@ -257,5 +226,17 @@ class Dataset(object):
         repoDir : `str`
             The directory where the output repository will be created.
         """
-        # shutil.copytree has wrong behavior for existing destinations, do it by hand
-        _nicecopy(self._stubInputRepo, repoDir)
+        if _isRepo(self.templateLocation):
+            # Stub repo is not a parent because can't mix v1 and v2 repositories in parents list
+            Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
+                   outputs=[{"root": repoDir, "mode": "rw"}])
+        else:
+            Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
+                   outputs=[{"root": repoDir, "mode": "rw"}])
+
+
+def _isRepo(repoDir):
+    """Test whether a directory has been set up as a repository.
+    """
+    return os.path.exists(os.path.join(repoDir, '_mapper')) \
+        or os.path.exists(os.path.join(repoDir, 'repositoryCfg.yaml'))
