@@ -138,10 +138,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testDefectIngest(self):
         """Test that ingesting defects adds them to a repository.
         """
-        files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects'),
-                 os.path.basename(IngestionTestSuite.defectDataId['path'])]
+        tarFile = os.path.join(IngestionTestSuite.testApVerifyData, 'defects.tar.gz')
 
-        self._task._doIngestDefects(self._repo, self._calibRepo, files)
+        self._task._doIngestDefects(self._repo, self._calibRepo, tarFile)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('defects', dataId=IngestionTestSuite.defectDataId))
@@ -155,9 +154,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         self._task._doIngest(self._repo, files, [])
         self._task._doIngestCalibs(self._repo, self._calibRepo, files)
-
-        files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects')]
-        self._task._doIngestDefects(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))

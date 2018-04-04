@@ -291,13 +291,13 @@ class DatasetIngestTask(pipeBase.Task):
 
             if self.config.defectTarball:
                 self.log.info("Ingesting defects...")
-                defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
-                self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, defectFiles)
+                defectFile = os.path.join(dataset.defectLocation, self.config.defectTarball)
+                self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, defectFile)
                 self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
             else:
                 self.log.info("No defects to ingest, skipping...")
 
-    def _doIngestDefects(self, repo, calibRepo, defectFiles):
+    def _doIngestDefects(self, repo, calibRepo, defectTarball):
         """Ingest defect images.
 
         Parameters
@@ -307,11 +307,9 @@ class DatasetIngestTask(pipeBase.Task):
         calibRepo : `str`
             The output repository location on disk for calibration files. Must
             exist.
-        defectFiles : `list` of `str`
-            A list of defect filenames. The first element in this list must be
-            the name of a .tar.gz file that contains all the compressed
-            defect images, while the remaining elements are the defect images
-            themselves.
+        defectTarball : `str`
+            The name of a .tar.gz file that contains all the compressed
+            defect images.
 
         Notes
         -----
@@ -323,7 +321,7 @@ class DatasetIngestTask(pipeBase.Task):
         """
         # TODO: clean up implementation after DM-5467 resolved
         absRepo = os.path.abspath(repo)
-        defectTarball = os.path.abspath(defectFiles[0] + ".tar.gz")
+        defectTarball = os.path.abspath(defectTarball)
         startDir = os.path.abspath(os.getcwd())
         # CameraMapper does not accept absolute paths
         os.chdir(calibRepo)
@@ -525,27 +523,3 @@ def _getCalibDataFiles(config, calibLocation):
         if all(not fnmatch.fnmatch(calibFile, string) for string in filesToIgnore):
             calibDataFiles.append(calibFile)
     return calibDataFiles
-
-
-def _getDefectFiles(defectLocation, defectTarball):
-    """Retrieve a list of the defect files for use during ingestion.
-
-    Parameters
-    ----------
-    defectLocation : `str`
-        The path on disk to where the defect tarball lives.
-    defectTarball : `str`
-        The filename of the tarball containing the defect files.
-
-    Returns
-    -------
-    defectFiles : `list` of `str`
-        A list of the filenames of each defect image file.
-        The first element in this list will be the name of a .tar.gz file
-        which contains all the compressed defect images.
-    """
-    # Retrieve defect filenames from tarball
-    defectTarfilePath = os.path.join(defectLocation, defectTarball)
-    defectFiles = tarfile.open(defectTarfilePath).getnames()
-    defectFiles = [os.path.join(defectLocation, defectFile) for defectFile in defectFiles]
-    return defectFiles
