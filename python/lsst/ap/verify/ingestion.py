@@ -150,6 +150,7 @@ class DatasetIngestTask(pipeBase.Task):
         """
         self._ingestRaws(dataset, workspace)
         self._ingestCalibs(dataset, workspace)
+        self._ingestDefects(dataset, workspace)
         self._ingestRefcats(dataset, workspace)
         self._ingestTemplates(dataset, workspace)
 
@@ -217,47 +218,17 @@ class DatasetIngestTask(pipeBase.Task):
             The abstract location where ingestion repositories will be created.
         """
         calibDataFiles = _getCalibDataFiles(self.config, dataset.calibLocation)
-        if self.config.defectTarball:
-            defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
-        else:
-            defectFiles = []
-        self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles, defectFiles)
 
-    def _doIngestCalibs(self, repo, calibRepo, calibDataFiles, defectFiles):
-        """Ingest calibration files into a calibration repository.
+        if not os.path.isdir(workspace.calibRepo):
+            os.mkdir(workspace.calibRepo)
 
-        ``calibRepo`` shall be populated with *links* to ``calibDataFiles``.
-        Defect images shall be registered in ``calibRepo`` but not linked.
-
-        Parameters
-        ----------
-        repo : `str`
-            The output repository location on disk for raw images.
-        calibRepo : `str`
-            The output repository location on disk for calibration files.
-        calibDataFiles : `list` of `str`
-            A list of non-defect filenames to ingest. Supported files vary by
-            instrument but may include flats, biases, darks, fringes, or sky.
-            May contain wildcards.
-        defectFiles : `list` of `str`
-            A list of defect filenames. The first element in this list must be
-            the name of a .tar.gz file that contains all the compressed
-            defect images, while the remaining elements are the defect images
-            themselves.
-        """
-        if not os.path.isdir(calibRepo):
-            os.mkdir(calibRepo)
-            self._flatBiasIngest(repo, calibRepo, calibDataFiles)
-            self._defectIngest(repo, calibRepo, defectFiles)
-        elif os.path.exists(os.path.join(calibRepo, "cpBIAS")):
+        if os.path.exists(os.path.join(workspace.calibRepo, "cpBIAS")):
             self.log.info("Flats and biases were previously ingested, skipping...")
-            self._defectIngest(repo, calibRepo, defectFiles)
         else:
-            self._flatBiasIngest(repo, calibRepo, calibDataFiles)
-            self._defectIngest(repo, calibRepo, defectFiles)
+            self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles)
 
-    def _flatBiasIngest(self, repo, calibRepo, calibDataFiles):
-        """Ingest flats and biases into a calibration repository.
+    def _doIngestCalibs(self, repo, calibRepo, calibDataFiles):
+        """Ingest calibration images into a calibration repository.
 
         Parameters
         ----------
@@ -266,7 +237,9 @@ class DatasetIngestTask(pipeBase.Task):
         calibRepo : `str`
             The output repository location on disk for calibration files.
         calibDataFiles : `list` of `str`
-            A list of filenames to ingest. May contain wildcards.
+            A list of filenames to ingest. Supported files vary by instrument
+            but may include flats, biases, darks, fringes, or sky. May contain
+            wildcards.
         """
         self.log.info("Ingesting flats and biases...")
         args = [repo, "--calib", calibRepo, "--mode", "link", "--validity", str(self.config.calibValidity)]
@@ -281,7 +254,29 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Success!")
             self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(repo, calibRepo))
 
-    def _defectIngest(self, repo, calibRepo, defectFiles):
+    def _ingestDefects(self, dataset, workspace):
+        """Ingest the defect files for use by LSST.
+
+        The original calibration directory shall not be modified.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset on which the pipeline will be run.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+        """
+        if self.config.defectTarball:
+            defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
+        else:
+            defectFiles = []
+
+        if not os.path.isdir(workspace.calibRepo):
+            os.mkdir(workspace.calibRepo)
+
+        self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, defectFiles)
+
+    def _doIngestDefects(self, repo, calibRepo, defectFiles):
         """Ingest defect images.
 
         Parameters

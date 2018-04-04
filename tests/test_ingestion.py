@@ -129,7 +129,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                   'zci.fits']
                  ]
 
-        self._task._flatBiasIngest(self._repo, self._calibRepo, files)
+        self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('cpBias', dataId=IngestionTestSuite.calibDataId))
@@ -141,7 +141,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects'),
                  os.path.basename(IngestionTestSuite.defectDataId['path'])]
 
-        self._task._defectIngest(self._repo, self._calibRepo, files)
+        self._task._doIngestDefects(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('defects', dataId=IngestionTestSuite.defectDataId))
@@ -154,10 +154,10 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = []
 
         self._task._doIngest(self._repo, files, [])
-        self._task._flatBiasIngest(self._repo, self._calibRepo, files)
+        self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects')]
-        self._task._defectIngest(self._repo, self._calibRepo, files)
+        self._task._doIngestDefects(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))
