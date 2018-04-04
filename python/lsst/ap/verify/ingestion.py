@@ -148,27 +148,56 @@ class DatasetIngestTask(pipeBase.Task):
             If the repositories already exist, they must support the same
             ``obs`` package as this task's subtasks.
         """
+        self._makeRepos(dataset, workspace)
         self._ingestRaws(dataset, workspace)
         self._ingestCalibs(dataset, workspace)
         self._ingestDefects(dataset, workspace)
         self._ingestRefcats(dataset, workspace)
         self._ingestTemplates(dataset, workspace)
 
+    def _makeRepos(self, dataset, workspace):
+        """Create empty repositories to ingest into.
+
+        After this method returns, all repositories mentioned by ``workspace``
+        except ``workspace.outputRepo`` shall be valid repositories compatible
+        with ``dataset``. They may be empty.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset to be ingested.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The abstract location where ingestion repositories will be created.
+            If the repositories already exist, they must support the same
+            ``obs`` package as this task's subtasks.
+        """
+        dataset.makeCompatibleRepo(workspace.dataRepo)
+        if not os.path.isdir(workspace.calibRepo):
+            os.mkdir(workspace.calibRepo)
+        if not os.path.isdir(workspace.templateRepo):
+            os.mkdir(workspace.templateRepo)
+
     def _ingestRaws(self, dataset, workspace):
         """Ingest the science data for use by LSST.
 
-        The original data directory shall not be modified.
+        After this method returns, the data repository in ``workspace`` shall
+        contain all science data from ``dataset``. Butler operations on the
+        repository shall not be able to modify ``dataset``.
 
         Parameters
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
-            The abstract location where ingestion repositories will be created.
+            The location containing all ingestion repositories.
         """
-        dataset.makeCompatibleRepo(workspace.dataRepo)
-        dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in self.config.dataFiles]
-        self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+        if os.path.exists(os.path.join(workspace.dataRepo, "registry.sqlite3")):
+            self.log.info("Raw images were previously ingested, skipping...")
+        else:
+            self.log.info("Ingesting raw images...")
+            dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in self.config.dataFiles]
+            self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+            self.log.info("Images are now ingested in {0}".format(workspace.dataRepo))
 
     def _doIngest(self, repo, dataFiles, badFiles):
         """Ingest raw images into a repository.
@@ -178,54 +207,45 @@ class DatasetIngestTask(pipeBase.Task):
         Parameters
         ----------
         repo : `str`
-            The output repository location on disk for raw images.
+            The output repository location on disk for raw images. Must exist.
         dataFiles : `list` of `str`
             A list of filenames to ingest. May contain wildcards.
         badFiles : `list` of `str`
             A list of filenames to exclude from ingestion. Must not contain paths.
             May contain wildcards.
         """
-        if os.path.exists(os.path.join(repo, "registry.sqlite3")):
-            self.log.info("Raw images were previously ingested, skipping...")
-            return
-        # TODO: make this a new-style repository (DM-12662)
-        if not os.path.isdir(repo):
-            os.mkdir(repo)
-        # make a text file that handles the mapper, per the obs_decam github README
-        with open(os.path.join(repo, "_mapper"), "w") as f:
-            print("lsst.obs.decam.DecamMapper", file=f)
-
-        self.log.info("Ingesting raw images...")
         args = [repo, "--filetype", "raw", "--mode", "link"]
         args.extend(dataFiles)
         if badFiles:
             args.append('--badFile')
             args.extend(badFiles)
-        _runIngestTask(self.dataIngester, args)
-
-        self.log.info("Images are now ingested in {0}".format(repo))
+        try:
+            _runIngestTask(self.dataIngester, args)
+        except sqlite3.IntegrityError as detail:
+            raise RuntimeError("Not all raw files are unique") from detail
 
     def _ingestCalibs(self, dataset, workspace):
         """Ingest the calibration files for use by LSST.
 
-        The original calibration directory shall not be modified.
+        After this method returns, the calibration repository in ``workspace``
+        shall contain all calibration data from ``dataset``. Butler operations
+        on the repository shall not be able to modify ``dataset``.
 
         Parameters
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
-            The abstract location where ingestion repositories will be created.
+            The location containing all ingestion repositories.
         """
-        calibDataFiles = _getCalibDataFiles(self.config, dataset.calibLocation)
-
-        if not os.path.isdir(workspace.calibRepo):
-            os.mkdir(workspace.calibRepo)
-
         if os.path.exists(os.path.join(workspace.calibRepo, "cpBIAS")):
-            self.log.info("Flats and biases were previously ingested, skipping...")
+            self.log.info("Calibration files were previously ingested, skipping...")
         else:
+            self.log.info("Ingesting calibration files...")
+            calibDataFiles = _getCalibDataFiles(self.config, dataset.calibLocation)
             self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles)
+            self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(
+                workspace.dataRepo, workspace.calibRepo))
 
     def _doIngestCalibs(self, repo, calibRepo, calibDataFiles):
         """Ingest calibration images into a calibration repository.
@@ -233,48 +253,49 @@ class DatasetIngestTask(pipeBase.Task):
         Parameters
         ----------
         repo : `str`
-            The output repository location on disk for raw images.
+            The output repository location on disk for raw images. Must exist.
         calibRepo : `str`
-            The output repository location on disk for calibration files.
+            The output repository location on disk for calibration files. Must
+            exist.
         calibDataFiles : `list` of `str`
             A list of filenames to ingest. Supported files vary by instrument
             but may include flats, biases, darks, fringes, or sky. May contain
             wildcards.
         """
-        self.log.info("Ingesting flats and biases...")
         args = [repo, "--calib", calibRepo, "--mode", "link", "--validity", str(self.config.calibValidity)]
         args.extend(calibDataFiles)
         try:
             _runIngestTask(self.calibIngester, args)
         except sqlite3.IntegrityError as detail:
-            self.log.error("sqlite3.IntegrityError: ", detail)
-            self.log.error("(sqlite3 doesn't think all the calibration files are unique)")
-            raise
-        else:
-            self.log.info("Success!")
-            self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(repo, calibRepo))
+            raise RuntimeError("Not all calibration files are unique") from detail
 
     def _ingestDefects(self, dataset, workspace):
         """Ingest the defect files for use by LSST.
 
-        The original calibration directory shall not be modified.
+        After this method returns, the calibration repository in ``workspace``
+        shall contain all defects from ``dataset``. Butler operations on the
+        repository shall not be able to modify ``dataset``.
 
         Parameters
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
-            The abstract location where ingestion repositories will be created.
+            The location containing all ingestion repositories.
         """
-        if self.config.defectTarball:
-            defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
+        if os.path.exists(os.path.join(workspace.calibRepo, "defects")):
+            self.log.info("Defects were previously ingested, skipping...")
         else:
-            defectFiles = []
+            if not os.path.isdir(workspace.calibRepo):
+                os.mkdir(workspace.calibRepo)
 
-        if not os.path.isdir(workspace.calibRepo):
-            os.mkdir(workspace.calibRepo)
-
-        self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, defectFiles)
+            if self.config.defectTarball:
+                self.log.info("Ingesting defects...")
+                defectFiles = _getDefectFiles(dataset.defectLocation, self.config.defectTarball)
+                self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, defectFiles)
+                self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
+            else:
+                self.log.info("No defects to ingest, skipping...")
 
     def _doIngestDefects(self, repo, calibRepo, defectFiles):
         """Ingest defect images.
@@ -282,9 +303,10 @@ class DatasetIngestTask(pipeBase.Task):
         Parameters
         ----------
         repo : `str`
-            The output repository location on disk for raw images.
+            The output repository location on disk for raw images. Must exist.
         calibRepo : `str`
-            The output repository location on disk for calibration files.
+            The output repository location on disk for calibration files. Must
+            exist.
         defectFiles : `list` of `str`
             A list of defect filenames. The first element in this list must be
             the name of a .tar.gz file that contains all the compressed
@@ -300,10 +322,6 @@ class DatasetIngestTask(pipeBase.Task):
         - They will be added to the calib registry, but not linked like the flats and biases
         """
         # TODO: clean up implementation after DM-5467 resolved
-        if not defectFiles:
-            self.log.info("No defects to ingest, skipping...")
-            return
-
         absRepo = os.path.abspath(repo)
         defectTarball = os.path.abspath(defectFiles[0] + ".tar.gz")
         startDir = os.path.abspath(os.getcwd())
@@ -311,15 +329,6 @@ class DatasetIngestTask(pipeBase.Task):
         os.chdir(calibRepo)
         try:
             os.mkdir("defects")
-        except OSError:
-            # most likely the defects directory already exists
-            if os.path.isdir("defects"):
-                self.log.info("Defects were previously ingested, skipping...")
-            else:
-                self.log.error("Defect ingestion failed because 'defects' dir could not be created")
-                raise
-        else:
-            self.log.info("Ingesting defects...")
             defectargs = [absRepo, "--calib", ".", "--calibType", "defect",
                           "--mode", "skip", "--validity", str(self.config.defectValidity)]
             tarfile.open(defectTarball, "r").extractall("defects")
@@ -330,38 +339,49 @@ class DatasetIngestTask(pipeBase.Task):
                         defectFiles.append(os.path.join(path, file))
             defectargs.extend(defectFiles)
             _runIngestTask(self.defectIngester, defectargs)
+        except sqlite3.IntegrityError as detail:
+            raise RuntimeError("Not all defect files are unique") from detail
         finally:
             os.chdir(startDir)
 
     def _ingestRefcats(self, dataset, workspace):
         """Ingest the refcats for use by LSST.
 
-        The original template repository shall not be modified.
+        After this method returns, the data repository in ``workspace`` shall
+        contain all reference catalogs from ``dataset``. Operations on the
+        repository shall not be able to modify ``dataset``.
 
         Parameters
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
-            The abstract location where ingestion repositories will be created.
-        """
-        self._doIngestRefcats(workspace.dataRepo, dataset.refcatsLocation)
-
-    def _doIngestRefcats(self, repo, refcats):
-        """Ingest refcats so they are visible to a particular repository.
-
-        Parameters
-        ----------
-        repo : `str`
-            The output repository location on disk for raw images.
-        refcats : `str`
-            A directory containing .tar.gz files with LSST-formatted astrometric
-            or photometric reference catalog information.
+            The location containing all ingestion repositories.
 
         Notes
         -----
         Refcats are not, at present, registered as part of the repository. They
-        are not guaranteed to be visible to anything other than a ``refObjLoader``.
+        are not guaranteed to be visible to anything other than a
+        ``refObjLoader``. See the [refcat Community thread](https://community.lsst.org/t/1523)
+        for more details.
+        """
+        if os.path.exists(os.path.join(workspace.dataRepo, "ref_cats")):
+            self.log.info("Refcats were previously ingested, skipping...")
+        else:
+            self.log.info("Ingesting reference catalogs...")
+            self._doIngestRefcats(workspace.dataRepo, dataset.refcatsLocation)
+            self.log.info("Reference catalogs are now ingested in {0}".format(workspace.dataRepo))
+
+    def _doIngestRefcats(self, repo, refcats):
+        """Place refcats inside a particular repository.
+
+        Parameters
+        ----------
+        repo : `str`
+            The output repository location on disk for raw images. Must exist.
+        refcats : `str`
+            A directory containing .tar.gz files with LSST-formatted astrometric
+            or photometric reference catalog information.
         """
         for refcatName, tarball in self.config.refcats.items():
             tarball = os.path.join(refcats, tarball)
@@ -371,42 +391,41 @@ class DatasetIngestTask(pipeBase.Task):
     def _ingestTemplates(self, dataset, workspace):
         """Ingest the templates for use by LSST.
 
-        The original template repository shall not be modified.
+        After this method returns, the data repository in ``workspace`` shall
+        contain the templates from ``dataset``. Butler operations on the
+        repository shall not be able to modify ``dataset`` or its template
+        repository.
 
         Parameters
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
-            The abstract location where ingestion repositories will be created.
+            The location containing all ingestion repositories.
         """
-        self._doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
+        # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
+        if os.path.exists(os.path.join(workspace.templateRepo, "deepCoadd")):
+            self.log.info("Templates were previously ingested, skipping...")
+        else:
+            self.log.info("Ingesting templates...")
+            self._doIngestTemplates(workspace.templateRepo, dataset.templateLocation)
+            self.log.info("Templates are now visible to {0}".format(workspace.dataRepo))
 
     def _doIngestTemplates(self, templateRepo, inputTemplates):
-        """Ingest templates into the input repository, so that
-        GetCoaddAsTemplateTask can find them.
-
-        After this method returns, butler queries against `templateRepo` can find the
-        templates in `inputTemplates`.
+        """Ingest templates into the input repository.
 
         Parameters
         ----------
         templateRepo: `str`
-            The output repository location on disk for templates.
+            The output repository location on disk for templates. Must exist.
         inputTemplates: `str`
             The input repository location where templates have been previously computed.
         """
-        # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
-        if os.path.exists(os.path.join(templateRepo, "deepCoadd")):
-            self.log.info("Templates were previously ingested, skipping...")
-        else:
-            # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
-            if not os.path.isdir(templateRepo):
-                os.mkdir(templateRepo)
-            for baseName in os.listdir(inputTemplates):
-                oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
-                if os.path.isdir(oldDir):
-                    os.symlink(oldDir, os.path.join(templateRepo, baseName))
+        # TODO: chain inputTemplates to templateRepo once DM-12662 resolved
+        for baseName in os.listdir(inputTemplates):
+            oldDir = os.path.abspath(os.path.join(inputTemplates, baseName))
+            if os.path.isdir(oldDir):
+                os.symlink(oldDir, os.path.join(templateRepo, baseName))
 
 
 def ingestDataset(dataset, workspace):
