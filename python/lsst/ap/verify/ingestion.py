@@ -25,9 +25,6 @@
 
 This module handles ingestion of a dataset into an appropriate repository, so
 that pipeline code need not be aware of the dataset framework.
-
-At present, the code is specific to DECam; it will be generalized to other
-instruments in the future.
 """
 
 from __future__ import absolute_import, division, print_function
@@ -238,7 +235,7 @@ class DatasetIngestTask(pipeBase.Task):
         workspace : `lsst.ap.verify.workspace.Workspace`
             The location containing all ingestion repositories.
         """
-        if os.path.exists(os.path.join(workspace.calibRepo, "cpBIAS")):
+        if os.path.exists(os.path.join(workspace.calibRepo, "calibRegistry.sqlite3")):
             self.log.info("Calibration files were previously ingested, skipping...")
         else:
             self.log.info("Ingesting calibration files...")
@@ -387,7 +384,8 @@ class DatasetIngestTask(pipeBase.Task):
             The location containing all ingestion repositories.
         """
         # TODO: this check will need to be rewritten when Butler directories change, ticket TBD
-        if os.path.exists(os.path.join(workspace.templateRepo, "deepCoadd")):
+        if os.path.exists(os.path.join(workspace.templateRepo, "deepCoadd")) \
+                or os.path.exists(os.path.join(workspace.templateRepo, "goodSeeingCoadd")):
             self.log.info("Templates were previously ingested, skipping...")
         else:
             self.log.info("Ingesting templates...")
