@@ -195,7 +195,7 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Raw images were previously ingested, skipping...")
         else:
             self.log.info("Ingesting raw images...")
-            dataFiles = [os.path.join(dataset.rawLocation, fileName) for fileName in self.config.dataFiles]
+            dataFiles = _findMatchingFiles(dataset.rawLocation, self.config.dataFiles)
             self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
             self.log.info("Images are now ingested in {0}".format(workspace.dataRepo))
 
@@ -242,7 +242,8 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Calibration files were previously ingested, skipping...")
         else:
             self.log.info("Ingesting calibration files...")
-            calibDataFiles = _getCalibDataFiles(self.config, dataset.calibLocation)
+            calibDataFiles = _findMatchingFiles(dataset.calibLocation,
+                                                self.config.calibFiles, self.config.calibBadFiles)
             self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles)
             self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(
                 workspace.dataRepo, workspace.calibRepo))
@@ -310,37 +311,21 @@ class DatasetIngestTask(pipeBase.Task):
         defectTarball : `str`
             The name of a .tar.gz file that contains all the compressed
             defect images.
-
-        Notes
-        -----
-        This function assumes very particular things about defect ingestion:
-        - They must live in a .tar.gz file in the same location on disk as the other calibs
-        - They will be ingested using ingestCalibs.py run from the ``calibRepo`` directory
-        - They will be manually uncompressed and saved in :file:`calibRepo/defects/<tarballname>/`.
-        - They will be added to the calib registry, but not linked like the flats and biases
         """
         # TODO: clean up implementation after DM-5467 resolved
-        absRepo = os.path.abspath(repo)
-        defectTarball = os.path.abspath(defectTarball)
-        startDir = os.path.abspath(os.getcwd())
-        # CameraMapper does not accept absolute paths
-        os.chdir(calibRepo)
+        defectDir = os.path.join(calibRepo, "defects")
+        if not os.path.isdir(defectDir):
+            os.mkdir(defectDir)
+        tarfile.open(defectTarball, "r").extractall(defectDir)
+        defectFiles = _findMatchingFiles(defectDir, ["*.*"])
+
+        defectargs = [repo, "--calib", calibRepo, "--calibType", "defect",
+                      "--mode", "skip", "--validity", str(self.config.defectValidity)]
+        defectargs.extend(defectFiles)
         try:
-            os.mkdir("defects")
-            defectargs = [absRepo, "--calib", ".", "--calibType", "defect",
-                          "--mode", "skip", "--validity", str(self.config.defectValidity)]
-            tarfile.open(defectTarball, "r").extractall("defects")
-            defectFiles = []
-            for path, dirs, files in os.walk("defects"):
-                for file in files:
-                    if file.endswith(".fits"):
-                        defectFiles.append(os.path.join(path, file))
-            defectargs.extend(defectFiles)
             _runIngestTask(self.defectIngester, defectargs)
         except sqlite3.IntegrityError as detail:
             raise RuntimeError("Not all defect files are unique") from detail
-        finally:
-            os.chdir(startDir)
 
     def _ingestRefcats(self, dataset, workspace):
         """Ingest the refcats for use by LSST.
@@ -498,28 +483,32 @@ def _runIngestTask(task, args):
     task.run(parsedCmd)
 
 
-def _getCalibDataFiles(config, calibLocation):
-    """Retrieve a list of the flat and bias files for use during ingestion.
+def _findMatchingFiles(basePath, include, exclude=None):
+    """Recursively identify files matching one set of patterns and not matching another.
 
     Parameters
     ----------
-    config : `DatasetIngestConfig`
-        The config for running `DatasetIngestTask` on ``dataset``.
-    calibLocation : `str`
-        The path on disk to where the calibration files live.
+    basePath : `str`
+        The path on disk where the files in ``include`` are located.
+    include : iterable of `str`
+        A collection of files (with wildcards) to include. Must not
+        contain paths.
+    exclude : iterable of `str`, optional
+        A collection of filenames (with wildcards) to exclude. Must not
+        contain paths. If omitted, all files matching ``include`` are returned.
 
     Returns
     -------
-    calibDataFiles : `list` of `str`
-        A list of the filenames of each flat and bias image file.
+    files : `set` of `str`
+        The files in ``basePath`` or any subdirectory that match ``include``
+        but not ``exclude``.
     """
-    allCalibDataFiles = []
-    for files in config.calibFiles:
-        allCalibDataFiles.extend(glob(os.path.join(calibLocation, files)))
+    _exclude = exclude if exclude is not None else []
 
-    calibDataFiles = []
-    filesToIgnore = config.calibBadFiles
-    for calibFile in allCalibDataFiles:
-        if all(not fnmatch.fnmatch(calibFile, string) for string in filesToIgnore):
-            calibDataFiles.append(calibFile)
-    return calibDataFiles
+    allFiles = set()
+    for pattern in include:
+        allFiles.update(glob(os.path.join(basePath, '**', pattern), recursive=True))
+
+    for pattern in _exclude:
+        allFiles.difference_update(fnmatch.filter(allFiles, pattern))
+    return allFiles

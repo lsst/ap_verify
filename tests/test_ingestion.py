@@ -163,6 +163,24 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
     # TODO: add unit test for _doIngest(..., badFiles) once DM-13835 resolved
 
+    def testFindMatchingFiles(self):
+        """Test that _findMatchingFiles finds the desired files.
+        """
+        testDir = os.path.join(IngestionTestSuite.testData, 'rawData', 'cpCalib')
+
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['*ci.fits']),
+            {os.path.join(testDir, f) for f in {"masterCal/fci.fits", "masterCal/zci.fits"}}
+        )
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['*ci.fits'], ['*zci*']),
+            {os.path.join(testDir, "masterCal/fci.fits")}
+        )
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['*ci.fits'], ['*masterCal*']),
+            set()
+        )
+
 
 def _isEmpty(butler, datasetType):
     """Test that a butler repository contains no objects.
