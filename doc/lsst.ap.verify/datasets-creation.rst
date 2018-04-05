@@ -30,9 +30,24 @@ Organizing the Data
   The directories may have any internal structure.
 * The :file:`templates` directory contains an :ref:`LSST Butler repository<butler>` containing processed images useable as templates.
   Template files must be ``TemplateCoadd`` files produced by a compatible version of the LSST science pipeline.
-* The :file:`refcats` directory contains one or more tar files, each containing containing one or more astrometric or photometric reference catalogs in HTM shard format.
+* The :file:`refcats` directory contains one or more tar files, each containing one astrometric or photometric reference catalog in HTM shard format.
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
+
+.. _ap-verify-datasets-creation-config:
+
+Configuring Dataset Ingestion
+-----------------------------
+
+Each dataset's :file:`config` directory must contain a :ref:`task config file<command-line-task-config-howto-configfile>` named :file:`datasetIngest.py`, which specifies an `lsst.ap.verify.DatasetIngestConfig`.
+The file may need to do any of the following:
+
+* Retarget the subtasks of ``DatasetIngestTask`` to the ingestion tasks recommended by the dataset's obs package.
+  The ingestion tasks do not need to have their own subtasks retargeted if the obs package provides an override file (see below).
+* Load observatory-specific config override files (usually :file:`ingest.py` and :file:`ingestCalibs.py`) for ingestion tasks.
+  The overrides should be applied using the conventions for :ref:`configuration override files<command-line-task-config-howto-obs>` for tasks that have overridden subtasks.
+* Provide file include or exclude patterns specific to the dataset.
+  In particular, defect files and reference catalogs are ignored by default.
 
 .. _ap-verify-datasets-creation-obs:
 
@@ -52,5 +67,5 @@ The observatory package must be named in two files:
 Registering a Dataset Name
 --------------------------
 
-In order to be supported by ``ap_verify``, datasets must be registered in the package's :ref:`configuration file<ap-verify-configuration-dataset>` and registered as an *optional* EUPS dependency of ``ap_verify``.
+In order to be supported by ``ap_verify``, datasets must be registered in ``ap_verify``'s :ref:`configuration file<ap-verify-configuration-dataset>` and registered as an *optional* EUPS dependency of ``ap_verify``.
 The line for the new dataset should be committed to the ``ap_verify`` Git repository.
