@@ -39,15 +39,11 @@ The templates and reference catalogs need not be all-sky, but should cover the c
 Configuring Dataset Ingestion
 -----------------------------
 
-Each dataset's :file:`config` directory must contain a :ref:`task config file<command-line-task-config-howto-configfile>` named :file:`datasetIngest.py`, which specifies an `lsst.ap.verify.DatasetIngestConfig`.
-The file may need to do any of the following:
+Each dataset's :file:`config` directory should contain a :ref:`task config file<command-line-task-config-howto-configfile>` named :file:`datasetIngest.py`, which specifies an `lsst.ap.verify.DatasetIngestConfig`.
+The file typically contains filenames or file patterns specific to the dataset.
+In particular, defect files and reference catalogs are ignored by default and need to be explicitly named.
 
-* Retarget the subtasks of ``DatasetIngestTask`` to the ingestion tasks recommended by the dataset's obs package.
-  The ingestion tasks do not need to have their own subtasks retargeted if the obs package provides an override file (see below).
-* Load observatory-specific config override files (usually :file:`ingest.py` and :file:`ingestCalibs.py`) for ingestion tasks.
-  The overrides should be applied using the conventions for :ref:`configuration override files<command-line-task-config-howto-obs>` for tasks that have overridden subtasks.
-* Provide file include or exclude patterns specific to the dataset.
-  In particular, defect files and reference catalogs are ignored by default.
+Configuration settings specific to an instrument rather than a dataset should be handled with ordinary :ref:`configuration override files<command-line-task-config-howto-obs>`.
 
 .. _ap-verify-datasets-creation-obs:
 

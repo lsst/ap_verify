@@ -40,6 +40,7 @@ import tarfile
 from glob import glob
 import sqlite3
 
+import lsst.utils
 import lsst.log
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
@@ -514,9 +515,18 @@ def _getConfig(dataset):
     config : `DatasetIngestConfig`
         The config for running `DatasetIngestTask` on ``dataset``.
     """
-    path = dataset.configLocation
-    config = DatasetIngestConfig()
-    config.load(os.path.join(path, "datasetIngest.py"))
+    overrideFile = DatasetIngestTask._DefaultName + ".py"
+    packageDir = lsst.utils.getPackageDir(dataset.obsPackage)
+
+    config = DatasetIngestTask.ConfigClass()
+    for path in [
+        os.path.join(packageDir, 'config'),
+        os.path.join(packageDir, 'config', dataset.camera),
+        dataset.configLocation,
+    ]:
+        overridePath = os.path.join(path, overrideFile)
+        if os.path.exists(overridePath):
+            config.load(overridePath)
     return config
 
 

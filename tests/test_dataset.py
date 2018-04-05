@@ -39,6 +39,8 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
     def setUpClass(cls):
         cls.testDataset = 'ap_verify_hits2015'
         cls.datasetKey = 'HiTS2015'
+        cls.obsPackage = 'obs_decam'
+        cls.camera = 'decam'
         try:
             lsst.utils.getPackageDir(cls.testDataset)
         except pexExcept.NotFoundError:
@@ -66,6 +68,12 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(self._testbed.calibLocation, os.path.join(root, 'calib'))
         self.assertEqual(self._testbed.templateLocation, os.path.join(root, 'templates'))
         self.assertEqual(self._testbed.refcatsLocation, os.path.join(root, 'refcats'))
+
+    def testObsPackage(self):
+        """Verify that a Dataset knows its associated obs package and camera.
+        """
+        self.assertEqual(self._testbed.obsPackage, DatasetTestSuite.obsPackage)
+        self.assertEqual(self._testbed.camera, DatasetTestSuite.camera)
 
     def testOutput(self):
         """Verify that a Dataset can create an output repository as desired.

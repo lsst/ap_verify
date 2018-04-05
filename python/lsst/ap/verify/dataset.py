@@ -27,6 +27,7 @@ import os
 import shutil
 from future.utils import raise_from
 
+from lsst.daf.persistence import Butler
 import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
@@ -195,6 +196,18 @@ class Dataset(object):
         """The directory containing configs that can be used to process the dataset (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'config')
+
+    @property
+    def obsPackage(self):
+        """The name of the obs package associated with this dataset (`str`, read-only).
+        """
+        return Butler.getMapperClass(self._stubInputRepo).getPackageName()
+
+    @property
+    def camera(self):
+        """The name of the camera associated with this dataset (`str`, read-only).
+        """
+        return Butler.getMapperClass(self._stubInputRepo).getCameraName()
 
     @property
     def _stubInputRepo(self):
