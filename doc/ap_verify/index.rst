@@ -13,15 +13,11 @@ Project info
 Repository
    https://github.com/lsst-dm/ap_verify
 
-JIRA component
-   `ap_verify <https://jira.lsstcorp.org/browse/DM/component/14167>`_
+Jira component
+   `ap_verify <https://jira.lsstcorp.org/issues/?jql=project %3D DM AND component %3D ap_verify>`_
 
 Modules
 =======
 
 - :ref:`lsst.ap.verify <lsst.ap.verify>`
 - :ref:`lsst.ap.verify.measurements <lsst.ap.verify.measurements>`
-
-.. NOTE: Need pid and issuetype
-.. _`Create a ticket`: https://jira.lsstcorp.org/secure/CreateIssueDetails!init.jspa?pid=&issuetype=&components=14167
-
