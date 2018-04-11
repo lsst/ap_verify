@@ -10,4 +10,3 @@ _g.update(build_package_configs(
     copyright="2017 Association of Univerities for "
               "Research in Astronomy, Inc.",
     version=lsst.ap.verify.version.__version__))
-
