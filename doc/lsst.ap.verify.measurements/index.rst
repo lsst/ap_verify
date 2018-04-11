@@ -16,4 +16,3 @@ Python API reference
 ====================
 
 .. automodapi:: lsst.ap.verify.measurements
-

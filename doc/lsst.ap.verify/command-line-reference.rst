@@ -80,7 +80,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :
 
    ``--output`` may not be used with the :option:`--rerun` argument.
 
-   See :doc:`command-line-task-data-repo-howto` for background.
+   See :ref:`command-line-task-data-repo-howto` for background.
 
    .. TODO: Rework or remove --rerun (DM-13492)
 
