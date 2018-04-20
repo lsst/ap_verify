@@ -89,6 +89,10 @@ class DatasetIngestConfig(pexConfig.Config):
         default=[],
         doc="Names of calib files (no path; wildcards allowed) to not ingest, supersedes ``calibFiles``.",
     )
+    calibValidity = pexConfig.Field(
+        dtype=int,
+        default=9999,
+        doc="Calibration validity period (days). Assumed equal for all calib types.")
 
     defectIngester = pexConfig.ConfigurableField(
         target=IngestCalibsTask,
@@ -100,6 +104,10 @@ class DatasetIngestConfig(pexConfig.Config):
         doc="Name of tar.gz file containing defects. May be empty. Defect files may be in any format and "
             "directory layout supported by the obs package.",
     )
+    defectValidity = pexConfig.Field(
+        dtype=int,
+        default=9999,
+        doc="Defect validity period (days).")
 
     refcats = pexConfig.DictField(
         keytype=str,
@@ -392,7 +400,7 @@ def _flatBiasIngest(config, repo, calibRepo, calibDataFiles):
     """
     log = lsst.log.Log.getLogger('ap.pipe._flatBiasIngest')
     log.info('Ingesting flats and biases...')
-    args = [repo, '--calib', calibRepo, '--mode', 'link', '--validity', '999']
+    args = [repo, '--calib', calibRepo, '--mode', 'link', '--validity', str(config.calibValidity)]
     args.extend(calibDataFiles)
     calibIngestTask = config.calibIngester.apply()
     try:
@@ -461,7 +469,7 @@ def _defectIngest(config, repo, calibRepo, defectFiles):
     else:
         log.info('Ingesting defects...')
         defectargs = [absRepo, '--calib', '.', '--calibType', 'defect',
-                      '--mode', 'skip', '--validity', '999']
+                      '--mode', 'skip', '--validity', str(config.defectValidity)]
         tarfile.open(defectTarball, 'r').extractall('defects')
         defectFiles = []
         for path, dirs, files in os.walk('defects'):
