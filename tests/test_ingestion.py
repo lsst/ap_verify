@@ -28,10 +28,13 @@ import shutil
 import tempfile
 import unittest
 
+from lsst.utils import getPackageDir
 import lsst.utils.tests
 import lsst.pex.exceptions as pexExcept
 import lsst.daf.persistence as dafPersist
 import lsst.ap.verify.ingestion as ingestion
+
+from lsst.obs.decam.ingest import DecamIngestTask
 
 
 # TODO: convert test data to obs_test in DM-13849
@@ -72,6 +75,15 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         # Making the directory appears to be both necessary and sufficient
         os.mkdir(self._calibRepo)
 
+        decamDir = os.path.join(getPackageDir('obs_decam'), 'config')
+        config = ingestion.DatasetIngestConfig()
+        config.dataIngester.retarget(DecamIngestTask)
+        config.dataIngester.load(os.path.join(decamDir, 'ingest.py'))
+        config.calibIngester.load(os.path.join(decamDir, 'ingestCalibs.py'))
+        config.defectIngester.load(os.path.join(decamDir, 'ingestCalibs.py'))
+        config.defectTarball = 'defects_2014-12-05.tar.gz'
+        self._task = ingestion.DatasetIngestTask(config=config)
+
     def tearDown(self):
         shutil.rmtree(self._repo, ignore_errors=True)
 
@@ -103,7 +115,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         testDir = os.path.join(IngestionTestSuite.testData, 'rawData', '2013-09-01', 'z')
         files = [os.path.join(testDir, 'decam0229388.fits.fz')]
-        ingestion._doIngest(self._repo, IngestionTestSuite.testApVerifyData, files)
+        self._task._doIngest(self._repo, files, [])
 
         butler = self._rawButler()
         self.assertTrue(butler.datasetExists('raw', dataId=IngestionTestSuite.rawDataId))
@@ -117,7 +129,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                   'zci.fits']
                  ]
 
-        ingestion._flatBiasIngest(self._repo, self._calibRepo, files)
+        self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('cpBias', dataId=IngestionTestSuite.calibDataId))
@@ -126,10 +138,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testDefectIngest(self):
         """Test that ingesting defects adds them to a repository.
         """
-        files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects'),
-                 os.path.basename(IngestionTestSuite.defectDataId['path'])]
+        tarFile = os.path.join(IngestionTestSuite.testApVerifyData, 'defects.tar.gz')
 
-        ingestion._defectIngest(self._repo, self._calibRepo, files)
+        self._task._doIngestDefects(self._repo, self._calibRepo, tarFile)
 
         butler = self._calibButler()
         self.assertTrue(butler.datasetExists('defects', dataId=IngestionTestSuite.defectDataId))
@@ -141,17 +152,34 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         files = []
 
-        ingestion._doIngest(self._repo, IngestionTestSuite.testApVerifyData, files)
-        ingestion._flatBiasIngest(self._repo, self._calibRepo, files)
-
-        files = [os.path.join(IngestionTestSuite.testApVerifyData, 'defects')]
-        ingestion._defectIngest(self._repo, self._calibRepo, files)
+        self._task._doIngest(self._repo, files, [])
+        self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))
         self.assertTrue(_isEmpty(butler, 'cpBias'))
         self.assertTrue(_isEmpty(butler, 'cpFlat'))
         self.assertTrue(_isEmpty(butler, 'defects'))
+
+    # TODO: add unit test for _doIngest(..., badFiles) once DM-13835 resolved
+
+    def testFindMatchingFiles(self):
+        """Test that _findMatchingFiles finds the desired files.
+        """
+        testDir = os.path.join(IngestionTestSuite.testData, 'rawData', 'cpCalib')
+
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['*ci.fits']),
+            {os.path.join(testDir, f) for f in {"masterCal/fci.fits", "masterCal/zci.fits"}}
+        )
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['*ci.fits'], ['*zci*']),
+            {os.path.join(testDir, "masterCal/fci.fits")}
+        )
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['*ci.fits'], ['*masterCal*']),
+            set()
+        )
 
 
 def _isEmpty(butler, datasetType):
