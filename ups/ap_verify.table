@@ -10,7 +10,7 @@ setupRequired(verify)
 setupRequired(ap_pipe)
 
 setupOptional(ap_verify_hits2015)
-setupOptional(testdata_decam)
+setupOptional(obs_test)
 
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
