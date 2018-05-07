@@ -51,8 +51,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
         cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
-        # TODO: butler queries fail without this extra info; related to DM-12672?
-        cls.calibDataId = {'visit': 229388, 'ccdnum': 1, 'filter': 'z', 'date': '2013-09-01'}
+        cls.calibDataId = {'ccdnum': 1, 'filter': 'z', 'calibDate': '2013-09-01'}
         cls.defectDataId = {'path': os.path.join('defects', 'D_n20150105t0115_c23_r2134p01_bpm.fits')}
 
     def setUp(self):
@@ -88,7 +87,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         shutil.rmtree(self._repo, ignore_errors=True)
 
     def _rawButler(self):
-        """Return multiple ways of querying calibration repositories.
+        """Return a way to query calibration repositories.
 
         Returns
         -------
@@ -98,7 +97,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         return dafPersist.Butler(inputs={'root': self._repo, 'mode': 'r'})
 
     def _calibButler(self):
-        """Return multiple ways of querying calibration repositories.
+        """Return a way to query calibration repositories.
 
         Returns
         -------
