@@ -41,6 +41,7 @@ from future.utils import raise_from
 import json
 
 import lsst.log
+import lsst.daf.persistence as dafPersist
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
@@ -122,8 +123,8 @@ def _process(pipeline, workspace, dataId, parallelization):
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
     """
-    dataRef = workspace.workButler.dataRef('raw', **dataId)
-    pipeline.runProcessCcd(dataRef)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw', dataId=dataId):
+        pipeline.runProcessCcd(dataRef)
 
 
 def _difference(pipeline, workspace, dataId, parallelization):
@@ -141,8 +142,8 @@ def _difference(pipeline, workspace, dataId, parallelization):
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
     """
-    dataRef = workspace.workButler.dataRef('calexp', **dataId)
-    pipeline.runDiffIm(dataRef)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
+        pipeline.runDiffIm(dataRef)
 
 
 def _associate(pipeline, workspace, dataId, parallelization):
@@ -160,8 +161,8 @@ def _associate(pipeline, workspace, dataId, parallelization):
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
     """
-    dataRef = workspace.workButler.dataRef('calexp', **dataId)
-    pipeline.runAssociation(dataRef)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
+        pipeline.runAssociation(dataRef)
 
 
 def _postProcess(workspace):
