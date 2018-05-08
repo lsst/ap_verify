@@ -118,6 +118,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         butler = self._rawButler()
         self.assertTrue(butler.datasetExists('raw', dataId=IngestionTestSuite.rawDataId))
+        self.assertFalse(_isEmpty(butler, 'raw'))
 
     def testCalibIngest(self):
         """Test that ingesting calibrations adds them to a repository.
@@ -145,7 +146,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self.assertTrue(butler.datasetExists('defects', dataId=IngestionTestSuite.defectDataId))
 
     @unittest.skip("Ingestion functions cannot handle empty file lists, see DM-13835")
-    @unittest.skip("Dataset enumeration requires specific data keys for date, filter, etc., see DM-12762")
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing do nothing.
         """
@@ -156,9 +156,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))
-        self.assertTrue(_isEmpty(butler, 'cpBias'))
-        self.assertTrue(_isEmpty(butler, 'cpFlat'))
-        self.assertTrue(_isEmpty(butler, 'defects'))
 
     # TODO: add unit test for _doIngest(..., badFiles) once DM-13835 resolved
 
@@ -183,6 +180,16 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
 def _isEmpty(butler, datasetType):
     """Test that a butler repository contains no objects.
+
+    Parameters
+    ----------
+    datasetType : `str`
+        The type of dataset to search for.
+
+    Notes
+    -----
+    .. warning::
+       Does not work for calib datasets, because they're not discoverable.
     """
     possibleDataRefs = butler.subset(datasetType)
     for dataRef in possibleDataRefs:
