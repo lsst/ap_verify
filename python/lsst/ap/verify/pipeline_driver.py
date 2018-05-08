@@ -29,14 +29,11 @@ that a total pipeline failure still allows some measurements to be
 recovered.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
 import os
 import re
-from future.utils import raise_from
 
 import json
 
@@ -103,9 +100,7 @@ def _updateMetrics(metadata, job):
                 taskJob = Job.deserialize(**json.load(f))
             job += taskJob
     except (IOError, TypeError) as e:
-        raise_from(
-            MeasurementStorageError('Task metadata could not be read; possible downstream bug'),
-            e)
+        raise MeasurementStorageError('Task metadata could not be read; possible downstream bug') from e
 
 
 def _process(pipeline, workspace, dataId, parallelization):
@@ -235,13 +230,9 @@ def _deStringDataId(dataId):
     dataId: `dict` from `str` to any
         The dataId to be cleaned up.
     '''
-    try:
-        basestring
-    except NameError:
-        basestring = str
     integer = re.compile('^\s*[+-]?\d+\s*$')
     for key, value in dataId.items():
-        if isinstance(value, basestring) and integer.match(value) is not None:
+        if isinstance(value, str) and integer.match(value) is not None:
             dataId[key] = int(value)
 
 

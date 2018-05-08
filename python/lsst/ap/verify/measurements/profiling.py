@@ -26,8 +26,6 @@
 All measurements assume the necessary information is present in a task's metadata.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["measureRuntime"]
 
 import astropy.units as u

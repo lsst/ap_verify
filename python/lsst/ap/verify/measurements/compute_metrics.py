@@ -27,8 +27,6 @@ The rest of `ap_verify` should access `measurements` through the functions
 defined here, rather than depending on individual measurement functions.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["measureFromMetadata",
            "measureFromButlerRepo",
            "measureFromL1DbSqlite"]

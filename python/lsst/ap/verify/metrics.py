@@ -28,8 +28,6 @@ processing of individual measurements. Measurements are handled in the
 ``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["AutoJob", "MetricsParser", "checkSquashReady"]
 
 import argparse

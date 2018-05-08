@@ -25,8 +25,6 @@
 This is a temporary script, to be removed once ap_pipe can handle multiple dataIds
 """
 
-from __future__ import absolute_import, division, print_function
-
 from collections import defaultdict
 import glob
 import json
