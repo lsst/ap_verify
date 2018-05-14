@@ -67,7 +67,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :
    
    .. note::
 
-      This option is provided for forward-compatibility, but is not yet supported by ``ap_pipe``.
+      This option is provided for forward-compatibility, but is not yet supported by ``ap_verify``.
 
 .. option:: --metrics-file <filename>
 
