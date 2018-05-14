@@ -21,10 +21,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, division, print_function
-
 import os
-from future.utils import raise_from
 
 from lsst.daf.persistence import Butler
 import lsst.pex.exceptions as pexExcept
@@ -64,10 +61,9 @@ class Dataset(object):
         try:
             self._dataRootDir = getPackageDir(datasetPackage)
         except pexExcept.NotFoundError as e:
-            raise_from(
-                RuntimeError('Dataset %s requires the %s package, which has not been set up.'
-                             % (datasetId, datasetPackage)),
-                e)
+            error = 'Dataset %s requires the %s package, which has not been set up.' \
+                % (datasetId, datasetPackage)
+            raise RuntimeError(error) from e
         else:
             self._validatePackage()
 

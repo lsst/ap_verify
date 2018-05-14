@@ -21,8 +21,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, division, print_function
-
 import os
 import shutil
 import tempfile
@@ -51,8 +49,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
         cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
-        # TODO: butler queries fail without this extra info; related to DM-12672?
-        cls.calibDataId = {'visit': 229388, 'ccdnum': 1, 'filter': 'z', 'date': '2013-09-01'}
+        cls.calibDataId = {'ccdnum': 1, 'filter': 'z', 'calibDate': '2013-09-01'}
         cls.defectDataId = {'path': os.path.join('defects', 'D_n20150105t0115_c23_r2134p01_bpm.fits')}
 
     def setUp(self):
@@ -88,7 +85,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         shutil.rmtree(self._repo, ignore_errors=True)
 
     def _rawButler(self):
-        """Return multiple ways of querying calibration repositories.
+        """Return a way to query calibration repositories.
 
         Returns
         -------
@@ -98,7 +95,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         return dafPersist.Butler(inputs={'root': self._repo, 'mode': 'r'})
 
     def _calibButler(self):
-        """Return multiple ways of querying calibration repositories.
+        """Return a way to query calibration repositories.
 
         Returns
         -------
@@ -119,6 +116,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         butler = self._rawButler()
         self.assertTrue(butler.datasetExists('raw', dataId=IngestionTestSuite.rawDataId))
+        self.assertFalse(_isEmpty(butler, 'raw'))
 
     def testCalibIngest(self):
         """Test that ingesting calibrations adds them to a repository.
@@ -146,7 +144,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self.assertTrue(butler.datasetExists('defects', dataId=IngestionTestSuite.defectDataId))
 
     @unittest.skip("Ingestion functions cannot handle empty file lists, see DM-13835")
-    @unittest.skip("Dataset enumeration requires specific data keys for date, filter, etc., see DM-12762")
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing do nothing.
         """
@@ -157,9 +154,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))
-        self.assertTrue(_isEmpty(butler, 'cpBias'))
-        self.assertTrue(_isEmpty(butler, 'cpFlat'))
-        self.assertTrue(_isEmpty(butler, 'defects'))
 
     # TODO: add unit test for _doIngest(..., badFiles) once DM-13835 resolved
 
@@ -184,6 +178,16 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
 def _isEmpty(butler, datasetType):
     """Test that a butler repository contains no objects.
+
+    Parameters
+    ----------
+    datasetType : `str`
+        The type of dataset to search for.
+
+    Notes
+    -----
+    .. warning::
+       Does not work for calib datasets, because they're not discoverable.
     """
     possibleDataRefs = butler.subset(datasetType)
     for dataRef in possibleDataRefs:

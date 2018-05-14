@@ -27,8 +27,6 @@ This module handles ingestion of a dataset into an appropriate repository, so
 that pipeline code need not be aware of the dataset framework.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["DatasetIngestConfig", "ingestDataset"]
 
 import fnmatch

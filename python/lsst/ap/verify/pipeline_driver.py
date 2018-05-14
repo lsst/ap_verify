@@ -29,18 +29,16 @@ that a total pipeline failure still allows some measurements to be
 recovered.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
 
 import argparse
 import os
 import re
-from future.utils import raise_from
 
 import json
 
 import lsst.log
+import lsst.daf.persistence as dafPersist
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
@@ -102,9 +100,7 @@ def _updateMetrics(metadata, job):
                 taskJob = Job.deserialize(**json.load(f))
             job += taskJob
     except (IOError, TypeError) as e:
-        raise_from(
-            MeasurementStorageError('Task metadata could not be read; possible downstream bug'),
-            e)
+        raise MeasurementStorageError('Task metadata could not be read; possible downstream bug') from e
 
 
 def _process(pipeline, workspace, dataId, parallelization):
@@ -122,8 +118,8 @@ def _process(pipeline, workspace, dataId, parallelization):
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
     """
-    dataRef = workspace.workButler.dataRef('raw', **dataId)
-    pipeline.runProcessCcd(dataRef)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw', dataId=dataId):
+        pipeline.runProcessCcd(dataRef)
 
 
 def _difference(pipeline, workspace, dataId, parallelization):
@@ -141,8 +137,8 @@ def _difference(pipeline, workspace, dataId, parallelization):
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
     """
-    dataRef = workspace.workButler.dataRef('calexp', **dataId)
-    pipeline.runDiffIm(dataRef)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
+        pipeline.runDiffIm(dataRef)
 
 
 def _associate(pipeline, workspace, dataId, parallelization):
@@ -160,8 +156,8 @@ def _associate(pipeline, workspace, dataId, parallelization):
     parallelization : `int`
         Parallelization level at which to run underlying task(s).
     """
-    dataRef = workspace.workButler.dataRef('calexp', **dataId)
-    pipeline.runAssociation(dataRef)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
+        pipeline.runAssociation(dataRef)
 
 
 def _postProcess(workspace):
@@ -234,13 +230,9 @@ def _deStringDataId(dataId):
     dataId: `dict` from `str` to any
         The dataId to be cleaned up.
     '''
-    try:
-        basestring
-    except NameError:
-        basestring = str
     integer = re.compile('^\s*[+-]?\d+\s*$')
     for key, value in dataId.items():
-        if isinstance(value, basestring) and integer.match(value) is not None:
+        if isinstance(value, str) and integer.match(value) is not None:
             dataId[key] = int(value)
 
 

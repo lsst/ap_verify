@@ -27,8 +27,6 @@ In addition to containing ap_verify's main function, this module manages
 command-line argument parsing.
 """
 
-from __future__ import absolute_import, division, print_function
-
 __all__ = ["runApVerify"]
 
 import argparse

@@ -21,10 +21,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from __future__ import absolute_import, division, print_function
-
-from future.utils import raise_from
-
 from lsst.daf.persistence import Policy
 
 
@@ -54,7 +50,7 @@ class Config(object):
             if not isinstance(datasetMap, Policy):
                 raise TypeError('`datasets` is not a dictionary')
         except (KeyError, TypeError) as e:
-            raise_from(RuntimeError('Invalid config file.'), e)
+            raise RuntimeError('Invalid config file.') from e
 
         try:
             measurementMap = self._allInfo['measurements']
@@ -64,7 +60,7 @@ class Config(object):
             if not isinstance(timingMap, Policy):
                 raise TypeError('`measurements.timing` is not a dictionary')
         except (KeyError, TypeError) as e:
-            raise_from(RuntimeError('Invalid config file.'), e)
+            raise RuntimeError('Invalid config file.') from e
 
 
 # Hack, but I don't know how else to make Config.instance act like a dictionary of config options
