@@ -67,7 +67,16 @@ Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :
    
    .. note::
 
-      This option is provided for forward-compatibility, but is not yet supported by ``ap_pipe``.
+      This option is provided for forward-compatibility, but is not yet supported by ``ap_verify``.
+
+.. option:: --metrics-file <filename>
+
+   **Output metrics file.**
+
+   The name of a file to contain the metrics measured by ``ap_verify``, in a format readable by the `lsst.verify` framework.
+   If omitted, the output will go to a file named :file:`ap_verify.verify.json` in the user's working directory.
+
+   This argument can be used to run multiple instances of ``ap_verify`` concurrently, with each instance producing output to a different metrics file.
 
 .. option:: --output <workspace_dir>
 
