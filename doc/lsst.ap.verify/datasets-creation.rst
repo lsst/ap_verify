@@ -16,7 +16,7 @@ Creating a Dataset Repository
 -----------------------------
 
 Datasets are Git LFS repositories with a particular directory and file structure.
-The easiest way to create a new dataset is to create a repository, and add a copy of the `dataset template repository`_ as the initial commit.
+The easiest way to create a new dataset is to `create an LFS repository <https://developer.lsst.io/git/git-lfs.html#git-lfs-create>`_, and add a copy of the `dataset template repository`_ as the initial commit.
 This will create empty directories for all data and will add placeholder files for dataset metadata.
 
 .. _dataset template repository: https://github.com/lsst-dm/ap_verify_dataset_template
