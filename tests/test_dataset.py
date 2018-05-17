@@ -58,6 +58,12 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         for dataset in datasets:
             Dataset(dataset)
 
+    def testBadDataset(self):
+        """Verify that Dataset construction fails gracefully on unsupported datasets.
+        """
+        with self.assertRaises(ValueError):
+            Dataset("TotallyBogusDataset")
+
     def testDirectories(self):
         """Verify that a Dataset reports the desired directory structure.
         """

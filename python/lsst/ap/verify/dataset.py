@@ -53,8 +53,12 @@ class Dataset(object):
     """
 
     def __init__(self, datasetId):
+        # daf.persistence.Policy's behavior on missing keys is apparently undefined
+        # test for __getattr__ *either* raising KeyError or returning None
         try:
             datasetPackage = self._getDatasetInfo()[datasetId]
+            if datasetPackage is None:
+                raise KeyError
         except KeyError:
             raise ValueError('Unsupported dataset: ' + datasetId)
 
