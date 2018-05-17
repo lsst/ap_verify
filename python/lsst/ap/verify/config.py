@@ -24,12 +24,14 @@
 from lsst.daf.persistence import Policy
 
 
-class Config(object):
+class Config:
     """Confuration manager for ``ap_verify``.
 
     This is a singleton `lsst.daf.persistence.Policy` that may be accessed
     from other modules in ``ap_verify`` as needed using `Config.instance`.
     Please do not construct objects of this class directly.
+
+    Objects of this type are immutable.
     """
 
     def __init__(self):
@@ -62,6 +64,13 @@ class Config(object):
         except (KeyError, TypeError) as e:
             raise RuntimeError('Invalid config file.') from e
 
+    def __getitem__(self, key):
+        return self._allInfo[key]
 
-# Hack, but I don't know how else to make Config.instance act like a dictionary of config options
-Config.instance = Config()._allInfo
+    def __contains__(self, key):
+        return key in self._allInfo
+
+
+Config.instance = Config()
+"""The sole `Config` object used by the program.
+"""

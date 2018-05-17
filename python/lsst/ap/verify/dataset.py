@@ -118,10 +118,7 @@ class Dataset(object):
         `RuntimeError`
             the config file exists, but does not contain the expected data
         """
-        if not hasattr(Dataset, '_datasetConfig'):
-            Dataset._datasetConfig = Config.instance['datasets']
-
-        return Dataset._datasetConfig
+        return Config.instance['datasets']
 
     @property
     def datasetRoot(self):
