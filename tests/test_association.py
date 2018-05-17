@@ -157,7 +157,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             schema=make_minimal_dia_object_schema(['r']))
         for diaObject in diaObjects:
             diaObject['n_dia_sources'] = 1
-        assocDb.store(diaObjects, True)
+        assocDb.store_dia_objects(diaObjects, True)
         assocDb.close()
 
     def tearDown(self):
