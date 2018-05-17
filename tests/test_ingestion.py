@@ -131,17 +131,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             self.assertTrue(butler.datasetExists(datum['type'], filter=datum['filter']))
         self.assertFalse(butler.datasetExists('flat', filter='z'))
 
-    @unittest.skip("obs_test does not support ingestible defects")
-    def testDefectIngest(self):
-        """Test that ingesting defects adds them to a repository.
-        """
-        tarFile = os.path.join(IngestionTestSuite.testApVerifyData, 'defects.tar.gz')
-
-        self._task._doIngestDefects(self._repo, self._calibRepo, tarFile)
-
-        butler = self._calibButler()
-        self.assertTrue(butler.datasetExists('defects'))
-
     @unittest.skip("Ingestion functions cannot handle empty file lists, see DM-13835")
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing do nothing.
