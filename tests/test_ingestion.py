@@ -100,9 +100,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testDataIngest(self):
         """Test that ingesting a science image adds it to a repository.
         """
-        rawData = [{'file': 'raw_v1_fg.fits.gz', 'visit': 890104911},
-                   {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021},
-                   {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321},
+        rawData = [{'file': 'raw_v1_fg.fits.gz', 'visit': 890104911, 'filter': 'g', 'exptime': 15.0},
+                   {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
+                   {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
                    ]
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in rawData]
@@ -110,7 +110,12 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         butler = self._rawButler()
         for datum in rawData:
-            self.assertTrue(butler.datasetExists('raw', visit=datum['visit']))
+            dataId = {'visit': datum['visit']}
+            self.assertTrue(butler.datasetExists('raw', dataId))
+            self.assertEqual(butler.queryMetadata('raw', 'filter', dataId),
+                             [datum['filter']])
+            self.assertEqual(butler.queryMetadata('raw', 'exptime', dataId),
+                             [datum['exptime']])
         self.assertFalse(_isEmpty(butler, 'raw'))
         self.assertFalse(butler.datasetExists('flat', filter='g'))
 
@@ -129,6 +134,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         butler = self._calibButler()
         for datum in calibData:
             self.assertTrue(butler.datasetExists(datum['type'], filter=datum['filter']))
+            # queryMetadata does not work on calibs
         self.assertFalse(butler.datasetExists('flat', filter='z'))
 
     @unittest.skip("Ingestion functions cannot handle empty file lists, see DM-13835")
