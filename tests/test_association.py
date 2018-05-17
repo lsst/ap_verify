@@ -153,7 +153,8 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.numTestDiaObjects = 5
         diaObjects = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
-                          range(self.numTestDiaObjects)])
+                          range(self.numTestDiaObjects)],
+            schema=make_minimal_dia_object_schema(['r']))
         for diaObject in diaObjects:
             diaObject['n_dia_sources'] = 1
         assocDb.store(diaObjects, True)
