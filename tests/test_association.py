@@ -35,8 +35,7 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 from lsst.ap.association import \
     make_minimal_dia_source_schema, \
-    DIAObject, \
-    DIAObjectCollection, \
+    make_minimal_dia_object_schema, \
     AssociationDBSqliteTask, \
     AssociationDBSqliteConfig, \
     AssociationTask
@@ -60,81 +59,53 @@ dataIdDict = {'visit': 1111,
               'filter': 'r'}
 
 
-def createTestDiaObjects(nObjects=1,
-                         nSources=1,
-                         startId=0,
-                         objectCentersDegrees=None,
-                         scatterArcsec=1.0):
-    """ Create DIAObjects with a specified number of DIASources attached.
+def createTestPoints(pointLocsDeg,
+                     startId=0,
+                     schema=None,
+                     scatterArcsec=1.0,
+                     indexerIds=None,
+                     associatedIds=None):
+    """Create dummy DIASources or DIAObjects for use in our tests.
 
     Parameters
     ----------
-    nObjects : int
-        Number of DIAObjects to generate.
-    nSources : int
-        Number of DIASources to generate for each DIAObject.
-    startId : int
-        Starting index to increment the created DIAObjects from.
-    objectCentersDegrees : (N, 2) list of floats
-        Centers of each DIAObject to create.
-    scatterArcsec : float
-        Scatter to add to the position of each DIASource.
-
-    Returns
-    -------
-    A list of DIAObjects
-    """
-
-    if objectCentersDegrees is None:
-        objectCentersDegrees = [[idx, idx] for idx in range(nObjects)]
-
-    outputDiaObjects = []
-    for objIdx in range(nObjects):
-        srcCat = createTestSources(
-            nSources,
-            startId + objIdx * nSources,
-            [objectCentersDegrees[objIdx] for srcIdx in range(nSources)],
-            scatterArcsec)
-        outputDiaObjects.append(DIAObject(srcCat))
-    return outputDiaObjects
-
-
-def createTestSources(nSources=5,
-                      startId=0,
-                      sourceLocsDeg=None,
-                      scatterArcsec=1.0):
-    """ Create dummy DIASources for use in our tests.
-
-    Parameters
-    ----------
-    nSources : int
-        Number of fake sources to create for testing.
-    startId : int
+    pointLocsDeg : array-like (N, 2) of `float`s
+        Positions of the test points to create in RA, DEC.
+    startId : `int`
         Unique id of the first object to create. The remaining sources are
         incremented by one from the first id.
-    sourceLocsDeg : (N, 2) list of floats
-        Positions of the DIASources to create.
-    scatterArcsec : float
+    schema : `lsst.afw.table.Schema`
+        Schema of the objects to create. Defaults to the DIASource schema.
+    scatterArcsec : `float`
         Scatter to add to the position of each DIASource.
+    indexerIds : `list` of `ints`s
+        Id numbers of pixelization indexer to store. Must be the same length
+        as the first dimension of point_locs_deg.
+    associatedIds : `list` of `ints`s
+        Id numbers of associated DIAObjects to store. Must be the same length
+        as the first dimension of point_locs_deg.
 
     Returns
     -------
-    A lsst.afw.SourceCatalog
+    testPoints : `lsst.afw.table.SourceCatalog`
+        Catalog of points to test.
     """
-    sources = afwTable.SourceCatalog(make_minimal_dia_source_schema())
+    if schema is None:
+        schema = make_minimal_dia_source_schema()
+    sources = afwTable.SourceCatalog(schema)
 
-    if sourceLocsDeg is None:
-        sourceLocsDeg = [[idx, idx] for idx in range(nSources)]
-
-    for srcIdx in range(nSources):
+    for src_idx, (ra, dec,) in enumerate(pointLocsDeg):
         src = sources.addNew()
-        src['id'] = srcIdx + startId
-        coord = afwGeom.SpherePoint(sourceLocsDeg[srcIdx][0],
-                                    sourceLocsDeg[srcIdx][1], afwGeom.degrees)
+        src['id'] = src_idx + startId
+        coord = afwGeom.SpherePoint(ra, dec, afwGeom.degrees)
         if scatterArcsec > 0.0:
             coord = coord.offset(
                 np.random.rand() * 360 * afwGeom.degrees,
                 np.random.rand() * scatterArcsec * afwGeom.arcseconds)
+        if indexerIds is not None:
+            src['indexer_id'] = indexerIds[src_idx]
+        if associatedIds is not None:
+            src['diaObjectId'] = associatedIds[src_idx]
         src.setCoord(coord)
 
     return sources
@@ -158,8 +129,12 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             outputs=outputRepoArgs)
         self.numTestSciSources = 10
         self.numTestDiaSources = 5
-        testSources = createTestSources(self.numTestSciSources)
-        testDiaSources = createTestSources(self.numTestDiaSources)
+        testSources = createTestPoints(
+            pointLocsDeg=[[idx, idx] for idx in
+                          range(self.numTestSciSources)])
+        testDiaSources = createTestPoints(
+            pointLocsDeg=[[idx, idx] for idx in
+                          range(self.numTestDiaSources)])
         self.butler.put(obj=testSources,
                         datasetType='src',
                         dataId=dataIdDict)
@@ -171,13 +146,17 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             dir=os.path.dirname(__file__))
         assocDbConfig = AssociationDBSqliteConfig()
         assocDbConfig.db_name = self.dbFile
+        assocDbConfig.filter_names = ['r']
         assocDb = AssociationDBSqliteTask(config=assocDbConfig)
         assocDb.create_tables()
 
         self.numTestDiaObjects = 5
-        diaCollection = DIAObjectCollection(
-            createTestDiaObjects(self.numTestDiaObjects))
-        assocDb.store(diaCollection, True)
+        diaObjects = createTestPoints(
+            pointLocsDeg=[[idx, idx] for idx in
+                          range(self.numTestDiaObjects)])
+        for diaObject in diaObjects:
+            diaObject['n_dia_sources'] = 1
+        assocDb.store(diaObjects, True)
         assocDb.close()
 
     def tearDown(self):
