@@ -30,7 +30,7 @@ from lsst.utils import getPackageDir
 from .config import Config
 
 
-class Dataset(object):
+class Dataset:
     """A dataset supported by ``ap_verify``.
 
     Any object of this class is guaranteed to represent a ready-for-use
