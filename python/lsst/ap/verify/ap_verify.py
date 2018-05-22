@@ -54,8 +54,8 @@ class _InputOutputParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--dataset', choices=Dataset.getSupportedDatasets(), required=True,
-                          help='The source of data to pass through the pipeline.')
+        self.add_argument('--dataset', action=_DatasetAction, choices=Dataset.getSupportedDatasets(),
+                          required=True, help='The source of data to pass through the pipeline.')
 
         output = self.add_mutually_exclusive_group(required=True)
         output.add_argument('--output',
@@ -112,6 +112,17 @@ class _FormattedType:
             return value
         else:
             raise argparse.ArgumentTypeError(self._message % value)
+
+
+class _DatasetAction(argparse.Action):
+    """A converter for dataset arguments.
+
+    Not an argparse type converter so that the ``choices`` parameter can be
+    expressed using strings; ``choices`` checks happen after type conversion
+    but before actions.
+    """
+    def __call__(self, _parser, namespace, values, _option_string=None):
+        setattr(namespace, self.dest, Dataset(values))
 
 
 def _getOutputDir(inputDir, outputArg, rerunArg):
@@ -189,10 +200,8 @@ def runApVerify(cmdLine=None):
     checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 
-    testData = Dataset(args.dataset)
-    log.info('Dataset %s set up.', args.dataset)
-    workspace = Workspace(_getOutputDir(testData.datasetRoot, args.output, args.rerun))
-    ingestDataset(testData, workspace)
+    workspace = Workspace(_getOutputDir(args.dataset.datasetRoot, args.output, args.rerun))
+    ingestDataset(args.dataset, workspace)
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
