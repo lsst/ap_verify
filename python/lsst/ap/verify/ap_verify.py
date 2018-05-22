@@ -69,7 +69,7 @@ class _InputOutputParser(argparse.ArgumentParser):
             help='The location of the workspace to use for pipeline repositories, as DATASET/rerun/OUTPUT')
 
 
-class _VerifyApParser(argparse.ArgumentParser):
+class _ApVerifyParser(argparse.ArgumentParser):
     """An argument parser for data needed by this script.
     """
 
@@ -191,7 +191,7 @@ def runApVerify(cmdLine=None):
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
-    args = _VerifyApParser().parse_args(args=cmdLine)
+    args = _ApVerifyParser().parse_args(args=cmdLine)
     checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 

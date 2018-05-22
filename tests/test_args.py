@@ -35,11 +35,16 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
 
         Parameters
         ----------
-        commandLine: `str`
+        commandLine : `str`
             a string containing Unix-style command line arguments, but not the
             name of the program
+
+        Returns
+        -------
+        parsed : `argparse.Namespace`
+            The parsed command line.
         """
-        return ap_verify._VerifyApParser().parse_args(shlex.split(commandLine))
+        return ap_verify._ApVerifyParser().parse_args(shlex.split(commandLine))
 
     def testMissing(self):
         """Verify that a command line consisting missing required arguments is rejected.
