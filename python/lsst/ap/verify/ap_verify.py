@@ -44,17 +44,16 @@ from .measurements import measureFromMetadata, \
 from .workspace import Workspace
 
 
-class _VerifyApParser(argparse.ArgumentParser):
-    """An argument parser for data needed by this script.
+class _InputOutputParser(argparse.ArgumentParser):
+    """An argument parser for program-wide input and output.
+
+    This parser is not complete, and is designed to be passed to another parser
+    using the `parent` parameter.
     """
 
     def __init__(self):
-        argparse.ArgumentParser.__init__(
-            self,
-            description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
-            epilog='',
-            parents=[ApPipeParser(), MetricsParser()],
-            add_help=True)
+        # Help and documentation will be handled by main program's parser
+        argparse.ArgumentParser.__init__(self, add_help=False)
         self.add_argument('--dataset', choices=Dataset.getSupportedDatasets(), required=True,
                           help='The source of data to pass through the pipeline.')
 
@@ -68,6 +67,19 @@ class _VerifyApParser(argparse.ArgumentParser):
                                 'You have entered something that appears to be of the form INPUT:OUTPUT. '
                                 'Please specify only OUTPUT.'),
             help='The location of the workspace to use for pipeline repositories, as DATASET/rerun/OUTPUT')
+
+
+class _VerifyApParser(argparse.ArgumentParser):
+    """An argument parser for data needed by this script.
+    """
+
+    def __init__(self):
+        argparse.ArgumentParser.__init__(
+            self,
+            description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
+            epilog='',
+            parents=[_InputOutputParser(), ApPipeParser(), MetricsParser()],
+            add_help=True)
 
         self.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
