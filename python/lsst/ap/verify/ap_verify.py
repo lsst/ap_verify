@@ -159,12 +159,9 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
     """
-    # TODO: remove this function's dependency on pipeline_driver (possibly after DM-11372)
+    # TODO: remove this function's dependency on pipeline_driver (DM-13555)
     measurements = []
     measurements.extend(measureFromMetadata(metadata))
-    # In the current version of ap_pipe, DIFFIM_DIR has a parent of
-    # PROCESSED_DIR. This means that a butler created from the DIFFIM_DIR reop
-    # includes data from PROCESSED_DIR.
     measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
     measurements.extend(measureFromL1DbSqlite(os.path.join(workspace.outputRepo, "association.db")))
 
@@ -178,9 +175,6 @@ def runApVerify(cmdLine=None):
     This is the main function for ``ap_verify``, and handles logging,
     command-line argument parsing, pipeline execution, and metrics
     generation.
-
-    After this function returns, metrics will be available in a file
-    named :file:`ap_verify.verify.json` in the working directory.
 
     Parameters
     ----------
