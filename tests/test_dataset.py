@@ -59,11 +59,6 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         datasets = Dataset.getSupportedDatasets()
         self.assertIn(DatasetTestSuite.datasetKey, datasets)  # assumed by other tests
 
-        # Initializing another Dataset has side effects, alas, but should not
-        # invalidate tests of whether ap_verify_testdata has been loaded
-        for dataset in datasets:
-            Dataset(dataset)
-
     def testBadDataset(self):
         """Verify that Dataset construction fails gracefully on unsupported datasets.
         """
