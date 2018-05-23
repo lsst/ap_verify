@@ -72,6 +72,24 @@ The :command:`--rerun run1` argument will create a directory at :file:`<hits-dat
 Since neither :ref:`datasets<ap-verify-datasets-butler>` nor ``ap_verify`` output directories are repositories, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
 In particular, ``ap_verify``'s ``--rerun`` does not support repository chaining (as in :command:`--rerun input:output`); the input for ``ap_verify`` will always be determined by the :option:`--dataset <ap_verify.py --dataset>`.
 
+.. _ap-verify-run-ingest:
+
+How to Run Ingestion By Itself
+------------------------------
+
+``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that ingests datasets but does not run the pipeline on them.
+This is useful if the data need special processing or as a precursor to massive processing runs.
+Running ``ap_verify`` with the same arguments as a previous run of ``ingest_dataset`` will automatically skip ingestion.
+
+Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ingest_dataset`` as follows:
+
+.. prompt:: bash
+
+   ingest_dataset.py --dataset HiTS2015 --output workspaces/hits/
+
+The :option:`--dataset <ap_verify.py --dataset>`, :option:`--output <ap_verify.py --output>`, and :option:`--rerun <ap_verify.py --rerun>` arguments behave the same way as for ``ap_verify``.
+Other options from ``ap_verify`` are not available.
+
 .. _ap-verify-results:
 
 How to Use Measurements of Metrics
