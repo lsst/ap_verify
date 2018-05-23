@@ -29,7 +29,7 @@ Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, o
 
 .. prompt:: bash
 
-   python ap_verify/bin/ap_verify.py --dataset HiTS2015 --id "visit=54123 ccd=25 filter=g" --output workspaces/hits/ --silent
+   ap_verify.py --dataset HiTS2015 --id "visit=54123 ccd=25 filter=g" --output workspaces/hits/ --silent
 
 Here the inputs are:
 
@@ -40,7 +40,7 @@ while the output is:
 
 * :command:`workspaces/hits/` is the location where the pipeline will create any :ref:`Butler repositories<command-line-task-data-repo-using-uris>` necessary,
 
-. :command:`--silent` disables SQuaSH metrics reporting.
+* :command:`--silent` disables SQuaSH metrics reporting.
 
 This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 54123 through the entire AP pipeline.
 
@@ -59,7 +59,7 @@ It is also possible to place a workspace in a subdirectory of a dataset director
 
 .. prompt:: bash
 
-   python python/lsst/ap/verify/ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccd=25 filter=g" --silent
+   ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccd=25 filter=g" --silent
 
 The :command:`--rerun run1` argument will create a directory at :file:`<hits-data>/rerun/run1/`.
 Since neither :ref:`datasets<ap-verify-datasets-butler>` nor ``ap_verify`` output directories are repositories, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
