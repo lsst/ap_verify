@@ -137,14 +137,15 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             # queryMetadata does not work on calibs
         self.assertFalse(butler.datasetExists('flat', filter='z'))
 
-    @unittest.skip("Ingestion functions cannot handle empty file lists, see DM-13835")
     def testNoFileIngest(self):
-        """Test that attempts to ingest nothing do nothing.
+        """Test that attempts to ingest nothing raise an exception.
         """
         files = []
 
-        self._task._doIngest(self._repo, files, [])
-        self._task._doIngestCalibs(self._repo, self._calibRepo, files)
+        with self.assertRaises(RuntimeError):
+            self._task._doIngest(self._repo, files, [])
+        with self.assertRaises(RuntimeError):
+            self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))
