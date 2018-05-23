@@ -50,13 +50,6 @@ This call will create a new directory at :file:`workspaces/hits`, ingest the HiT
    In particular, only file-based repositories are supported, and compound dataIds cannot be provided.
    See the :ref:`ap-verify-cmd` for details.
 
-.. TODO: remove this note after resolving DM-13042
-
-.. warning::
-
-   ``ap_verify.py`` does not support running multiple instances concurrently.
-   Attempting to run two or more programs, particularly from the same working directory, may cause them to compete for access to the output directories or to overwrite each others' metrics.
-
 .. _ap-verify-run-rerun:
 
 How to Run ap_verify in the Dataset Directory
@@ -95,13 +88,13 @@ Other options from ``ap_verify`` are not available.
 How to Use Measurements of Metrics
 ----------------------------------
 
-After ``ap_verify`` has run, it will produce a file named :file:`ap_verify.verify.json` in the caller's directory.
+After ``ap_verify`` has run, it will produce a file named, by default, :file:`ap_verify.verify.json` in the caller's directory.
+The file name may be customized using the :option:`--metrics-file <ap_verify.py --metrics-file>` command-line argument.
 This file contains metric measurements in `lsst.verify` format, and can be loaded and read as described in the `lsst.verify` documentation or in `SQR-019 <https://sqr-019.lsst.io>`_.
-The file name is currently hard-coded, but may be customizable in a future version.
 
 Unless the :option:`--silent <ap_verify.py --silent>` argument is provided, ``ap_verify`` will also upload measurements to the `SQuaSH service <https://squash.lsst.codes/>`_ on completion.
 See the SQuaSH documentation for details.
 
-If the pipeline is interrupted by a fatal error, completed measurements will be saved to :file:`ap_verify.verify.json` for debugging purposes, but nothing will get sent to SQuaSH.
+If the pipeline is interrupted by a fatal error, completed measurements will be saved to the metrics file for debugging purposes, but nothing will get sent to SQuaSH.
 See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for details.
 
