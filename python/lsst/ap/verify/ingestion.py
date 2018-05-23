@@ -438,7 +438,11 @@ def _runIngestTask(task, args):
         The command-line arguments for ``task``. Must be compatible with ``task.ArgumentParser``.
     """
     argumentParser = task.ArgumentParser(name=task.getName())
-    parsedCmd = argumentParser.parse_args(config=task.config, args=args)
+    try:
+        parsedCmd = argumentParser.parse_args(config=task.config, args=args)
+    except SystemExit as e:
+        # SystemExit is not an appropriate response when the arguments aren't user-supplied
+        raise ValueError("Invalid ingestion arguments: %s" % args) from e
     task.run(parsedCmd)
 
 
