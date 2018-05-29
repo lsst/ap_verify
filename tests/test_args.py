@@ -30,25 +30,42 @@ import lsst.ap.verify.ap_verify as ap_verify
 
 class CommandLineTestSuite(lsst.utils.tests.TestCase):
 
-    def _parseString(self, commandLine):
+    def _parseString(self, commandLine, parser=None):
         """Tokenize and parse a command line string.
 
         Parameters
         ----------
-        commandLine: `str`
+        commandLine : `str`
             a string containing Unix-style command line arguments, but not the
             name of the program
-        """
-        return ap_verify._VerifyApParser().parse_args(shlex.split(commandLine))
+        parser : `argparse.ArgumentParser`, optional
+            the parser to use. Defaults to ``ap_verify``'s primary parser.
 
-    def testMissing(self):
+        Returns
+        -------
+        parsed : `argparse.Namespace`
+            The parsed command line.
+        """
+        if not parser:
+            parser = ap_verify._ApVerifyParser()
+
+        return parser.parse_args(shlex.split(commandLine))
+
+    def testMissingMain(self):
         """Verify that a command line consisting missing required arguments is rejected.
         """
         args = '--dataset HiTS2015 --output tests/output/foo'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
-    def testMinimum(self):
+    def testMissingIngest(self):
+        """Verify that a command line consisting missing required arguments is rejected.
+        """
+        args = '--dataset HiTS2015'
+        with self.assertRaises(SystemExit):
+            self._parseString(args, ap_verify._IngestOnlyParser())
+
+    def testMinimumMain(self):
         """Verify that a command line consisting only of required arguments parses correctly.
         """
         args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123"'
@@ -56,6 +73,14 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
         self.assertIn('dataset', dir(parsed))
         self.assertIn('output', dir(parsed))
         self.assertIn('dataId', dir(parsed))
+
+    def testMinimumIngest(self):
+        """Verify that a command line consisting only of required arguments parses correctly.
+        """
+        args = '--dataset HiTS2015 --output tests/output/foo'
+        parsed = self._parseString(args, ap_verify._IngestOnlyParser())
+        self.assertIn('dataset', dir(parsed))
+        self.assertIn('output', dir(parsed))
 
     def testRerun(self):
         """Verify that a command line with reruns is handled correctly.
@@ -86,12 +111,19 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
-    def testBadKey(self):
+    def testBadKeyMain(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
         args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123" --clobber'
         with self.assertRaises(SystemExit):
             self._parseString(args)
+
+    def testBadKeyIngest(self):
+        """Verify that a command line with unsupported arguments is rejected.
+        """
+        args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123"'
+        with self.assertRaises(SystemExit):
+            self._parseString(args, ap_verify._IngestOnlyParser())
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

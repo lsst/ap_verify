@@ -22,7 +22,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from lsst.ap.verify import runApVerify
+from lsst.ap.verify import runIngestion
 
 if __name__ == "__main__":
-    runApVerify()
+    runIngestion()

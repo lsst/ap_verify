@@ -27,7 +27,7 @@ In addition to containing ap_verify's main function, this module manages
 command-line argument parsing.
 """
 
-__all__ = ["runApVerify"]
+__all__ = ["runApVerify", "runIngestion"]
 
 import argparse
 import os
@@ -44,19 +44,18 @@ from .measurements import measureFromMetadata, \
 from .workspace import Workspace
 
 
-class _VerifyApParser(argparse.ArgumentParser):
-    """An argument parser for data needed by this script.
+class _InputOutputParser(argparse.ArgumentParser):
+    """An argument parser for program-wide input and output.
+
+    This parser is not complete, and is designed to be passed to another parser
+    using the `parent` parameter.
     """
 
     def __init__(self):
-        argparse.ArgumentParser.__init__(
-            self,
-            description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
-            epilog='',
-            parents=[ApPipeParser(), MetricsParser()],
-            add_help=True)
-        self.add_argument('--dataset', choices=Dataset.getSupportedDatasets(), required=True,
-                          help='The source of data to pass through the pipeline.')
+        # Help and documentation will be handled by main program's parser
+        argparse.ArgumentParser.__init__(self, add_help=False)
+        self.add_argument('--dataset', action=_DatasetAction, choices=Dataset.getSupportedDatasets(),
+                          required=True, help='The source of data to pass through the pipeline.')
 
         output = self.add_mutually_exclusive_group(required=True)
         output.add_argument('--output',
@@ -68,6 +67,39 @@ class _VerifyApParser(argparse.ArgumentParser):
                                 'You have entered something that appears to be of the form INPUT:OUTPUT. '
                                 'Please specify only OUTPUT.'),
             help='The location of the workspace to use for pipeline repositories, as DATASET/rerun/OUTPUT')
+
+
+class _ApVerifyParser(argparse.ArgumentParser):
+    """An argument parser for data needed by the main ap_verify program.
+    """
+
+    def __init__(self):
+        argparse.ArgumentParser.__init__(
+            self,
+            description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
+            epilog='',
+            parents=[_InputOutputParser(), ApPipeParser(), MetricsParser()],
+            add_help=True)
+
+        self.add_argument('--version', action='version', version='%(prog)s 0.1.0')
+
+
+class _IngestOnlyParser(argparse.ArgumentParser):
+    """An argument parser for data needed by dataset ingestion.
+    """
+
+    def __init__(self):
+        argparse.ArgumentParser.__init__(
+            self,
+            description='Ingests a dataset into a pair of Butler repositories.'
+            'The program will create a data repository in <OUTPUT>/ingested and a calib repository '
+            'in <OUTPUT>/calibingested. '
+            'These repositories may be used directly by ap_verify.py by '
+            'passing the same --output or --rerun argument, or by other programs that accept '
+            'Butler repositories as input.',
+            epilog='',
+            parents=[_InputOutputParser()],
+            add_help=True)
 
         self.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
@@ -100,6 +132,17 @@ class _FormattedType:
             return value
         else:
             raise argparse.ArgumentTypeError(self._message % value)
+
+
+class _DatasetAction(argparse.Action):
+    """A converter for dataset arguments.
+
+    Not an argparse type converter so that the ``choices`` parameter can be
+    expressed using strings; ``choices`` checks happen after type conversion
+    but before actions.
+    """
+    def __call__(self, _parser, namespace, values, _option_string=None):
+        setattr(namespace, self.dest, Dataset(values))
 
 
 def _getOutputDir(inputDir, outputArg, rerunArg):
@@ -147,12 +190,9 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
     """
-    # TODO: remove this function's dependency on pipeline_driver (possibly after DM-11372)
+    # TODO: remove this function's dependency on pipeline_driver (DM-13555)
     measurements = []
     measurements.extend(measureFromMetadata(metadata))
-    # In the current version of ap_pipe, DIFFIM_DIR has a parent of
-    # PROCESSED_DIR. This means that a butler created from the DIFFIM_DIR reop
-    # includes data from PROCESSED_DIR.
     measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
     measurements.extend(measureFromL1DbSqlite(os.path.join(workspace.outputRepo, "association.db")))
 
@@ -167,9 +207,6 @@ def runApVerify(cmdLine=None):
     command-line argument parsing, pipeline execution, and metrics
     generation.
 
-    After this function returns, metrics will be available in a file
-    named :file:`ap_verify.verify.json` in the working directory.
-
     Parameters
     ----------
     cmdLine : `list` of `str`
@@ -179,16 +216,36 @@ def runApVerify(cmdLine=None):
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
-    args = _VerifyApParser().parse_args(args=cmdLine)
+    args = _ApVerifyParser().parse_args(args=cmdLine)
     checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 
-    testData = Dataset(args.dataset)
-    log.info('Dataset %s set up.', args.dataset)
-    workspace = Workspace(_getOutputDir(testData.datasetRoot, args.output, args.rerun))
-    ingestDataset(testData, workspace)
+    workspace = Workspace(_getOutputDir(args.dataset.datasetRoot, args.output, args.rerun))
+    ingestDataset(args.dataset, workspace)
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
         metadata = runApPipe(job, workspace, args)
         _measureFinalProperties(job, metadata, workspace, args)
+
+
+def runIngestion(cmdLine=None):
+    """Ingest a dataset, but do not process it.
+
+    This is the main function for ``ingest_dataset``, and handles logging,
+    command-line argument parsing, and ingestion.
+
+    Parameters
+    ----------
+    cmdLine : `list` of `str`
+        an optional command line used to execute `runIngestion` from other
+        Python code. If `None`, `sys.argv` will be used.
+    """
+    lsst.log.configure()
+    log = lsst.log.Log.getLogger('ap.verify.ap_verify.ingest')
+    # TODO: what is LSST's policy on exceptions escaping into main()?
+    args = _IngestOnlyParser().parse_args(args=cmdLine)
+    log.debug('Command-line arguments: %s', args)
+
+    workspace = Workspace(_getOutputDir(args.dataset.datasetRoot, args.output, args.rerun))
+    ingestDataset(args.dataset, workspace)

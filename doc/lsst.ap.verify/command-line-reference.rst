@@ -13,9 +13,9 @@ Signature and syntax
 
 The basic call signature of ``ap_verify`` is:
 
-.. code-block:: sh
+.. prompt:: bash
 
-   python ap_verify.py --dataset DATASET --output WORKSPACE --id DATAID
+   ap_verify.py --dataset DATASET --output WORKSPACE --id DATAID
 
 These three arguments (or replacing ``--output`` with ``--rerun``) are mandatory, all others are optional.
 
