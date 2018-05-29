@@ -30,7 +30,7 @@ from lsst.utils import getPackageDir
 from .config import Config
 
 
-class Dataset(object):
+class Dataset:
     """A dataset supported by ``ap_verify``.
 
     Any object of this class is guaranteed to represent a ready-for-use
@@ -53,8 +53,12 @@ class Dataset(object):
     """
 
     def __init__(self, datasetId):
+        # daf.persistence.Policy's behavior on missing keys is apparently undefined
+        # test for __getattr__ *either* raising KeyError or returning None
         try:
             datasetPackage = self._getDatasetInfo()[datasetId]
+            if datasetPackage is None:
+                raise KeyError
         except KeyError:
             raise ValueError('Unsupported dataset: ' + datasetId)
 
@@ -114,10 +118,7 @@ class Dataset(object):
         `RuntimeError`
             the config file exists, but does not contain the expected data
         """
-        if not hasattr(Dataset, '_datasetConfig'):
-            Dataset._datasetConfig = Config.instance['datasets']
-
-        return Dataset._datasetConfig
+        return Config.instance['datasets']
 
     @property
     def datasetRoot(self):

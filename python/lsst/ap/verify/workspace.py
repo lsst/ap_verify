@@ -27,7 +27,7 @@ import stat
 import lsst.daf.persistence as dafPersist
 
 
-class Workspace(object):
+class Workspace:
     """A directory used by ``ap_verify`` to handle data.
 
     Any object of this class represents a plan for organizing a working

@@ -28,6 +28,7 @@ import unittest
 
 import lsst.utils.tests
 import lsst.pex.exceptions as pexExcept
+from lsst.ap.verify.config import Config
 from lsst.ap.verify.dataset import Dataset
 
 
@@ -35,14 +36,19 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.testDataset = 'ap_verify_hits2015'
-        cls.datasetKey = 'HiTS2015'
-        cls.obsPackage = 'obs_decam'
-        cls.camera = 'decam'
+        cls.testDataset = 'ap_verify_testdata'
+        cls.datasetKey = 'test'
+        cls.obsPackage = 'obs_test'
+        cls.camera = 'test'
         try:
             lsst.utils.getPackageDir(cls.testDataset)
         except pexExcept.NotFoundError:
             raise unittest.SkipTest(cls.testDataset + ' not set up')
+
+        # Hack the config for testing purposes
+        # Note that Config.instance is supposed to be immutable, so, depending on initialization order,
+        # this modification may cause other tests to see inconsistent config values
+        Config.instance._allInfo['datasets.' + cls.datasetKey] = cls.testDataset
 
     def setUp(self):
         self._testbed = Dataset(DatasetTestSuite.datasetKey)
@@ -51,12 +57,13 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         """Verify that a Dataset knows its supported datasets.
         """
         datasets = Dataset.getSupportedDatasets()
-        self.assertIn('HiTS2015', datasets)  # assumed by other tests
+        self.assertIn(DatasetTestSuite.datasetKey, datasets)  # assumed by other tests
 
-        # Initializing another Dataset has side effects, alas, but should not
-        # invalidate tests of whether HiTS2015 has been loaded
-        for dataset in datasets:
-            Dataset(dataset)
+    def testBadDataset(self):
+        """Verify that Dataset construction fails gracefully on unsupported datasets.
+        """
+        with self.assertRaises(ValueError):
+            Dataset("TotallyBogusDataset")
 
     def testDirectories(self):
         """Verify that a Dataset reports the desired directory structure.
@@ -77,7 +84,7 @@ class DatasetTestSuite(lsst.utils.tests.TestCase):
         """Verify that a Dataset can create an output repository as desired.
         """
         testDir = tempfile.mkdtemp()
-        outputDir = os.path.join(testDir, 'hitsOut')
+        outputDir = os.path.join(testDir, 'goodOut')
 
         try:
             self._testbed.makeCompatibleRepo(outputDir)

@@ -208,7 +208,7 @@ class DatasetIngestTask(pipeBase.Task):
             A list of filenames to exclude from ingestion. Must not contain paths.
             May contain wildcards.
         """
-        args = [repo, "--filetype", "raw", "--mode", "link"]
+        args = [repo, "--mode", "link"]
         args.extend(dataFiles)
         if badFiles:
             args.append('--badFile')
