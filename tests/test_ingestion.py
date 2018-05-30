@@ -151,7 +151,19 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         butler = self._calibButler()
         self.assertTrue(_isEmpty(butler, 'raw'))
 
-    # TODO: add unit test for _doIngest(..., badFiles) once DM-13835 resolved
+    def testBadFileIngest(self):
+        """Test that ingestion of raw data ignores blacklisted files.
+        """
+        badFiles = ['raw_v2_fg.fits.gz']
+
+        testDir = os.path.join(IngestionTestSuite.testData, 'raw')
+        files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
+        self._task._doIngest(self._repo, files, badFiles)
+
+        butler = self._rawButler()
+        for datum in IngestionTestSuite.rawData:
+            dataId = {'visit': datum['visit']}
+            self.assertEqual(butler.datasetExists('raw', dataId), datum['file'] not in badFiles)
 
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
