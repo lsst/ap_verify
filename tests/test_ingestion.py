@@ -46,6 +46,15 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
         cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
 
+        cls.rawData = [{'file': 'raw_v1_fg.fits.gz', 'visit': 890104911, 'filter': 'g', 'exptime': 15.0},
+                       {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
+                       {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
+                       ]
+        cls.calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': 'None'},
+                         {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g'},
+                         {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r'},
+                         ]
+
     def setUp(self):
         self._repo = tempfile.mkdtemp()
         self._calibRepo = os.path.join(self._repo, 'calibs')
@@ -100,16 +109,12 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testDataIngest(self):
         """Test that ingesting a science image adds it to a repository.
         """
-        rawData = [{'file': 'raw_v1_fg.fits.gz', 'visit': 890104911, 'filter': 'g', 'exptime': 15.0},
-                   {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
-                   {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
-                   ]
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
-        files = [os.path.join(testDir, datum['file']) for datum in rawData]
+        files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
         self._task._doIngest(self._repo, files, [])
 
         butler = self._rawButler()
-        for datum in rawData:
+        for datum in IngestionTestSuite.rawData:
             dataId = {'visit': datum['visit']}
             self.assertTrue(butler.datasetExists('raw', dataId))
             self.assertEqual(butler.queryMetadata('raw', 'filter', dataId),
@@ -122,17 +127,13 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testCalibIngest(self):
         """Test that ingesting calibrations adds them to a repository.
         """
-        calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': 'None'},
-                     {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g'},
-                     {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r'},
-                     ]
         files = [os.path.join(IngestionTestSuite.testData, datum['type'], datum['file'])
-                 for datum in calibData]
+                 for datum in IngestionTestSuite.calibData]
 
         self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         butler = self._calibButler()
-        for datum in calibData:
+        for datum in IngestionTestSuite.calibData:
             self.assertTrue(butler.datasetExists(datum['type'], filter=datum['filter']))
             # queryMetadata does not work on calibs
         self.assertFalse(butler.datasetExists('flat', filter='z'))
