@@ -31,6 +31,7 @@ __all__ = ["DatasetIngestConfig", "ingestDataset"]
 
 import fnmatch
 import os
+import pathlib
 import tarfile
 from glob import glob
 import sqlite3
@@ -166,10 +167,8 @@ class DatasetIngestTask(pipeBase.Task):
             ``obs`` package as this task's subtasks.
         """
         dataset.makeCompatibleRepo(workspace.dataRepo)
-        if not os.path.isdir(workspace.calibRepo):
-            os.mkdir(workspace.calibRepo)
-        if not os.path.isdir(workspace.templateRepo):
-            os.mkdir(workspace.templateRepo)
+        pathlib.Path(workspace.calibRepo).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(workspace.templateRepo).mkdir(parents=True, exist_ok=True)
 
     def _ingestRaws(self, dataset, workspace):
         """Ingest the science data for use by LSST.
@@ -184,14 +183,22 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The location containing all ingestion repositories.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if there are no files to ingest.
         """
         if os.path.exists(os.path.join(workspace.dataRepo, "registry.sqlite3")):
             self.log.info("Raw images were previously ingested, skipping...")
         else:
             self.log.info("Ingesting raw images...")
             dataFiles = _findMatchingFiles(dataset.rawLocation, self.config.dataFiles)
-            self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
-            self.log.info("Images are now ingested in {0}".format(workspace.dataRepo))
+            if dataFiles:
+                self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+                self.log.info("Images are now ingested in {0}".format(workspace.dataRepo))
+            else:
+                raise RuntimeError("No raw files found at %s." % dataset.rawLocation)
 
     def _doIngest(self, repo, dataFiles, badFiles):
         """Ingest raw images into a repository.
@@ -207,7 +214,15 @@ class DatasetIngestTask(pipeBase.Task):
         badFiles : `list` of `str`
             A list of filenames to exclude from ingestion. Must not contain paths.
             May contain wildcards.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if ``dataFiles`` is empty.
         """
+        if not dataFiles:
+            raise RuntimeError("No raw files to ingest (expected list of filenames, got %r)." % dataFiles)
+
         args = [repo, "--mode", "link"]
         args.extend(dataFiles)
         if badFiles:
@@ -231,6 +246,11 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The location containing all ingestion repositories.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if there are no files to ingest.
         """
         if os.path.exists(os.path.join(workspace.calibRepo, "calibRegistry.sqlite3")):
             self.log.info("Calibration files were previously ingested, skipping...")
@@ -238,9 +258,12 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Ingesting calibration files...")
             calibDataFiles = _findMatchingFiles(dataset.calibLocation,
                                                 self.config.calibFiles, self.config.calibBadFiles)
-            self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles)
-            self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(
-                workspace.dataRepo, workspace.calibRepo))
+            if calibDataFiles:
+                self._doIngestCalibs(workspace.dataRepo, workspace.calibRepo, calibDataFiles)
+                self.log.info("Calibrations corresponding to {0} are now ingested in {1}".format(
+                    workspace.dataRepo, workspace.calibRepo))
+            else:
+                raise RuntimeError("No calib files found at %s." % dataset.calibLocation)
 
     def _doIngestCalibs(self, repo, calibRepo, calibDataFiles):
         """Ingest calibration images into a calibration repository.
@@ -256,7 +279,16 @@ class DatasetIngestTask(pipeBase.Task):
             A list of filenames to ingest. Supported files vary by instrument
             but may include flats, biases, darks, fringes, or sky. May contain
             wildcards.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if ``calibDataFiles`` is empty.
         """
+        if not calibDataFiles:
+            raise RuntimeError("No calib files to ingest (expected list of filenames, got %r)."
+                               % calibDataFiles)
+
         # TODO: --output is workaround for DM-11668
         args = [repo, "--calib", calibRepo, "--output", os.path.join(calibRepo, "dummy"),
                 "--mode", "link", "--validity", str(self.config.calibValidity)]
@@ -279,13 +311,15 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The location containing all ingestion repositories.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if defect ingestion requested but no defects found.
         """
         if os.path.exists(os.path.join(workspace.calibRepo, "defects")):
             self.log.info("Defects were previously ingested, skipping...")
         else:
-            if not os.path.isdir(workspace.calibRepo):
-                os.mkdir(workspace.calibRepo)
-
             if self.config.defectTarball:
                 self.log.info("Ingesting defects...")
                 defectFile = os.path.join(dataset.defectLocation, self.config.defectTarball)
@@ -307,12 +341,20 @@ class DatasetIngestTask(pipeBase.Task):
         defectTarball : `str`
             The name of a .tar.gz file that contains all the compressed
             defect images.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if ``defectTarball`` exists but is empty.
         """
         # TODO: clean up implementation after DM-5467 resolved
         defectDir = os.path.join(calibRepo, "defects")
-        if not os.path.isdir(defectDir):
-            os.mkdir(defectDir)
-        tarfile.open(defectTarball, "r").extractall(defectDir)
+        with tarfile.open(defectTarball, "r") as opened:
+            if opened.getNames():
+                pathlib.Path(defectDir).mkdir(parents=True, exist_ok=True)
+                opened.extractall(defectDir)
+            else:
+                raise RuntimeError("Defect archive %s is empty." % defectTarball)
         defectFiles = _findMatchingFiles(defectDir, ["*.*"])
 
         # TODO: --output is workaround for DM-11668
@@ -438,7 +480,11 @@ def _runIngestTask(task, args):
         The command-line arguments for ``task``. Must be compatible with ``task.ArgumentParser``.
     """
     argumentParser = task.ArgumentParser(name=task.getName())
-    parsedCmd = argumentParser.parse_args(config=task.config, args=args)
+    try:
+        parsedCmd = argumentParser.parse_args(config=task.config, args=args)
+    except SystemExit as e:
+        # SystemExit is not an appropriate response when the arguments aren't user-supplied
+        raise ValueError("Invalid ingestion arguments: %s" % args) from e
     task.run(parsedCmd)
 
 
