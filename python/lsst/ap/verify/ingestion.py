@@ -31,6 +31,7 @@ __all__ = ["DatasetIngestConfig", "ingestDataset"]
 
 import fnmatch
 import os
+import pathlib
 import tarfile
 from glob import glob
 import sqlite3
@@ -166,10 +167,8 @@ class DatasetIngestTask(pipeBase.Task):
             ``obs`` package as this task's subtasks.
         """
         dataset.makeCompatibleRepo(workspace.dataRepo)
-        if not os.path.isdir(workspace.calibRepo):
-            os.mkdir(workspace.calibRepo)
-        if not os.path.isdir(workspace.templateRepo):
-            os.mkdir(workspace.templateRepo)
+        pathlib.Path(workspace.calibRepo).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(workspace.templateRepo).mkdir(parents=True, exist_ok=True)
 
     def _ingestRaws(self, dataset, workspace):
         """Ingest the science data for use by LSST.
@@ -321,9 +320,6 @@ class DatasetIngestTask(pipeBase.Task):
         if os.path.exists(os.path.join(workspace.calibRepo, "defects")):
             self.log.info("Defects were previously ingested, skipping...")
         else:
-            if not os.path.isdir(workspace.calibRepo):
-                os.mkdir(workspace.calibRepo)
-
             if self.config.defectTarball:
                 self.log.info("Ingesting defects...")
                 defectFile = os.path.join(dataset.defectLocation, self.config.defectTarball)
@@ -355,8 +351,7 @@ class DatasetIngestTask(pipeBase.Task):
         defectDir = os.path.join(calibRepo, "defects")
         with tarfile.open(defectTarball, "r") as opened:
             if opened.getNames():
-                if not os.path.isdir(defectDir):
-                    os.mkdir(defectDir)
+                pathlib.Path(defectDir).mkdir(parents=True, exist_ok=True)
                 opened.extractall(defectDir)
             else:
                 raise RuntimeError("Defect archive %s is empty." % defectTarball)
