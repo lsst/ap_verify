@@ -28,7 +28,6 @@ import astropy.units as u
 import numpy as np
 import os
 import sqlite3
-import tempfile
 
 import lsst.daf.persistence as dafPersist
 import lsst.afw.geom as afwGeom
@@ -36,8 +35,6 @@ import lsst.afw.table as afwTable
 from lsst.ap.association import \
     make_minimal_dia_source_schema, \
     make_minimal_dia_object_schema, \
-    AssociationDBSqliteTask, \
-    AssociationDBSqliteConfig, \
     AssociationTask
 import lsst.pipe.base as pipeBase
 import lsst.utils.tests
@@ -140,32 +137,19 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
         self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
-        (self.tmpFile, self.dbFile) = tempfile.mkstemp(
-            dir=os.path.dirname(__file__))
-        assocDbConfig = AssociationDBSqliteConfig()
-        assocDbConfig.db_name = self.dbFile
-        assocDbConfig.filter_names = ['r']
-        assocDb = AssociationDBSqliteTask(config=assocDbConfig)
-        assocDb.create_tables()
-
         self.numTestDiaObjects = 5
-        diaObjects = createTestPoints(
+        self.diaObjects = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
                           range(self.numTestDiaObjects)],
             schema=make_minimal_dia_object_schema(['r']))
-        for diaObject in diaObjects:
+        for diaObject in self.diaObjects:
             diaObject['nDiaSources'] = 1
-        assocDb.store_dia_objects(diaObjects, True)
-        assocDb.close()
 
     def tearDown(self):
         del self.assocTask
 
         if hasattr(self, "butler"):
             del self.butler
-
-        del self.tmpFile
-        os.remove(self.dbFile)
 
     def testValidFromMetadata(self):
         """Verify that association information can be recovered from metadata.
@@ -240,8 +224,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                          self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromSqlite(self):
-        conn = sqlite3.connect(self.dbFile)
-        cursor = conn.cursor()
+        # Fake DB handle to avoid DB initialization overhead
+        cursor = NonCallableMock(spec=sqlite3.Cursor)
+        cursor.fetchall.return_value = [(len(self.diaObjects),)]
 
         meas = measureTotalUnassociatedDiaObjects(
             cursor,
@@ -322,8 +307,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 self.butler, dataId=dataIdDict,
                 metricName='foo.bar.FooBar')
 
-        conn = sqlite3.connect(self.dbFile)
-        cursor = conn.cursor()
+        # Fake DB handle to avoid DB initialization overhead
+        cursor = NonCallableMock(spec=sqlite3.Cursor)
+        cursor.fetchall.return_value = [(0,)]
         with self.assertRaises(TypeError):
             measureTotalUnassociatedDiaObjects(
                 cursor, metricName='foo.bar.FooBar')
