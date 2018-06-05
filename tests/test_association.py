@@ -27,7 +27,6 @@ import astropy.units as u
 import numpy as np
 import os
 import sqlite3
-import tempfile
 
 import lsst.daf.persistence as dafPersist
 import lsst.afw.geom as afwGeom
@@ -35,8 +34,6 @@ import lsst.afw.table as afwTable
 from lsst.ap.association import \
     make_minimal_dia_source_schema, \
     make_minimal_dia_object_schema, \
-    AssociationDBSqliteTask, \
-    AssociationDBSqliteConfig, \
     AssociationTask
 import lsst.pipe.base as pipeBase
 import lsst.utils.tests
@@ -132,6 +129,33 @@ class _ButlerStub:
             raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
 
 
+class _DbCursorStub:
+    """A fast `sqlite3.Cursor`-like object for testing database queries.
+    """
+
+    def __init__(self, diaObjects):
+        self.diaObjects = diaObjects
+        self.query = None
+
+    def execute(self, query):
+        """An emulator for `sqlite3.Cursor.execute`.
+        """
+        self.query = query
+
+    def fetchall(self):
+        """An emulator for `sqlite3.Cursor.fetchall`, returns results for known queries.
+
+        Raises
+        ------
+        AssertionError
+            Raised if `execute` was not called or was called with an unexpected query.
+        """
+        if "count" in self.query and "dia_objects" in self.query:
+            return [(len(self.diaObjects),)]
+        else:
+            raise AssertionError("Unsupported query: %r" % self.query)
+
+
 class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
 
     def setUp(self):
@@ -150,14 +174,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                           range(self.numTestDiaSources)])
         self.butler = _ButlerStub(sciSources=testSources, diaSources=testDiaSources)
 
-        (self.tmpFile, self.dbFile) = tempfile.mkstemp(
-            dir=os.path.dirname(__file__))
-        assocDbConfig = AssociationDBSqliteConfig()
-        assocDbConfig.db_name = self.dbFile
-        assocDbConfig.filter_names = ['r']
-        assocDb = AssociationDBSqliteTask(config=assocDbConfig)
-        assocDb.create_tables()
-
         self.numTestDiaObjects = 5
         diaObjects = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
@@ -165,17 +181,13 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             schema=make_minimal_dia_object_schema(['r']))
         for diaObject in diaObjects:
             diaObject['n_dia_sources'] = 1
-        assocDb.store_dia_objects(diaObjects, True)
-        assocDb.close()
+        self.cursor = _DbCursorStub(diaObjects)
 
     def tearDown(self):
         del self.assocTask
 
         if hasattr(self, "butler"):
             del self.butler
-
-        del self.tmpFile
-        os.remove(self.dbFile)
 
     def testValidFromMetadata(self):
         """Verify that association information can be recovered from metadata.
@@ -250,11 +262,8 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                          self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromSqlite(self):
-        conn = sqlite3.connect(self.dbFile)
-        cursor = conn.cursor()
-
         meas = measureTotalUnassociatedDiaObjects(
-            cursor,
+            self.cursor,
             metricName='association.numTotalUnassociatedDiaObjects')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
@@ -343,11 +352,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 self.butler, dataId=dataIdDict,
                 metricName='foo.bar.FooBar')
 
-        conn = sqlite3.connect(self.dbFile)
-        cursor = conn.cursor()
         with self.assertRaises(TypeError):
             measureTotalUnassociatedDiaObjects(
-                cursor, metricName='foo.bar.FooBar')
+                self.cursor, metricName='foo.bar.FooBar')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
