@@ -230,7 +230,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric='ip_diffim.numSciSrc'))
-        self.assertEqual(meas.quantity, 10 * u.count)
+        self.assertEqual(meas.quantity, self.numTestSciSources * u.count)
 
         meas = measureFractionDiaSourcesToSciSources(
             self.butler,
@@ -240,8 +240,8 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric='ip_diffim.fracDiaSrcToSciSrc'))
-        # We put in half the number of DIASources as detected sources.
-        self.assertEqual(meas.quantity, 0.5 * u.dimensionless_unscaled)
+        self.assertEqual(meas.quantity,
+                         self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromSqlite(self):
         conn = sqlite3.connect(self.dbFile)
@@ -255,7 +255,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(
                 metric='association.numTotalUnassociatedDiaObjects'))
-        self.assertEqual(meas.quantity, 5 * u.count)
+        self.assertEqual(meas.quantity, self.numTestDiaObjects * u.count)
 
     def testNoButlerData(self):
         """ Test attempting to create a measurement with data that the butler
