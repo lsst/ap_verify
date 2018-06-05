@@ -22,11 +22,11 @@
 #
 
 import unittest
+from unittest.mock import NonCallableMock
 
 import astropy.units as u
 import numpy as np
 import os
-import shutil
 import sqlite3
 import tempfile
 
@@ -39,7 +39,6 @@ from lsst.ap.association import \
     AssociationDBSqliteTask, \
     AssociationDBSqliteConfig, \
     AssociationTask
-import lsst.obs.test as obsTest
 import lsst.pipe.base as pipeBase
 import lsst.utils.tests
 from lsst.verify import Measurement
@@ -119,14 +118,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assocTask = AssociationTask()
 
         # Create a empty butler repository and put data in it.
-        self.testDir = tempfile.mkdtemp(
-            dir=ROOT, prefix="TestAssocMeasurements-")
-        outputRepoArgs = dafPersist.RepositoryArgs(
-            root=os.path.join(self.testDir, 'repoA'),
-            mapper=obsTest.TestMapper,
-            mode='rw')
-        self.butler = dafPersist.Butler(
-            outputs=outputRepoArgs)
         self.numTestSciSources = 10
         self.numTestDiaSources = 5
         testSources = createTestPoints(
@@ -135,12 +126,19 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         testDiaSources = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
                           range(self.numTestDiaSources)])
-        self.butler.put(obj=testSources,
-                        datasetType='src',
-                        dataId=dataIdDict)
-        self.butler.put(obj=testDiaSources,
-                        datasetType='deepDiff_diaSrc',
-                        dataId=dataIdDict)
+
+        # Fake Butler to avoid initialization and I/O overhead
+        def mockGet(datasetType, dataId=None):
+            """An emulator for `lsst.daf.persistence.Butler.get` that can only handle test data.
+            """
+            # Check whether dataIdDict is a subset of dataId
+            if dataIdDict.items() <= dataId.items():
+                if datasetType == 'src':
+                    return testSources
+                elif datasetType == 'deepDiff_diaSrc':
+                    return testDiaSources
+            raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
+        self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
         (self.tmpFile, self.dbFile) = tempfile.mkstemp(
             dir=os.path.dirname(__file__))
@@ -163,8 +161,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
     def tearDown(self):
         del self.assocTask
 
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
         if hasattr(self, "butler"):
             del self.butler
 
