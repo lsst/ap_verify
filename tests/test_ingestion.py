@@ -23,14 +23,161 @@
 
 import os
 import shutil
+import glob
 import tempfile
 import unittest
+from collections import defaultdict
 
 from lsst.utils import getPackageDir
 import lsst.utils.tests
+import lsst.pipe.base as pipeBase
+import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
-import lsst.daf.persistence as dafPersist
 import lsst.ap.verify.ingestion as ingestion
+
+
+class _RepoStub:
+    """Simplified representation of a repository.
+
+    While this object can be read as if it were a `lsst.daf.persistence.Butler`,
+    it has some extra input methods to avoid needing a separate registry stub.
+
+    Note that this object does *not* support extraction of actual datasets using
+    ``get``; only registry queries are allowed.
+    """
+
+    def __init__(self):
+        self._datasets = defaultdict(list)    # datasetType to filenames
+        self._metadata = {}                   # filename to metadata
+
+    def registerFile(self, filename, datasetType, metadata):
+        """Register a file and its metadata internally so that it can be queried later.
+
+        Parameters
+        ----------
+        filename : `str`
+            The name of a file being "ingested".
+        datasetType : `str`
+            The Butler data type of ``filename``.
+        metadata : `dict` from `str` to any
+            The metadata columns to be associated with ``filename``.
+        """
+        self._datasets[datasetType].append(filename)
+        self._metadata[filename] = metadata
+
+    def queryMetadata(self, datasetType, queryFormat, dataId=None, **rest):
+        if dataId is None:
+            dataId = {}
+        dataId.update(**rest)
+
+        candidateFiles = self._datasets[datasetType]
+        result = []
+        for filename in candidateFiles:
+            if self._fileMatches(filename, dataId):
+                metadata = self._metadata[filename]
+                if isinstance(queryFormat, str):
+                    result.append(metadata[queryFormat])
+                else:
+                    result.append(tuple(metadata[key] for key in queryFormat))
+        return result
+
+    def datasetExists(self, datasetType, dataId=None, **rest):
+        if dataId is None:
+            dataId = {}
+        dataId.update(**rest)
+
+        candidateFiles = self._datasets[datasetType]
+        return any(self._fileMatches(file, dataId) for file in candidateFiles)
+
+    def subset(self, datasetType, dataId=None, **rest):
+        """Return an iterable of objects supporting a `datasetExists` method.
+        """
+        if dataId is None:
+            dataId = {}
+        dataId.update(**rest)
+
+        candidateFiles = self._datasets[datasetType]
+        return [self.dataRef(datasetType, self._metadata[filename])
+                for filename in candidateFiles if self._fileMatches(filename, dataId)]
+
+    def _fileMatches(self, filename, dataId):
+        """Test whether a file can be described by a particular (partial) data ID.
+        """
+        metadata = self._metadata[filename]
+        for key, value in dataId.items():
+            if key in metadata and value != metadata[key]:
+                return False
+        return True
+
+    def dataRef(self, datasetType, dataId=None, **rest):
+        """Return an object supporting a `datasetExists` method.
+        """
+        if dataId is None:
+            dataId = {}
+        dataId.update(**rest)
+        parent = self
+
+        class Temp:
+            def datasetExists(self):
+                return parent.datasetExists(datasetType, dataId)
+
+        return Temp()
+
+
+class _IngestTaskStub(pipeBase.Task):
+    """Simplified version of an ingestion task that avoids Butler operations.
+    """
+    ConfigClass = pipeTasks.ingest.IngestConfig
+    ArgumentParser = pipeTasks.ingest.IngestArgumentParser
+
+    repo = None
+    """Dummy "repository" that registers "ingested" files (`_RepoStub`).
+
+    This object should be shared with other code that will read or write the same files.
+    As a result, this attribute is never assigned to by this object's code.
+    """
+
+    def __init__(self, *args, **kwargs):
+        pipeBase.Task.__init__(self, *args, **kwargs)
+        self.makeSubtask("parse")
+
+    def run(self, args):
+        """A substitute for `lsst.pipe.tasks.IngestTask.run` that registers
+        files with a `_RepoStub`.
+
+        `self.repo` MUST be initialized before this method is called.
+        """
+        for file in _IngestTaskStub._expandFiles(args.files):
+            if hasattr(args, 'badFile') and os.path.basename(file) in args.badFile:
+                continue
+
+            if hasattr(args, 'calibType') and args.calibType:
+                datasetType = args.calibType
+            else:
+                datasetType = self.getType(file)
+            fileInfo, _ = self.parse.getInfo(file)
+
+            self.repo.registerFile(file, datasetType, fileInfo)
+
+    @staticmethod
+    def _expandFiles(files):
+        result = []
+        for pattern in files:
+            expanded = glob.glob(pattern)
+            if expanded:
+                result.extend(expanded)
+        return result
+
+    def getType(self, _filename):
+        return 'raw'
+
+
+class _IngestCalibsTaskStub(_IngestTaskStub):
+    ConfigClass = pipeTasks.ingestCalibs.IngestCalibsConfig
+    ArgumentParser = pipeTasks.ingestCalibs.IngestCalibsArgumentParser
+
+    def getType(self, filename):
+        return self.parse.getCalibType(filename)
 
 
 class IngestionTestSuite(lsst.utils.tests.TestCase):
@@ -43,6 +190,16 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             message = "obs_test not setup. Skipping."
             raise unittest.SkipTest(message)
 
+        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
+        cls.config = ingestion.DatasetIngestConfig()
+        cls.config.dataIngester.retarget(_IngestTaskStub)
+        cls.config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
+        cls.config.calibIngester.retarget(_IngestCalibsTaskStub)
+        cls.config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        cls.config.defectIngester.retarget(_IngestCalibsTaskStub)
+        cls.config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        cls.config.freeze()
+
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
         cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
 
@@ -50,12 +207,13 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                        {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
                        {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
                        ]
-        cls.calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': 'None'},
+        cls.calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': '_unknown_'},
                          {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g'},
                          {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r'},
                          ]
 
     def setUp(self):
+        # Dummy repository for argument parsers, never used to store data
         self._repo = tempfile.mkdtemp()
         self._calibRepo = os.path.join(self._repo, 'calibs')
         templateRepo = os.path.join(IngestionTestSuite.testApVerifyData, 'repoTemplate')
@@ -75,36 +233,14 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         # Making the directory appears to be both necessary and sufficient
         os.mkdir(self._calibRepo)
 
-        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
-        config = ingestion.DatasetIngestConfig()
-        config.load(os.path.join(obsDir, 'datasetIngest.py'))
-        self._task = ingestion.DatasetIngestTask(config=config)
+        self._task = ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
+        self._butler = _RepoStub()
+        self._task.dataIngester.repo = self._butler
+        self._task.calibIngester.repo = self._butler
+        self._task.defectIngester.repo = self._butler
 
     def tearDown(self):
         shutil.rmtree(self._repo, ignore_errors=True)
-
-    def _rawButler(self):
-        """Return a way to query calibration repositories.
-
-        Returns
-        -------
-        butler : `lsst.daf.persistence.Butler`
-            A butler that should be capable of finding ingested science data.
-        """
-        return dafPersist.Butler(inputs={'root': self._repo, 'mode': 'r'})
-
-    def _calibButler(self):
-        """Return a way to query calibration repositories.
-
-        Returns
-        -------
-        butlers : `lsst.daf.persistence.Butler`
-            A butler that should be capable of finding ingested calibration data.
-        """
-        return dafPersist.Butler(inputs={
-            'root': self._repo,
-            'mode': 'r',
-            'mapperArgs': {'calibRoot': self._calibRepo}})
 
     def testDataIngest(self):
         """Test that ingesting a science image adds it to a repository.
@@ -113,16 +249,15 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
         self._task._doIngest(self._repo, files, [])
 
-        butler = self._rawButler()
         for datum in IngestionTestSuite.rawData:
             dataId = {'visit': datum['visit']}
-            self.assertTrue(butler.datasetExists('raw', dataId))
-            self.assertEqual(butler.queryMetadata('raw', 'filter', dataId),
+            self.assertTrue(self._butler.datasetExists('raw', dataId))
+            self.assertEqual(self._butler.queryMetadata('raw', 'filter', dataId),
                              [datum['filter']])
-            self.assertEqual(butler.queryMetadata('raw', 'exptime', dataId),
+            self.assertEqual(self._butler.queryMetadata('raw', 'expTime', dataId),
                              [datum['exptime']])
-        self.assertFalse(_isEmpty(butler, 'raw'))
-        self.assertFalse(butler.datasetExists('flat', filter='g'))
+        self.assertFalse(_isEmpty(self._butler, 'raw'))
+        self.assertFalse(self._butler.datasetExists('flat', filter='g'))
 
     def testCalibIngest(self):
         """Test that ingesting calibrations adds them to a repository.
@@ -132,11 +267,10 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
-        butler = self._calibButler()
         for datum in IngestionTestSuite.calibData:
-            self.assertTrue(butler.datasetExists(datum['type'], filter=datum['filter']))
+            self.assertTrue(self._butler.datasetExists(datum['type'], filter=datum['filter']))
             # queryMetadata does not work on calibs
-        self.assertFalse(butler.datasetExists('flat', filter='z'))
+        self.assertFalse(self._butler.datasetExists('flat', filter='z'))
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
@@ -148,8 +282,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         with self.assertRaises(RuntimeError):
             self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
-        butler = self._calibButler()
-        self.assertTrue(_isEmpty(butler, 'raw'))
+        self.assertTrue(_isEmpty(self._butler, 'raw'))
 
     def testBadFileIngest(self):
         """Test that ingestion of raw data ignores blacklisted files.
@@ -160,10 +293,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
         self._task._doIngest(self._repo, files, badFiles)
 
-        butler = self._rawButler()
         for datum in IngestionTestSuite.rawData:
             dataId = {'visit': datum['visit']}
-            self.assertEqual(butler.datasetExists('raw', dataId), datum['file'] not in badFiles)
+            self.assertEqual(self._butler.datasetExists('raw', dataId), datum['file'] not in badFiles)
 
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
