@@ -22,9 +22,8 @@
 #
 
 import os
-import shutil
 import glob
-import tempfile
+import argparse
 import unittest
 from collections import defaultdict
 
@@ -124,11 +123,40 @@ class _RepoStub:
         return Temp()
 
 
+class _ArgumentParserStub(argparse.ArgumentParser):
+    """Emulation of `lsst.pipe.tasks.IngestArgumentParser` and
+    `lsst.pipe.tasks.IngestCalibsArgumentParser` that does not create a
+    Butler as a side effect.
+    """
+
+    def __init__(self, name, *args, **kwargs):
+        # _ArgumentParserStub is not an pipeBase.ArgumentParser; use composition instead of inheritance
+        standardArgs = pipeBase.ArgumentParser(self, name, *args, **kwargs)
+
+        argparse.ArgumentParser.__init__(self, parents=[standardArgs], add_help=False)
+        self.add_argument("--mode", choices=["move", "copy", "link", "skip"], default="link",
+                          help="Mode of delivering the files to their destination")
+        self.add_argument("--validity", type=int, help="Calibration validity period (days)")
+        self.add_argument("--calibType", type=str, default=None,
+                          choices=[None, "bias", "dark", "flat", "fringe", "sky", "defect"],
+                          help="Type of the calibration data to be ingested;" +
+                               " if omitted, the type is determined from" +
+                               " the file header information")
+        self.add_argument("--ignore-ingested", dest="ignoreIngested", action="store_true",
+                          help="Don't register files that have already been registered")
+        self.add_argument("--badFile", nargs="*", default=[],
+                          help="Names of bad files (no path; wildcards allowed)")
+        self.add_argument("files", nargs="+", help="Names of file")
+
+    def parse_args(self, config, args=None, log=None, override=None):
+        return argparse.ArgumentParser.parse_args(self, args=args)
+
+
 class _IngestTaskStub(pipeBase.Task):
     """Simplified version of an ingestion task that avoids Butler operations.
     """
     ConfigClass = pipeTasks.ingest.IngestConfig
-    ArgumentParser = pipeTasks.ingest.IngestArgumentParser
+    ArgumentParser = _ArgumentParserStub
 
     repo = None
     """Dummy "repository" that registers "ingested" files (`_RepoStub`).
@@ -148,10 +176,10 @@ class _IngestTaskStub(pipeBase.Task):
         `self.repo` MUST be initialized before this method is called.
         """
         for file in _IngestTaskStub._expandFiles(args.files):
-            if hasattr(args, 'badFile') and os.path.basename(file) in args.badFile:
+            if os.path.basename(file) in args.badFile:
                 continue
 
-            if hasattr(args, 'calibType') and args.calibType:
+            if args.calibType:
                 datasetType = args.calibType
             else:
                 datasetType = self.getType(file)
@@ -174,7 +202,7 @@ class _IngestTaskStub(pipeBase.Task):
 
 class _IngestCalibsTaskStub(_IngestTaskStub):
     ConfigClass = pipeTasks.ingestCalibs.IngestCalibsConfig
-    ArgumentParser = pipeTasks.ingestCalibs.IngestCalibsArgumentParser
+    ArgumentParser = _ArgumentParserStub
 
     def getType(self, filename):
         return self.parse.getCalibType(filename)
@@ -213,34 +241,14 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                          ]
 
     def setUp(self):
-        # Dummy repository for argument parsers, never used to store data
-        self._repo = tempfile.mkdtemp()
-        self._calibRepo = os.path.join(self._repo, 'calibs')
-        templateRepo = os.path.join(IngestionTestSuite.testApVerifyData, 'repoTemplate')
-
-        # Initialize as a valid repository
-        # Can't call copytree on (templateRepo, self._repo) because latter already exists
-        testFiles = os.listdir(templateRepo)
-        for testFile in testFiles:
-            original = os.path.join(templateRepo, testFile)
-            copy = os.path.join(self._repo, testFile)
-            if os.path.isdir(original):
-                shutil.copytree(original, copy)
-            else:
-                shutil.copy2(original, copy)
-
-        # Initialize calib repo
-        # Making the directory appears to be both necessary and sufficient
-        os.mkdir(self._calibRepo)
+        # Unused by _ArgumentParserStub, but mandatory argument to _doIngest*
+        self._repo = self._calibRepo = 'foo'
 
         self._task = ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
         self._butler = _RepoStub()
         self._task.dataIngester.repo = self._butler
         self._task.calibIngester.repo = self._butler
         self._task.defectIngester.repo = self._butler
-
-    def tearDown(self):
-        shutil.rmtree(self._repo, ignore_errors=True)
 
     def testDataIngest(self):
         """Test that ingesting a science image adds it to a repository.
