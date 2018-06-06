@@ -24,13 +24,14 @@
 import os
 import shutil
 import tempfile
-import unittest
+import unittest.mock
 
 from lsst.utils import getPackageDir
 import lsst.utils.tests
+import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
-import lsst.daf.persistence as dafPersist
-import lsst.ap.verify.ingestion as ingestion
+import lsst.obs.test
+from lsst.ap.verify import ingestion
 
 
 class IngestionTestSuite(lsst.utils.tests.TestCase):
@@ -43,6 +44,13 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             message = "obs_test not setup. Skipping."
             raise unittest.SkipTest(message)
 
+        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
+        cls.config = ingestion.DatasetIngestConfig()
+        cls.config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
+        cls.config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        cls.config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        cls.config.freeze()
+
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
         cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
 
@@ -50,120 +58,142 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                        {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
                        {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
                        ]
-        cls.calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': 'None'},
-                         {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g'},
-                         {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r'},
+        cls.calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': '_unknown_',
+                          'date': '1999-01-17'},
+                         {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g', 'date': '1999-01-17'},
+                         {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r', 'date': '1999-01-17'},
                          ]
 
     def setUp(self):
-        self._repo = tempfile.mkdtemp()
-        self._calibRepo = os.path.join(self._repo, 'calibs')
-        templateRepo = os.path.join(IngestionTestSuite.testApVerifyData, 'repoTemplate')
+        # Repositories still get used by IngestTask despite Butler being a mock object
+        self._repo = self._calibRepo = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self._repo, ignore_errors=True)
 
-        # Initialize as a valid repository
-        # Can't call copytree on (templateRepo, self._repo) because latter already exists
-        testFiles = os.listdir(templateRepo)
-        for testFile in testFiles:
-            original = os.path.join(templateRepo, testFile)
-            copy = os.path.join(self._repo, testFile)
-            if os.path.isdir(original):
-                shutil.copytree(original, copy)
+        # Fake Butler and RegisterTask to avoid initialization or DB overhead
+        def mockGet(datasetType, dataId=None):
+            """Minimally fake a butler.get().
+            """
+            if "raw_filename" in datasetType:
+                matchingFiles = [datum['file'] for datum in IngestionTestSuite.rawData
+                                 if datum['visit'] == dataId['visit']]
+                return [os.path.join(self._repo, file) for file in matchingFiles]
+            elif "bias_filename" in datasetType:
+                matchingFiles = [datum['file'] for datum in IngestionTestSuite.calibData
+                                 if datum['type'] == 'bias']
+                return [os.path.join(self._repo, file) for file in matchingFiles]
+            elif "flat_filename" in datasetType:
+                matchingFiles = [datum['file'] for datum in IngestionTestSuite.calibData
+                                 if datum['type'] == 'flat' and datum['filter'] == dataId['filter']]
+                return [os.path.join(self._repo, file) for file in matchingFiles]
             else:
-                shutil.copy2(original, copy)
+                return None
 
-        # Initialize calib repo
-        # Making the directory appears to be both necessary and sufficient
-        os.mkdir(self._calibRepo)
+        butlerPatcher = unittest.mock.patch("lsst.daf.persistence.Butler", autospec=True)
+        self._butler = butlerPatcher.start()
+        self._butler.getMapperClass.return_value = lsst.obs.test.TestMapper
+        self._butler.return_value.get = mockGet
+        self.addCleanup(butlerPatcher.stop)
 
-        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
-        config = ingestion.DatasetIngestConfig()
-        config.load(os.path.join(obsDir, 'datasetIngest.py'))
-        self._task = ingestion.DatasetIngestTask(config=config)
+        self._task = ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
 
-    def tearDown(self):
-        shutil.rmtree(self._repo, ignore_errors=True)
+    def setUpRawRegistry(self):
+        """Mock up the RegisterTask used for ingesting raw data.
 
-    def _rawButler(self):
-        """Return a way to query calibration repositories.
+        This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
+        called at the start of any test case that attempts raw ingestion.
 
-        Returns
-        -------
-        butler : `lsst.daf.persistence.Butler`
-            A butler that should be capable of finding ingested science data.
+        Behavior is undefined if both `setUpRawRegistry` and `setUpCalibRegistry` are called.
         """
-        return dafPersist.Butler(inputs={'root': self._repo, 'mode': 'r'})
+        patcherRegister = unittest.mock.patch.object(self._task.dataIngester, "register",
+                                                     spec=pipeTasks.ingest.RegisterTask,
+                                                     new_callable=unittest.mock.NonCallableMagicMock)
+        self._registerTask = patcherRegister.start()
+        self.addCleanup(patcherRegister.stop)
+        # the mocked entry point of the Registry context manager, needed for querying the registry
+        self._registryHandle = self._registerTask.openRegistry().__enter__()
 
-    def _calibButler(self):
-        """Return a way to query calibration repositories.
+    def setUpCalibRegistry(self):
+        """Mock up the RegisterTask used for ingesting calib data.
 
-        Returns
-        -------
-        butlers : `lsst.daf.persistence.Butler`
-            A butler that should be capable of finding ingested calibration data.
+        This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
+        called at the start of any test case that attempts calib ingestion.
+
+        Behavior is undefined if both `setUpRawRegistry` and `setUpCalibRegistry` are called.
         """
-        return dafPersist.Butler(inputs={
-            'root': self._repo,
-            'mode': 'r',
-            'mapperArgs': {'calibRoot': self._calibRepo}})
+        patcherRegister = unittest.mock.patch.object(self._task.calibIngester, "register",
+                                                     spec=pipeTasks.ingestCalibs.CalibsRegisterTask,
+                                                     new_callable=unittest.mock.NonCallableMagicMock)
+        self._registerTask = patcherRegister.start()
+        self._registerTask.config = self._task.config.calibIngester.register
+        self.addCleanup(patcherRegister.stop)
+        # the mocked entry point of the Registry context manager, needed for querying the registry
+        self._registryHandle = self._registerTask.openRegistry().__enter__()
 
     def testDataIngest(self):
         """Test that ingesting a science image adds it to a repository.
         """
+        self.setUpRawRegistry()
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
         self._task._doIngestRaws(self._repo, files, [])
 
-        butler = self._rawButler()
         for datum in IngestionTestSuite.rawData:
-            dataId = {'visit': datum['visit']}
-            self.assertTrue(butler.datasetExists('raw', dataId))
-            self.assertEqual(butler.queryMetadata('raw', 'filter', dataId),
-                             [datum['filter']])
-            self.assertEqual(butler.queryMetadata('raw', 'exptime', dataId),
-                             [datum['exptime']])
-        self.assertFalse(_isEmpty(butler, 'raw'))
-        self.assertFalse(butler.datasetExists('flat', filter='g'))
+            # TODO: find a way to avoid having to know exact data ID expansion
+            dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
+            # TODO: I don't think we actually care about the keywords -- especially since they're defaults
+            self._registerTask.addRow.assert_any_call(self._registryHandle, dataId,
+                                                      create=False, dryrun=False)
+        self.assertEqual(self._registerTask.addRow.call_count, len(IngestionTestSuite.rawData))
 
     def testCalibIngest(self):
         """Test that ingesting calibrations adds them to a repository.
         """
         files = [os.path.join(IngestionTestSuite.testData, datum['type'], datum['file'])
                  for datum in IngestionTestSuite.calibData]
+        self.setUpCalibRegistry()
 
         self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
-        butler = self._calibButler()
         for datum in IngestionTestSuite.calibData:
-            self.assertTrue(butler.datasetExists(datum['type'], filter=datum['filter']))
-            # queryMetadata does not work on calibs
-        self.assertFalse(butler.datasetExists('flat', filter='z'))
+            # TODO: find a way to avoid having to know exact data ID expansion
+            dataId = {'calibDate': datum['date'], 'filter': datum['filter']}
+            # TODO: I don't think we actually care about the keywords -- especially since they're defaults
+            self._registerTask.addRow.assert_any_call(self._registryHandle, dataId,
+                                                      create=False, dryrun=False, table=datum['type'])
+        self.assertEqual(self._registerTask.addRow.call_count, len(IngestionTestSuite.rawData))
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
         """
         files = []
+        self.setUpRawRegistry()
 
         with self.assertRaises(RuntimeError):
             self._task._doIngestRaws(self._repo, files, [])
         with self.assertRaises(RuntimeError):
             self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
-        butler = self._calibButler()
-        self.assertTrue(_isEmpty(butler, 'raw'))
+        self._registerTask.addRow.assert_not_called()
 
     def testBadFileIngest(self):
         """Test that ingestion of raw data ignores blacklisted files.
         """
         badFiles = ['raw_v2_fg.fits.gz']
+        self.setUpRawRegistry()
 
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
         self._task._doIngestRaws(self._repo, files, badFiles)
 
-        butler = self._rawButler()
         for datum in IngestionTestSuite.rawData:
-            dataId = {'visit': datum['visit']}
-            self.assertEqual(butler.datasetExists('raw', dataId), datum['file'] not in badFiles)
+            dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
+            call = unittest.mock.call(self._registryHandle, dataId, create=False, dryrun=False)
+            if datum['file'] not in badFiles:
+                self.assertIn(call, self._registerTask.addRow.mock_calls)
+            else:
+                self.assertNotIn(call, self._registerTask.addRow.mock_calls)
+        self.assertEqual(self._registerTask.addRow.call_count,
+                         len(IngestionTestSuite.rawData) - len(badFiles))
 
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
@@ -183,26 +213,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*_v?_f?.fits.gz']),
             set()
         )
-
-
-def _isEmpty(butler, datasetType):
-    """Test that a butler repository contains no objects.
-
-    Parameters
-    ----------
-    datasetType : `str`
-        The type of dataset to search for.
-
-    Notes
-    -----
-    .. warning::
-       Does not work for calib datasets, because they're not discoverable.
-    """
-    possibleDataRefs = butler.subset(datasetType)
-    for dataRef in possibleDataRefs:
-        if dataRef.datasetExists():
-            return False
-    return True
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
