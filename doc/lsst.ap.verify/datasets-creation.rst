@@ -34,6 +34,20 @@ Organizing the Data
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
 
+.. _ap-verify-datasets-creation-docs:
+
+Documenting Datasets
+--------------------
+
+Datasets provide package-level documentation in their :file:`doc` directory.
+An example is provided in the `dataset template repository`_.
+
+The dataset's package-level documentation should include:
+
+* the source of the data (e.g., a particular survey with specific cuts applied)
+* whether or not optional files such as image differencing templates are provided
+* the expected use of the data
+
 .. _ap-verify-datasets-creation-config:
 
 Configuring Dataset Ingestion
