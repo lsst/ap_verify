@@ -22,7 +22,9 @@
 #
 
 import os
+import shutil
 import glob
+import tempfile
 import argparse
 import unittest
 from collections import defaultdict
@@ -241,14 +243,17 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                          ]
 
     def setUp(self):
-        # Unused by _ArgumentParserStub, but mandatory argument to _doIngest*
-        self._repo = self._calibRepo = 'foo'
+        # Mandatory argument to _doIngest*, used by _doIngestDefects to unpack tar
+        self._repo = self._calibRepo = tempfile.mkdtemp()
 
         self._task = ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
         self._butler = _RepoStub()
         self._task.dataIngester.repo = self._butler
         self._task.calibIngester.repo = self._butler
         self._task.defectIngester.repo = self._butler
+
+    def tearDown(self):
+        shutil.rmtree(self._repo, ignore_errors=True)
 
     def testDataIngest(self):
         """Test that ingesting a science image adds it to a repository.
@@ -279,6 +284,15 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             self.assertTrue(self._butler.datasetExists(datum['type'], filter=datum['filter']))
             # queryMetadata does not work on calibs
         self.assertFalse(self._butler.datasetExists('flat', filter='z'))
+
+    def testDefectIngest(self):
+        """Test that ingesting defects adds them to a repository.
+        """
+        tarFile = os.path.join(IngestionTestSuite.testApVerifyData, 'defects.tar.gz')
+
+        self._task._doIngestDefects(self._repo, self._calibRepo, tarFile)
+
+        self.assertTrue(self._butler.datasetExists('defect'))
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
