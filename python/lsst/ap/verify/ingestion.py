@@ -350,7 +350,7 @@ class DatasetIngestTask(pipeBase.Task):
         # TODO: clean up implementation after DM-5467 resolved
         defectDir = os.path.join(calibRepo, "defects")
         with tarfile.open(defectTarball, "r") as opened:
-            if opened.getNames():
+            if opened.getnames():
                 pathlib.Path(defectDir).mkdir(parents=True, exist_ok=True)
                 opened.extractall(defectDir)
             else:

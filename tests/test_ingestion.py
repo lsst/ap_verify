@@ -23,6 +23,7 @@
 
 import os
 import shutil
+import tarfile
 import tempfile
 import unittest.mock
 
@@ -49,6 +50,8 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         cls.config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
         cls.config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
         cls.config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        # The real obs_test can't ingest defects because they're hardcoded
+        cls.config.defectIngester.register.tables.append('defect')
         cls.config.freeze()
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
@@ -102,7 +105,8 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
         called at the start of any test case that attempts raw ingestion.
 
-        Behavior is undefined if both `setUpRawRegistry` and `setUpCalibRegistry` are called.
+        Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
+        or `setupDefectRegistry` is called.
         """
         patcherRegister = unittest.mock.patch.object(self._task.dataIngester, "register",
                                                      spec=pipeTasks.ingest.RegisterTask,
@@ -118,13 +122,32 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
         called at the start of any test case that attempts calib ingestion.
 
-        Behavior is undefined if both `setUpRawRegistry` and `setUpCalibRegistry` are called.
+        Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
+        or `setupDefectRegistry` is called.
         """
         patcherRegister = unittest.mock.patch.object(self._task.calibIngester, "register",
                                                      spec=pipeTasks.ingestCalibs.CalibsRegisterTask,
                                                      new_callable=unittest.mock.NonCallableMagicMock)
         self._registerTask = patcherRegister.start()
         self._registerTask.config = self._task.config.calibIngester.register
+        self.addCleanup(patcherRegister.stop)
+        # the mocked entry point of the Registry context manager, needed for querying the registry
+        self._registryHandle = self._registerTask.openRegistry().__enter__()
+
+    def setUpDefectRegistry(self):
+        """Mock up the RegisterTask used for ingesting defect data.
+
+        This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
+        called at the start of any test case that attempts defect ingestion.
+
+        Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
+        or `setupDefectRegistry` is called.
+        """
+        patcherRegister = unittest.mock.patch.object(self._task.defectIngester, "register",
+                                                     spec=pipeTasks.ingestCalibs.CalibsRegisterTask,
+                                                     new_callable=unittest.mock.NonCallableMagicMock)
+        self._registerTask = patcherRegister.start()
+        self._registerTask.config = self._task.config.defectIngester.register
         self.addCleanup(patcherRegister.stop)
         # the mocked entry point of the Registry context manager, needed for querying the registry
         self._registryHandle = self._registerTask.openRegistry().__enter__()
@@ -161,6 +184,19 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             self._registerTask.addRow.assert_any_call(self._registryHandle, dataId,
                                                       create=False, dryrun=False, table=datum['type'])
         self.assertEqual(self._registerTask.addRow.call_count, len(IngestionTestSuite.rawData))
+
+    def testDefectIngest(self):
+        """Test that ingesting defects adds them to a repository.
+        """
+        defectFilename = os.path.join(IngestionTestSuite.testApVerifyData, 'defects.tar.gz')
+        self.setUpDefectRegistry()
+        with tarfile.open(defectFilename) as tarContents:
+            numDefects = len(tarContents.getnames())
+
+        self._task._doIngestDefects(self._repo, self._calibRepo, defectFilename)
+
+        # No interesting arguments get passed in obs_test defect ingestion
+        self.assertEqual(self._registerTask.addRow.call_count, numDefects)
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
