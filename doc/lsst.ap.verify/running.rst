@@ -29,12 +29,12 @@ Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, o
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=54123 ccd=25 filter=g" --output workspaces/hits/ --silent
+   ap_verify.py --dataset HiTS2015 --id "visit=54123 ccdnum=25 filter=g" --output workspaces/hits/ --silent
 
 Here the inputs are:
 
 * :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
-* :command:`visit=54123 ccd=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :command:`visit=54123 ccdnum=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
 
@@ -59,7 +59,7 @@ It is also possible to place a workspace in a subdirectory of a dataset director
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccd=25 filter=g" --silent
+   ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccdnum=25 filter=g" --silent
 
 The :command:`--rerun run1` argument will create a directory at :file:`<hits-data>/rerun/run1/`.
 Since neither :ref:`datasets<ap-verify-datasets-butler>` nor ``ap_verify`` output directories are repositories, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
