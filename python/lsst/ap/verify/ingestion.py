@@ -409,7 +409,8 @@ class DatasetIngestTask(pipeBase.Task):
         for refcatName, tarball in self.config.refcats.items():
             tarball = os.path.join(refcats, tarball)
             refcatDir = os.path.join(repo, "ref_cats", refcatName)
-            tarfile.open(tarball, "r").extractall(refcatDir)
+            with tarfile.open(tarball, "r") as opened:
+                opened.extractall(refcatDir)
 
 
 def ingestDataset(dataset, workspace):
