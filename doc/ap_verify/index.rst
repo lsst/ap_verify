@@ -14,7 +14,7 @@ Repository
    https://github.com/lsst-dm/ap_verify
 
 Jira component
-   `ap_verify <https://jira.lsstcorp.org/issues/?jql=project %3D DM AND component %3D ap_verify>`_
+   `ap_verify <https://jira.lsstcorp.org/issues/?jql=project %3D DM %20AND%20 component %3D ap_verify>`_
 
 Modules
 =======

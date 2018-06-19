@@ -6,7 +6,7 @@
 Packaging Data as a Dataset
 ###########################
 
-:ref:`ap-verify-datasets` is designed to be as generic as possible, and should be able to accomodate any collection of observations so long as the source observatory has an :ref:`observatory interface (obs) package<obs-framework>` in the LSST software stack.
+:ref:`ap-verify-datasets` is designed to be as generic as possible, and should be able to accommodate any collection of observations so long as the source observatory has an :ref:`observatory interface (obs) package<obs-framework>` in the LSST software stack.
 This page describes how to create and maintain a dataset.
 It does not include :ref:`configuring ap_verify to use the dataset<ap-verify-configuration>`.
 
@@ -28,11 +28,25 @@ Organizing the Data
 
 * The :file:`raw` and :file:`calib` directories contain science and calibration data, respectively.
   The directories may have any internal structure.
-* The :file:`templates` directory contains an :ref:`LSST Butler repository<butler>` containing processed images useable as templates.
+* The :file:`templates` directory contains an :ref:`LSST Butler repository<butler>` containing processed images usable as templates.
   Template files must be ``TemplateCoadd`` files produced by a compatible version of the LSST science pipeline.
 * The :file:`refcats` directory contains one or more tar files, each containing one astrometric or photometric reference catalog in HTM shard format.
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
+
+.. _ap-verify-datasets-creation-docs:
+
+Documenting Datasets
+--------------------
+
+Datasets provide package-level documentation in their :file:`doc` directory.
+An example is provided in the `dataset template repository`_.
+
+The dataset's package-level documentation should include:
+
+* the source of the data (e.g., a particular survey with specific cuts applied)
+* whether or not optional files such as image differencing templates are provided
+* the expected use of the data
 
 .. _ap-verify-datasets-creation-config:
 
