@@ -220,7 +220,7 @@ def measureTotalUnassociatedDiaObjects(dbCursor, metricName):
     """
 
     dbCursor.execute("SELECT count(*) FROM dia_objects "
-                     "WHERE n_dia_sources = 1")
+                     "WHERE nDiaSources = 1")
     (nUnassociatedDiaObjects,) = dbCursor.fetchall()[0]
 
     meas = lsst.verify.Measurement(
