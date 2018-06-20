@@ -22,6 +22,7 @@
 #
 
 import unittest
+from unittest.mock import NonCallableMagicMock
 
 import astropy.units as u
 import numpy as np
@@ -106,56 +107,6 @@ def createTestPoints(pointLocsDeg,
     return sources
 
 
-class _ButlerStub:
-    """A fast Butler-like object for testing repository queries.
-    """
-
-    def __init__(self, sciSources, diaSources):
-        self.testSources = sciSources
-        self.testDiaSources = diaSources
-
-    def get(self, datasetType, dataId=None):
-        """An emulator for `lsst.daf.persistence.Butler.get` that can only handle test data.
-        """
-        # No cleaner way to test if dict contains all key-value pairs in dataIdDict?
-        if dataIdDict.items() <= dataId.items():
-            if datasetType == 'src':
-                return self.testSources
-            elif datasetType == 'deepDiff_diaSrc':
-                return self.testDiaSources
-            else:
-                raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
-        else:
-            raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
-
-
-class _DbCursorStub:
-    """A fast `sqlite3.Cursor`-like object for testing database queries.
-    """
-
-    def __init__(self, diaObjects):
-        self.diaObjects = diaObjects
-        self.query = None
-
-    def execute(self, query):
-        """An emulator for `sqlite3.Cursor.execute`.
-        """
-        self.query = query
-
-    def fetchall(self):
-        """An emulator for `sqlite3.Cursor.fetchall`, returns results for known queries.
-
-        Raises
-        ------
-        AssertionError
-            Raised if `execute` was not called or was called with an unexpected query.
-        """
-        if "count" in self.query and "dia_objects" in self.query:
-            return [(len(self.diaObjects),)]
-        else:
-            raise AssertionError("Unsupported query: %r" % self.query)
-
-
 class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
 
     def setUp(self):
@@ -172,16 +123,26 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         testDiaSources = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
                           range(self.numTestDiaSources)])
-        self.butler = _ButlerStub(sciSources=testSources, diaSources=testDiaSources)
+
+        def mock_get(datasetType, dataId=None):
+            """Fake butler get that responds to `src` and `deepDiff_diaSrc` types"""
+            # dataIdDict must be a subest of dataId
+            if dataIdDict.items() <= dataId.items():
+                if datasetType == 'src':
+                    return testSources
+                elif datasetType == 'deepDiff_diaSrc':
+                    return testDiaSources
+            raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
+        self.butler = NonCallableMagicMock(spec=dafPersist.Butler, get=mock_get)
 
         self.numTestDiaObjects = 5
         diaObjects = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
                           range(self.numTestDiaObjects)],
             schema=make_minimal_dia_object_schema(['r']))
-        for diaObject in diaObjects:
-            diaObject['n_dia_sources'] = 1
-        self.cursor = _DbCursorStub(diaObjects)
+        # for diaObject in diaObjects:
+        #     diaObject['n_dia_sources'] = 1
+        self.diaObjects = diaObjects
 
     def tearDown(self):
         del self.assocTask
@@ -262,8 +223,11 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                          self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromSqlite(self):
+        def fetchall():
+            return ((len(self.diaObjects), ), ('other stuff',))
+        cursor = NonCallableMagicMock(spec=sqlite3.Cursor, fetchall=fetchall)
         meas = measureTotalUnassociatedDiaObjects(
-            self.cursor,
+            cursor,
             metricName='association.numTotalUnassociatedDiaObjects')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
@@ -353,8 +317,10 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 metricName='foo.bar.FooBar')
 
         with self.assertRaises(TypeError):
+            cursor = NonCallableMagicMock(spec=sqlite3.Cursor)
+            cursor.fetchall.return_value = 3  # this value doesn't matter.
             measureTotalUnassociatedDiaObjects(
-                self.cursor, metricName='foo.bar.FooBar')
+                cursor, metricName='foo.bar.FooBar')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
