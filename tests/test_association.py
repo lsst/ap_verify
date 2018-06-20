@@ -103,7 +103,7 @@ def createTestPoints(pointLocsDeg,
                 np.random.rand() * 360 * afwGeom.degrees,
                 np.random.rand() * scatterArcsec * afwGeom.arcseconds)
         if indexerIds is not None:
-            src['indexer_id'] = indexerIds[src_idx]
+            src['pixelId'] = indexerIds[src_idx]
         if associatedIds is not None:
             src['diaObjectId'] = associatedIds[src_idx]
         src.setCoord(coord)
@@ -156,7 +156,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                           range(self.numTestDiaObjects)],
             schema=make_minimal_dia_object_schema(['r']))
         for diaObject in diaObjects:
-            diaObject['n_dia_sources'] = 1
+            diaObject['nDiaSources'] = 1
         assocDb.store_dia_objects(diaObjects, True)
         assocDb.close()
 
