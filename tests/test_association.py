@@ -294,17 +294,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             "association.numNewDIAObjects")
         self.assertIsNone(meas)
 
-    def testInvalidDb(self):
-        """ Test that the measurement raises the correct error when given an
-        improper database.
-        """
-        conn = sqlite3.connect(":memory:")
-        cursor = conn.cursor()
-        with self.assertRaises(sqlite3.OperationalError):
-            measureTotalUnassociatedDiaObjects(
-                cursor,
-                metricName='association.numTotalUnassociatedDiaObjects')
-
     def testNoMetric(self):
         """Verify that trying to measure a nonexistent metric fails.
         """
