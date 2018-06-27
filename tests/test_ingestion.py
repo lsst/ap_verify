@@ -23,191 +23,19 @@
 
 import os
 import shutil
-import glob
 import tempfile
-import argparse
 import unittest
-from collections import defaultdict
+import unittest.mock
+
+from lsst.obs.test import TestMapper
 
 from lsst.utils import getPackageDir
 import lsst.utils.tests
-import lsst.pipe.base as pipeBase
-import lsst.pipe.tasks as pipeTasks
+import lsst.pipe.tasks.ingest
+import lsst.pipe.tasks.ingestCalibs
+# import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
-import lsst.ap.verify.ingestion as ingestion
-
-
-class _RepoStub:
-    """Simplified representation of a repository.
-
-    While this object can be read as if it were a `lsst.daf.persistence.Butler`,
-    it has some extra input methods to avoid needing a separate registry stub.
-
-    Note that this object does *not* support extraction of actual datasets using
-    ``get``; only registry queries are allowed.
-    """
-
-    def __init__(self):
-        self._datasets = defaultdict(list)    # datasetType to filenames
-        self._metadata = {}                   # filename to metadata
-
-    def registerFile(self, filename, datasetType, metadata):
-        """Register a file and its metadata internally so that it can be queried later.
-
-        Parameters
-        ----------
-        filename : `str`
-            The name of a file being "ingested".
-        datasetType : `str`
-            The Butler data type of ``filename``.
-        metadata : `dict` from `str` to any
-            The metadata columns to be associated with ``filename``.
-        """
-        self._datasets[datasetType].append(filename)
-        self._metadata[filename] = metadata
-
-    def queryMetadata(self, datasetType, queryFormat, dataId=None, **rest):
-        if dataId is None:
-            dataId = {}
-        dataId.update(**rest)
-
-        candidateFiles = self._datasets[datasetType]
-        result = []
-        for filename in candidateFiles:
-            if self._fileMatches(filename, dataId):
-                metadata = self._metadata[filename]
-                if isinstance(queryFormat, str):
-                    result.append(metadata[queryFormat])
-                else:
-                    result.append(tuple(metadata[key] for key in queryFormat))
-        return result
-
-    def datasetExists(self, datasetType, dataId=None, **rest):
-        if dataId is None:
-            dataId = {}
-        dataId.update(**rest)
-
-        candidateFiles = self._datasets[datasetType]
-        return any(self._fileMatches(file, dataId) for file in candidateFiles)
-
-    def subset(self, datasetType, dataId=None, **rest):
-        """Return an iterable of objects supporting a `datasetExists` method.
-        """
-        if dataId is None:
-            dataId = {}
-        dataId.update(**rest)
-
-        candidateFiles = self._datasets[datasetType]
-        return [self.dataRef(datasetType, self._metadata[filename])
-                for filename in candidateFiles if self._fileMatches(filename, dataId)]
-
-    def _fileMatches(self, filename, dataId):
-        """Test whether a file can be described by a particular (partial) data ID.
-        """
-        metadata = self._metadata[filename]
-        for key, value in dataId.items():
-            if key in metadata and value != metadata[key]:
-                return False
-        return True
-
-    def dataRef(self, datasetType, dataId=None, **rest):
-        """Return an object supporting a `datasetExists` method.
-        """
-        if dataId is None:
-            dataId = {}
-        dataId.update(**rest)
-        parent = self
-
-        class Temp:
-            def datasetExists(self):
-                return parent.datasetExists(datasetType, dataId)
-
-        return Temp()
-
-
-class _ArgumentParserStub(argparse.ArgumentParser):
-    """Emulation of `lsst.pipe.tasks.IngestArgumentParser` and
-    `lsst.pipe.tasks.IngestCalibsArgumentParser` that does not create a
-    Butler as a side effect.
-    """
-
-    def __init__(self, name, *args, **kwargs):
-        # _ArgumentParserStub is not an pipeBase.ArgumentParser; use composition instead of inheritance
-        standardArgs = pipeBase.ArgumentParser(self, name, *args, **kwargs)
-
-        argparse.ArgumentParser.__init__(self, parents=[standardArgs], add_help=False)
-        self.add_argument("--mode", choices=["move", "copy", "link", "skip"], default="link",
-                          help="Mode of delivering the files to their destination")
-        self.add_argument("--validity", type=int, help="Calibration validity period (days)")
-        self.add_argument("--calibType", type=str, default=None,
-                          choices=[None, "bias", "dark", "flat", "fringe", "sky", "defect"],
-                          help="Type of the calibration data to be ingested;" +
-                               " if omitted, the type is determined from" +
-                               " the file header information")
-        self.add_argument("--ignore-ingested", dest="ignoreIngested", action="store_true",
-                          help="Don't register files that have already been registered")
-        self.add_argument("--badFile", nargs="*", default=[],
-                          help="Names of bad files (no path; wildcards allowed)")
-        self.add_argument("files", nargs="+", help="Names of file")
-
-    def parse_args(self, config, args=None, log=None, override=None):
-        return argparse.ArgumentParser.parse_args(self, args=args)
-
-
-class _IngestTaskStub(pipeBase.Task):
-    """Simplified version of an ingestion task that avoids Butler operations.
-    """
-    ConfigClass = pipeTasks.ingest.IngestConfig
-    ArgumentParser = _ArgumentParserStub
-
-    repo = None
-    """Dummy "repository" that registers "ingested" files (`_RepoStub`).
-
-    This object should be shared with other code that will read or write the same files.
-    As a result, this attribute is never assigned to by this object's code.
-    """
-
-    def __init__(self, *args, **kwargs):
-        pipeBase.Task.__init__(self, *args, **kwargs)
-        self.makeSubtask("parse")
-
-    def run(self, args):
-        """A substitute for `lsst.pipe.tasks.IngestTask.run` that registers
-        files with a `_RepoStub`.
-
-        `self.repo` MUST be initialized before this method is called.
-        """
-        for file in _IngestTaskStub._expandFiles(args.files):
-            if os.path.basename(file) in args.badFile:
-                continue
-
-            if args.calibType:
-                datasetType = args.calibType
-            else:
-                datasetType = self.getType(file)
-            fileInfo, _ = self.parse.getInfo(file)
-
-            self.repo.registerFile(file, datasetType, fileInfo)
-
-    @staticmethod
-    def _expandFiles(files):
-        result = []
-        for pattern in files:
-            expanded = glob.glob(pattern)
-            if expanded:
-                result.extend(expanded)
-        return result
-
-    def getType(self, _filename):
-        return 'raw'
-
-
-class _IngestCalibsTaskStub(_IngestTaskStub):
-    ConfigClass = pipeTasks.ingestCalibs.IngestCalibsConfig
-    ArgumentParser = _ArgumentParserStub
-
-    def getType(self, filename):
-        return self.parse.getCalibType(filename)
+import lsst.ap.verify.ingestion
 
 
 class IngestionTestSuite(lsst.utils.tests.TestCase):
@@ -221,18 +49,18 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             raise unittest.SkipTest(message)
 
         obsDir = os.path.join(getPackageDir('obs_test'), 'config')
-        cls.config = ingestion.DatasetIngestConfig()
-        cls.config.dataIngester.retarget(_IngestTaskStub)
+        cls.config = lsst.ap.verify.ingestion.DatasetIngestConfig()
         cls.config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
-        cls.config.calibIngester.retarget(_IngestCalibsTaskStub)
         cls.config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        cls.config.defectIngester.retarget(_IngestCalibsTaskStub)
         cls.config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
         cls.config.freeze()
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
         cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
 
+        cls.visitToFile = {890104911: 'raw_v1_fg.fits.gz',
+                           890106021: 'raw_v2_fg.fits.gz',
+                           890880321: 'raw_v3_fr.fits.gz'}
         cls.rawData = [{'file': 'raw_v1_fg.fits.gz', 'visit': 890104911, 'filter': 'g', 'exptime': 15.0},
                        {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
                        {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
@@ -246,11 +74,29 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         # Mandatory argument to _doIngest*, used by _doIngestDefects to unpack tar
         self._repo = self._calibRepo = tempfile.mkdtemp()
 
-        self._task = ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
-        self._butler = _RepoStub()
-        self._task.dataIngester.repo = self._butler
-        self._task.calibIngester.repo = self._butler
-        self._task.defectIngester.repo = self._butler
+        def mock_get(datasetType, dataId=None):
+            """Minimally fake a butler.get()"""
+            if "raw_filename" in datasetType:
+                # butler.get('_filename') returns a list.
+                return [os.path.join(self._repo, IngestionTestSuite.visitToFile[dataId['visit']]), ]
+            return None
+
+        patcherButler = unittest.mock.patch("lsst.daf.persistence.Butler", autospec=True)
+        self._butler = patcherButler.start()
+        # NOTE: we have to force the MapperClass here, because we don't have a
+        # properly initialized butler repository, so getMapperClass() wouldn't
+        # work with a real butler.
+        self._butler.getMapperClass.return_value = TestMapper
+        self._butler.return_value.get = mock_get
+        self.addCleanup(patcherButler.stop)
+
+        self._task = lsst.ap.verify.ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
+        patcherRegister = unittest.mock.patch.object(self._task.dataIngester, "register",
+                                                     spec=lsst.pipe.tasks.ingest.RegisterTask)
+        self._register = patcherRegister.start()
+        self.addCleanup(patcherRegister.stop)
+        # the mocked entry point of the Registry context manager
+        self._contextEnter = self._register.openRegistry().__enter__()
 
     def tearDown(self):
         shutil.rmtree(self._repo, ignore_errors=True)
@@ -260,7 +106,19 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
-        self._task._doIngest(self._repo, files, [])
+        self._task._doIngestRaws(self._repo, files, [])
+
+        self.assertEqual(self._register.addRow.call_count, len(IngestionTestSuite.rawData))
+        self.assertEqual(self._register.addVisits.call_count, 1)
+        # print("register:", self._register.mock_calls)
+        for item in IngestionTestSuite.rawData:
+            # outfile = os.path.join(self._repo, item['file'])
+            # self.assertTrue(os.path.exists(outfile))
+            dataId = {'visit': item['visit'], 'expTime': item['exptime'], 'filter': item['filter']}
+            self._register.addRow.assert_any_call(self._contextEnter, dataId, create=False, dryrun=False)
+        self._register.addVisits.assert_called_once_with(self._contextEnter, dryrun=False)
+
+        import ipdb; ipdb.set_trace()
 
         for datum in IngestionTestSuite.rawData:
             dataId = {'visit': datum['visit']}
@@ -300,7 +158,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = []
 
         with self.assertRaises(RuntimeError):
-            self._task._doIngest(self._repo, files, [])
+            self._task._doIngestRaws(self._repo, files, [])
         with self.assertRaises(RuntimeError):
             self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
@@ -313,11 +171,17 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
-        self._task._doIngest(self._repo, files, badFiles)
+        self._task._doIngestRaws(self._repo, files, badFiles)
 
         for datum in IngestionTestSuite.rawData:
-            dataId = {'visit': datum['visit']}
-            self.assertEqual(self._butler.datasetExists('raw', dataId), datum['file'] not in badFiles)
+            # dataId = {'visit': datum['visit']}
+            # self.assertEqual(self._butler.datasetExists('raw', dataId), datum['file'] not in badFiles)
+            dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
+            call = unittest.mock.call(self._contextEnter, dataId, create=False, dryrun=False)
+            if datum['file'] not in badFiles:
+                self.assertIn(call, self._register.addRow.mock_calls)
+            else:
+                self.assertNotIn(call, self._register.addRow.mock_calls)
 
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
@@ -325,16 +189,16 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         testDir = os.path.join(IngestionTestSuite.testData)
 
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz']),
+            lsst.ap.verify.ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz']),
             {os.path.join(testDir, f) for f in
              {'raw/raw_v1_fg.fits.gz', 'raw/raw_v2_fg.fits.gz', 'raw/raw_v3_fr.fits.gz'}}
         )
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*fr*']),
+            lsst.ap.verify.ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*fr*']),
             {os.path.join(testDir, f) for f in {'raw/raw_v1_fg.fits.gz', 'raw/raw_v2_fg.fits.gz'}}
         )
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*_v?_f?.fits.gz']),
+            lsst.ap.verify.ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*_v?_f?.fits.gz']),
             set()
         )
 
