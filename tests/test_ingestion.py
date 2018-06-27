@@ -111,7 +111,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
-        self._task._doIngest(self._repo, files, [])
+        self._task._doIngestRaws(self._repo, files, [])
 
         butler = self._rawButler()
         for datum in IngestionTestSuite.rawData:
@@ -144,7 +144,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         files = []
 
         with self.assertRaises(RuntimeError):
-            self._task._doIngest(self._repo, files, [])
+            self._task._doIngestRaws(self._repo, files, [])
         with self.assertRaises(RuntimeError):
             self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
@@ -158,7 +158,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         testDir = os.path.join(IngestionTestSuite.testData, 'raw')
         files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
-        self._task._doIngest(self._repo, files, badFiles)
+        self._task._doIngestRaws(self._repo, files, badFiles)
 
         butler = self._rawButler()
         for datum in IngestionTestSuite.rawData:
