@@ -22,13 +22,12 @@
 #
 
 import unittest
+from unittest.mock import NonCallableMock
 
 import astropy.units as u
 import numpy as np
 import os
-import shutil
 import sqlite3
-import tempfile
 
 import lsst.daf.persistence as dafPersist
 import lsst.afw.geom as afwGeom
@@ -36,10 +35,7 @@ import lsst.afw.table as afwTable
 from lsst.ap.association import \
     make_minimal_dia_source_schema, \
     make_minimal_dia_object_schema, \
-    AssociationDBSqliteTask, \
-    AssociationDBSqliteConfig, \
     AssociationTask
-import lsst.obs.test as obsTest
 import lsst.pipe.base as pipeBase
 import lsst.utils.tests
 from lsst.verify import Measurement
@@ -119,14 +115,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assocTask = AssociationTask()
 
         # Create a empty butler repository and put data in it.
-        self.testDir = tempfile.mkdtemp(
-            dir=ROOT, prefix="TestAssocMeasurements-")
-        outputRepoArgs = dafPersist.RepositoryArgs(
-            root=os.path.join(self.testDir, 'repoA'),
-            mapper=obsTest.TestMapper,
-            mode='rw')
-        self.butler = dafPersist.Butler(
-            outputs=outputRepoArgs)
         self.numTestSciSources = 10
         self.numTestDiaSources = 5
         testSources = createTestPoints(
@@ -135,41 +123,33 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         testDiaSources = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
                           range(self.numTestDiaSources)])
-        self.butler.put(obj=testSources,
-                        datasetType='src',
-                        dataId=dataIdDict)
-        self.butler.put(obj=testDiaSources,
-                        datasetType='deepDiff_diaSrc',
-                        dataId=dataIdDict)
 
-        (self.tmpFile, self.dbFile) = tempfile.mkstemp(
-            dir=os.path.dirname(__file__))
-        assocDbConfig = AssociationDBSqliteConfig()
-        assocDbConfig.db_name = self.dbFile
-        assocDbConfig.filter_names = ['r']
-        assocDb = AssociationDBSqliteTask(config=assocDbConfig)
-        assocDb.create_tables()
+        # Fake Butler to avoid initialization and I/O overhead
+        def mockGet(datasetType, dataId=None):
+            """An emulator for `lsst.daf.persistence.Butler.get` that can only handle test data.
+            """
+            # Check whether dataIdDict is a subset of dataId
+            if dataIdDict.items() <= dataId.items():
+                if datasetType == 'src':
+                    return testSources
+                elif datasetType == 'deepDiff_diaSrc':
+                    return testDiaSources
+            raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
+        self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
         self.numTestDiaObjects = 5
-        diaObjects = createTestPoints(
+        self.diaObjects = createTestPoints(
             pointLocsDeg=[[idx, idx] for idx in
                           range(self.numTestDiaObjects)],
             schema=make_minimal_dia_object_schema(['r']))
-        for diaObject in diaObjects:
+        for diaObject in self.diaObjects:
             diaObject['nDiaSources'] = 1
-        assocDb.store_dia_objects(diaObjects, True)
-        assocDb.close()
 
     def tearDown(self):
         del self.assocTask
 
-        if os.path.exists(self.testDir):
-            shutil.rmtree(self.testDir)
         if hasattr(self, "butler"):
             del self.butler
-
-        del self.tmpFile
-        os.remove(self.dbFile)
 
     def testValidFromMetadata(self):
         """Verify that association information can be recovered from metadata.
@@ -230,7 +210,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric='ip_diffim.numSciSrc'))
-        self.assertEqual(meas.quantity, 10 * u.count)
+        self.assertEqual(meas.quantity, self.numTestSciSources * u.count)
 
         meas = measureFractionDiaSourcesToSciSources(
             self.butler,
@@ -240,12 +220,13 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric='ip_diffim.fracDiaSrcToSciSrc'))
-        # We put in half the number of DIASources as detected sources.
-        self.assertEqual(meas.quantity, 0.5 * u.dimensionless_unscaled)
+        self.assertEqual(meas.quantity,
+                         self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromSqlite(self):
-        conn = sqlite3.connect(self.dbFile)
-        cursor = conn.cursor()
+        # Fake DB handle to avoid DB initialization overhead
+        cursor = NonCallableMock(spec=sqlite3.Cursor)
+        cursor.fetchall.return_value = [(len(self.diaObjects),)]
 
         meas = measureTotalUnassociatedDiaObjects(
             cursor,
@@ -255,7 +236,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(
                 metric='association.numTotalUnassociatedDiaObjects'))
-        self.assertEqual(meas.quantity, 5 * u.count)
+        self.assertEqual(meas.quantity, self.numTestDiaObjects * u.count)
 
     def testNoButlerData(self):
         """ Test attempting to create a measurement with data that the butler
@@ -298,17 +279,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             "association.numNewDIAObjects")
         self.assertIsNone(meas)
 
-    def testInvalidDb(self):
-        """ Test that the measurement raises the correct error when given an
-        improper database.
-        """
-        conn = sqlite3.connect(":memory:")
-        cursor = conn.cursor()
-        with self.assertRaises(sqlite3.OperationalError):
-            measureTotalUnassociatedDiaObjects(
-                cursor,
-                metricName='association.numTotalUnassociatedDiaObjects')
-
     def testNoMetric(self):
         """Verify that trying to measure a nonexistent metric fails.
         """
@@ -337,8 +307,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 self.butler, dataId=dataIdDict,
                 metricName='foo.bar.FooBar')
 
-        conn = sqlite3.connect(self.dbFile)
-        cursor = conn.cursor()
+        # Fake DB handle to avoid DB initialization overhead
+        cursor = NonCallableMock(spec=sqlite3.Cursor)
+        cursor.fetchall.return_value = [(0,)]
         with self.assertRaises(TypeError):
             measureTotalUnassociatedDiaObjects(
                 cursor, metricName='foo.bar.FooBar')

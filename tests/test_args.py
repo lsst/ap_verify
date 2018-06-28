@@ -26,9 +26,11 @@ import unittest
 
 import lsst.utils.tests
 import lsst.ap.verify.ap_verify as ap_verify
+import lsst.ap.verify.testUtils
 
 
-class CommandLineTestSuite(lsst.utils.tests.TestCase):
+class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
+    # DataTestCase's test dataset is needed for successful parsing of the --dataset argument
 
     def _parseString(self, commandLine, parser=None):
         """Tokenize and parse a command line string.
@@ -54,21 +56,21 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testMissingMain(self):
         """Verify that a command line consisting missing required arguments is rejected.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo'
+        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.datasetKey
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
     def testMissingIngest(self):
         """Verify that a command line consisting missing required arguments is rejected.
         """
-        args = '--dataset HiTS2015'
+        args = '--dataset %s' % CommandLineTestSuite.datasetKey
         with self.assertRaises(SystemExit):
             self._parseString(args, ap_verify._IngestOnlyParser())
 
     def testMinimumMain(self):
         """Verify that a command line consisting only of required arguments parses correctly.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123"'
+        args = '--dataset %s --output tests/output/foo --id "visit=54123"' % CommandLineTestSuite.datasetKey
         parsed = self._parseString(args)
         self.assertIn('dataset', dir(parsed))
         self.assertIn('output', dir(parsed))
@@ -77,7 +79,7 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testMinimumIngest(self):
         """Verify that a command line consisting only of required arguments parses correctly.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo'
+        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.datasetKey
         parsed = self._parseString(args, ap_verify._IngestOnlyParser())
         self.assertIn('dataset', dir(parsed))
         self.assertIn('output', dir(parsed))
@@ -85,7 +87,7 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testRerun(self):
         """Verify that a command line with reruns is handled correctly.
         """
-        args = '--dataset HiTS2015 --rerun me --id "visit=54123"'
+        args = '--dataset %s --rerun me --id "visit=54123"' % CommandLineTestSuite.datasetKey
         parsed = self._parseString(args)
         out = ap_verify._getOutputDir('non_lsst_repo/', parsed.output, parsed.rerun)
         self.assertEqual(out, 'non_lsst_repo/rerun/me')
@@ -93,14 +95,15 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testRerunInput(self):
         """Verify that a command line trying to redirect input is rejected.
         """
-        args = '--dataset HiTS2015 --rerun from:to --id "visit=54123"'
+        args = '--dataset %s --rerun from:to --id "visit=54123"' % CommandLineTestSuite.datasetKey
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
     def testTwoOutputs(self):
         """Verify that a command line with both --output and --rerun is rejected.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --rerun me --id "visit=54123"'
+        args = '--dataset %s --output tests/output/foo --rerun me --id "visit=54123"' \
+            % CommandLineTestSuite.datasetKey
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
@@ -114,14 +117,16 @@ class CommandLineTestSuite(lsst.utils.tests.TestCase):
     def testBadKeyMain(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123" --clobber'
+        args = '--dataset %s --output tests/output/foo --id "visit=54123" --clobber' \
+            % CommandLineTestSuite.datasetKey
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
     def testBadKeyIngest(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
-        args = '--dataset HiTS2015 --output tests/output/foo --id "visit=54123"'
+        args = '--dataset %s --output tests/output/foo --id "visit=54123"' \
+            % CommandLineTestSuite.datasetKey
         with self.assertRaises(SystemExit):
             self._parseString(args, ap_verify._IngestOnlyParser())
 

@@ -195,12 +195,12 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Ingesting raw images...")
             dataFiles = _findMatchingFiles(dataset.rawLocation, self.config.dataFiles)
             if dataFiles:
-                self._doIngest(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+                self._doIngestRaws(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
                 self.log.info("Images are now ingested in {0}".format(workspace.dataRepo))
             else:
                 raise RuntimeError("No raw files found at %s." % dataset.rawLocation)
 
-    def _doIngest(self, repo, dataFiles, badFiles):
+    def _doIngestRaws(self, repo, dataFiles, badFiles):
         """Ingest raw images into a repository.
 
         ``repo`` shall be populated with *links* to ``dataFiles``.
@@ -350,7 +350,7 @@ class DatasetIngestTask(pipeBase.Task):
         # TODO: clean up implementation after DM-5467 resolved
         defectDir = os.path.join(calibRepo, "defects")
         with tarfile.open(defectTarball, "r") as opened:
-            if opened.getNames():
+            if opened.getnames():
                 pathlib.Path(defectDir).mkdir(parents=True, exist_ok=True)
                 opened.extractall(defectDir)
             else:

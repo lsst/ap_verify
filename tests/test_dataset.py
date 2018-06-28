@@ -27,28 +27,18 @@ import tempfile
 import unittest
 
 import lsst.utils.tests
-import lsst.pex.exceptions as pexExcept
-from lsst.ap.verify.config import Config
 from lsst.ap.verify.dataset import Dataset
+from lsst.ap.verify.testUtils import DataTestCase
 
 
-class DatasetTestSuite(lsst.utils.tests.TestCase):
+class DatasetTestSuite(DataTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.testDataset = 'ap_verify_testdata'
-        cls.datasetKey = 'test'
+        super().setUpClass()
+
         cls.obsPackage = 'obs_test'
         cls.camera = 'test'
-        try:
-            lsst.utils.getPackageDir(cls.testDataset)
-        except pexExcept.NotFoundError:
-            raise unittest.SkipTest(cls.testDataset + ' not set up')
-
-        # Hack the config for testing purposes
-        # Note that Config.instance is supposed to be immutable, so, depending on initialization order,
-        # this modification may cause other tests to see inconsistent config values
-        Config.instance._allInfo['datasets.' + cls.datasetKey] = cls.testDataset
 
     def setUp(self):
         self._testbed = Dataset(DatasetTestSuite.datasetKey)
