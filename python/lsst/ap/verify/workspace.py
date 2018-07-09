@@ -61,6 +61,12 @@ class Workspace:
         self._analysisButler = None
 
     @property
+    def configDir(self):
+        """The location of a directory containing custom Task config files for use with the data.
+        """
+        return os.path.join(self._location, 'config')
+
+    @property
     def dataRepo(self):
         """The URI to a Butler repo for science data (`str`, read-only).
         """

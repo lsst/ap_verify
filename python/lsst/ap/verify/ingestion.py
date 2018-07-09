@@ -31,6 +31,7 @@ __all__ = ["DatasetIngestConfig", "ingestDataset"]
 
 import fnmatch
 import os
+import shutil
 import pathlib
 import tarfile
 from glob import glob
@@ -149,6 +150,7 @@ class DatasetIngestTask(pipeBase.Task):
         self._ingestCalibs(dataset, workspace)
         self._ingestDefects(dataset, workspace)
         self._ingestRefcats(dataset, workspace)
+        self._copyConfigs(dataset, workspace)
 
     def _makeRepos(self, dataset, workspace):
         """Create empty repositories to ingest into.
@@ -169,6 +171,7 @@ class DatasetIngestTask(pipeBase.Task):
         dataset.makeCompatibleRepo(workspace.dataRepo)
         pathlib.Path(workspace.calibRepo).mkdir(parents=True, exist_ok=True)
         pathlib.Path(workspace.templateRepo).mkdir(parents=True, exist_ok=True)
+        pathlib.Path(workspace.configDir).mkdir(parents=True, exist_ok=True)
 
     def _ingestRaws(self, dataset, workspace):
         """Ingest the science data for use by LSST.
@@ -411,6 +414,39 @@ class DatasetIngestTask(pipeBase.Task):
             refcatDir = os.path.join(repo, "ref_cats", refcatName)
             with tarfile.open(tarball, "r") as opened:
                 opened.extractall(refcatDir)
+
+    def _copyConfigs(self, dataset, workspace):
+        """Give a workspace a copy of all configs associated with the ingested data.
+
+        After this method returns, the config directory in ``workspace`` shall
+        contain all config files from ``dataset``.
+
+        Parameters
+        ----------
+        dataset : `lsst.ap.verify.dataset.Dataset`
+            The dataset on which the pipeline will be run.
+        workspace : `lsst.ap.verify.workspace.Workspace`
+            The location containing the config directory.
+        """
+        if os.listdir(workspace.configDir):
+            self.log.info("Configs already copied, skipping...")
+        else:
+            self.log.info("Storing data-specific configs...")
+            self._doCopyConfigs(workspace.configDir, dataset.configLocation)
+            self.log.info("Configs are now stored in {0}".format(workspace.configDir))
+
+    def _doCopyConfigs(self, destination, source):
+        """Place configs inside a particular repository.
+
+        Parameters
+        ----------
+        destination : `str`
+            The directory to which the configs must be copied. Must exist.
+        source : `str`
+            A directory containing Task config files.
+        """
+        for configFile in _findMatchingFiles(source, ['*.py']):
+            shutil.copy2(configFile, destination)
 
 
 def ingestDataset(dataset, workspace):
