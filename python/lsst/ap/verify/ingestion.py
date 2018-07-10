@@ -145,33 +145,12 @@ class DatasetIngestTask(pipeBase.Task):
             If the repositories already exist, they must support the same
             ``obs`` package as this task's subtasks.
         """
-        self._makeRepos(dataset, workspace)
+        dataset.makeCompatibleRepo(workspace.dataRepo)
         self._ingestRaws(dataset, workspace)
         self._ingestCalibs(dataset, workspace)
         self._ingestDefects(dataset, workspace)
         self._ingestRefcats(dataset, workspace)
         self._copyConfigs(dataset, workspace)
-
-    def _makeRepos(self, dataset, workspace):
-        """Create empty repositories to ingest into.
-
-        After this method returns, all repositories mentioned by ``workspace``
-        except ``workspace.outputRepo`` shall be valid repositories compatible
-        with ``dataset``. They may be empty.
-
-        Parameters
-        ----------
-        dataset : `lsst.ap.verify.dataset.Dataset`
-            The dataset to be ingested.
-        workspace : `lsst.ap.verify.workspace.Workspace`
-            The abstract location where ingestion repositories will be created.
-            If the repositories already exist, they must support the same
-            ``obs`` package as this task's subtasks.
-        """
-        dataset.makeCompatibleRepo(workspace.dataRepo)
-        pathlib.Path(workspace.calibRepo).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(workspace.templateRepo).mkdir(parents=True, exist_ok=True)
-        pathlib.Path(workspace.configDir).mkdir(parents=True, exist_ok=True)
 
     def _ingestRaws(self, dataset, workspace):
         """Ingest the science data for use by LSST.
