@@ -262,7 +262,7 @@ def _deStringDataId(dataId):
     dataId: `dict` from `str` to any
         The dataId to be cleaned up.
     '''
-    integer = re.compile('^\s*[+-]?\d+\s*$')
+    integer = re.compile(r'^\s*[+-]?\d+\s*$')
     for key, value in dataId.items():
         if isinstance(value, str) and integer.match(value) is not None:
             dataId[key] = int(value)
