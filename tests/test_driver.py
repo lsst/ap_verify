@@ -21,6 +21,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import functools
 import os
 import shutil
 import tempfile
@@ -31,8 +32,24 @@ import astropy.units as u
 from lsst.daf.base import PropertySet
 import lsst.utils.tests
 import lsst.verify
+import lsst.obs.test
+from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify import pipeline_driver
 from lsst.ap.verify.workspace import Workspace
+
+
+def patchApPipe(method):
+    """Shortcut decorator for consistently patching ApPipeTask.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        patcher = unittest.mock.patch("lsst.ap.pipe.ApPipeTask",
+                                      autospec=True,
+                                      _DefaultName=ApPipeTask._DefaultName,
+                                      ConfigClass=ApPipeTask.ConfigClass)
+        patchedMethod = patcher(method)
+        return patchedMethod(self, *args, **kwargs)
+    return wrapper
 
 
 class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
@@ -41,7 +58,8 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.addCleanup(shutil.rmtree, self._testDir, ignore_errors=True)
 
         # Fake Butler to avoid Workspace initialization overhead
-        self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
+        butler = self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
+        butler.getMapperClass.return_value = lsst.obs.test.TestMapper
         self.setUpMockPatch("lsst.daf.persistence.searchDataRefs", return_value=[{"visit": 42, "ccd": 0}])
 
         self.job = lsst.verify.Job()
@@ -84,9 +102,10 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.addCleanup(patcher.stop)
         return mock
 
-    # Mock up ApPipeTask to avoid doing any processing
-    @unittest.mock.patch("lsst.ap.pipe.ApPipeTask", autospec=True)
-    def testRunApPipeReturn(self, mockClass):
+    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
+    @patchApPipe
+    def testRunApPipeReturn(self, _mockConfig, mockClass):
         """Test that runApPipe runs the pipeline and returns the Task object's(s') metadata.
         """
         mockClass.return_value.getFullMetadata.return_value = PipelineDriverTestSuite.dummyMetadata()
@@ -96,9 +115,10 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(len(metadata.paramNames(topLevelOnly=False)), 1)
         self.assertEqual(metadata.getScalar("lsst.ap.pipe.ccdProcessor.cycleCount"), 42)
 
-    # Mock up ApPipeTask to avoid doing any processing
-    @unittest.mock.patch("lsst.ap.pipe.ApPipeTask", autospec=True)
-    def testRunApPipeSteps(self, mockClass):
+    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
+    @patchApPipe
+    def testRunApPipeSteps(self, _mockConfig, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """
         # This test case is sensitive to the implementation of pipeline_driver
@@ -132,9 +152,10 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
         self.assertEqual(self.job.measurements, self.subtaskJob.measurements)
 
-    # Mock up ApPipeTask to avoid doing any processing
-    @unittest.mock.patch("lsst.ap.pipe.ApPipeTask", autospec=True)
-    def testUpdateMetricsOnError(self, mockClass):
+    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
+    @patchApPipe
+    def testUpdateMetricsOnError(self, _mockConfig, mockClass):
         """Test that runApPipe stores metrics in a job even when the pipeline fails.
         """
         subtaskFile = os.path.join(self._testDir, "ccdProcessor.persist")
@@ -151,6 +172,36 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
             pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
 
         self.assertEqual(self.job.measurements, self.subtaskJob.measurements)
+
+    def testRunApPipeCustomConfig(self):
+        """Test that runApPipe can pass custom configs from a workspace to ApPipeTask.
+        """
+        configFile = os.path.join(self.workspace.configDir, "apPipe.py")
+        with open(configFile, "w") as f:
+            # Illegal value; would never be set by a real config
+            f.write("config.differencer.doWriteSources = False")
+
+        class InitRecordingMock(unittest.mock.MagicMock):
+            def __call__(self, *args, **kwargs):
+                # super() unsafe because MagicMock does not guarantee support
+                instance = unittest.mock.MagicMock.__call__(self, *args, **kwargs)
+                initCall = unittest.mock.call(*args, **kwargs)
+                initCall.name = "__init__"
+                instance.mock_calls.append(initCall)
+                return instance
+        task = self.setUpMockPatch("lsst.ap.pipe.ApPipeTask",
+                                   spec=True,
+                                   new_callable=InitRecordingMock,
+                                   _DefaultName=ApPipeTask._DefaultName,
+                                   ConfigClass=ApPipeTask.ConfigClass).return_value
+
+        pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+        initCalls = (c for c in task.mock_calls if c.name == "__init__")
+        for call in initCalls:
+            kwargs = call[2]
+            self.assertIn("config", kwargs)
+            taskConfig = kwargs["config"]
+            self.assertFalse(taskConfig.differencer.doWriteSources)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

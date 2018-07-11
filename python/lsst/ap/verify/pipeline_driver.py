@@ -203,7 +203,8 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     processes = parsedCmdLine.processes
 
     pipeline = apPipe.ApPipeTask(workspace.workButler,
-                                 os.path.join(workspace.outputRepo, 'association.db'))
+                                 os.path.join(workspace.outputRepo, 'association.db'),
+                                 config=_getConfig(workspace))
     try:
         _process(pipeline, workspace, dataId, processes)
         log.info('Single-frame processing complete')
@@ -219,6 +220,37 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     finally:
         # Recover any metrics from completed pipeline steps, even if the pipeline fails
         _updateMetrics(pipeline.getFullMetadata(), metricsJob)
+
+
+def _getConfig(workspace):
+    """Return the config for running ApPipeTask on this workspace.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        A Workspace whose config directory may contain an
+        `~lsst.ap.pipe.ApPipeTask` config.
+
+    Returns
+    -------
+    config : `lsst.ap.pipe.ApPipeConfig`
+        The config for running `~lsst.ap.pipe.ApPipeTask`.
+    """
+    overrideFile = apPipe.ApPipeTask._DefaultName + ".py"
+    # TODO: may not be needed depending on resolution of DM-13887
+    mapper = dafPersist.Butler.getMapperClass(workspace.dataRepo)
+    packageDir = lsst.utils.getPackageDir(mapper.getPackageName())
+
+    config = apPipe.ApPipeTask.ConfigClass()
+    for path in [
+        os.path.join(packageDir, 'config'),
+        os.path.join(packageDir, 'config', mapper.getCameraName()),
+        workspace.configDir,
+    ]:
+        overridePath = os.path.join(path, overrideFile)
+        if os.path.exists(overridePath):
+            config.load(overridePath)
+    return config
 
 
 def _deStringDataId(dataId):
