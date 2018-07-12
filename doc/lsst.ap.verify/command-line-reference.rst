@@ -17,7 +17,7 @@ The basic call signature of ``ap_verify`` is:
 
    ap_verify.py --dataset DATASET --output WORKSPACE --id DATAID
 
-These three arguments (or replacing ``--output`` with ``--rerun``) are mandatory, all others are optional.
+These three arguments are mandatory, all others are optional.
 
 Status code
 ===========
@@ -28,7 +28,7 @@ If the pipeline fails, the status code will be an interpreter-dependent nonzero 
 Named arguments
 ===============
 
-Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :option:`--output` or :option:`--rerun`.
+Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--output`.
 
 .. option:: --id <dataId>
 
@@ -82,28 +82,10 @@ Required arguments are :option:`--dataset`, :option:`--id`, and exactly one of :
 
    **Output and intermediate product path.**
 
-   The output argument or :option:`--rerun` is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
+   The output argument is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
 
    The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
    The path may be absolute or relative to the current working directory.
-
-   ``--output`` may not be used with the :option:`--rerun` argument.
-
-   See :ref:`command-line-task-data-repo-howto` for background.
-
-   .. TODO: Rework or remove --rerun (DM-13492)
-
-.. option:: --rerun <workspace_dir>
-
-   **Specify output "rerun".**
-
-   The rerun or :option:`--output` is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
-
-   For ``ap_verify``, a rerun is a workspace directory relative to the dataset directory (as determined by :option:`--dataset`).
-   This is different from command-line task reruns, which are output repositories chained to an input repository.
-   An input rerun cannot be specified.
-
-   ``--rerun`` may not be used with the :option:`--output` argument.
 
 .. option:: --silent
 

@@ -28,11 +28,7 @@ A basic run on HiTS data:
 
     python python/lsst/ap/verify/ap_verify.py --dataset HiTS2015 --output workspace/hits/ --dataIdString "visit=54123"
 
-This will create a workspace (a Butler repository) in `workspace/hits` based on `<hits-data>/data/`, ingest the HiTS data into it, then run visit 54123 through the entire AP pipeline. `ap_verify` also supports the `--rerun` system:
-
-    python python/lsst/ap/verify/ap_verify.py --dataset HiTS2015 --rerun run1 --dataIdString "visit=54123"
-
-This will create a workspace in `<hits-data>/rerun/run1/`. Since datasets are not, in general, repositories, many of the complexities of `--rerun` for Tasks (e.g., always using the highest-level repository) do not apply. In addition, the `--rerun` argument does not support input directories; the input for `ap_verify` will always be determined by the `--dataset`.
+This will create a workspace (a Butler repository) in `workspace/hits` based on `<hits-data>/data/`, ingest the HiTS data into it, then run visit 54123 through the entire AP pipeline.
 
 ### Optional Arguments
 

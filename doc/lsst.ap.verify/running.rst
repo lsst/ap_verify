@@ -50,21 +50,6 @@ This call will create a new directory at :file:`workspaces/hits`, ingest the HiT
    In particular, only file-based repositories are supported, and compound dataIds cannot be provided.
    See the :ref:`ap-verify-cmd` for details.
 
-.. _ap-verify-run-rerun:
-
-How to Run ap_verify in the Dataset Directory
----------------------------------------------
-
-It is also possible to place a workspace in a subdirectory of a dataset directory. The syntax for this mode is:
-
-.. prompt:: bash
-
-   ap_verify.py --dataset HiTS2015 --rerun run1 --id "visit=54123 ccdnum=25 filter=g" --silent
-
-The :command:`--rerun run1` argument will create a directory at :file:`<hits-data>/rerun/run1/`.
-Since neither :ref:`datasets<ap-verify-datasets-butler>` nor ``ap_verify`` output directories are repositories, the :option:`--rerun <ap_verify.py --rerun>` parameter only superficially resembles the analogous argument for command-line tasks.
-In particular, ``ap_verify``'s ``--rerun`` does not support repository chaining (as in :command:`--rerun input:output`); the input for ``ap_verify`` will always be determined by the :option:`--dataset <ap_verify.py --dataset>`.
-
 .. _ap-verify-run-ingest:
 
 How to Run Ingestion By Itself
@@ -80,7 +65,7 @@ Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, o
 
    ingest_dataset.py --dataset HiTS2015 --output workspaces/hits/
 
-The :option:`--dataset <ap_verify.py --dataset>`, :option:`--output <ap_verify.py --output>`, and :option:`--rerun <ap_verify.py --rerun>` arguments behave the same way as for ``ap_verify``.
+The :option:`--dataset <ap_verify.py --dataset>` and :option:`--output <ap_verify.py --output>` arguments behave the same way as for ``ap_verify``.
 Other options from ``ap_verify`` are not available.
 
 .. _ap-verify-results:

@@ -57,16 +57,8 @@ class _InputOutputParser(argparse.ArgumentParser):
         self.add_argument('--dataset', action=_DatasetAction, choices=Dataset.getSupportedDatasets(),
                           required=True, help='The source of data to pass through the pipeline.')
 
-        output = self.add_mutually_exclusive_group(required=True)
-        output.add_argument('--output',
-                            help='The location of the workspace to use for pipeline repositories.')
-        output.add_argument(
-            '--rerun', metavar='OUTPUT',
-            type=_FormattedType('[^:]+',
-                                'Invalid name "%s"; ap_verify supports only output reruns. '
-                                'You have entered something that appears to be of the form INPUT:OUTPUT. '
-                                'Please specify only OUTPUT.'),
-            help='The location of the workspace to use for pipeline repositories, as DATASET/rerun/OUTPUT')
+        self.add_argument('--output', required=True,
+                          help='The location of the workspace to use for pipeline repositories.')
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -95,7 +87,7 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             'The program will create a data repository in <OUTPUT>/ingested and a calib repository '
             'in <OUTPUT>/calibingested. '
             'These repositories may be used directly by ap_verify.py by '
-            'passing the same --output or --rerun argument, or by other programs that accept '
+            'passing the same --output argument, or by other programs that accept '
             'Butler repositories as input.',
             epilog='',
             parents=[_InputOutputParser()],
@@ -145,35 +137,6 @@ class _DatasetAction(argparse.Action):
         setattr(namespace, self.dest, Dataset(values))
 
 
-def _getOutputDir(inputDir, outputArg, rerunArg):
-    """Choose an output directory based on program arguments.
-
-    Parameters
-    ----------
-    inputDir : `str`
-        The root directory of the input dataset.
-    outputArg : `str`
-        The directory given using the ``--output`` command line argument. May
-        be `None`.
-    rerunArg : `str`
-        The subdirectory given using the ``--rerun`` command line argument.  May
-        be `None`, otherwise must be relative to `inputDir`.
-
-    Raises
-    ------
-    `ValueError`
-        Neither `outputArg` nor `rerunArg` is `None`, or both are.
-    """
-    if outputArg and rerunArg:
-        raise ValueError('Cannot provide both --output and --rerun.')
-    if not outputArg and not rerunArg:
-        raise ValueError('Must provide either --output or --rerun.')
-    if outputArg:
-        return outputArg
-    else:
-        return os.path.join(inputDir, "rerun", rerunArg)
-
-
 def _measureFinalProperties(metricsJob, metadata, workspace, args):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
@@ -220,7 +183,7 @@ def runApVerify(cmdLine=None):
     checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 
-    workspace = Workspace(_getOutputDir(args.dataset.datasetRoot, args.output, args.rerun))
+    workspace = Workspace(args.output)
     ingestDataset(args.dataset, workspace)
 
     with AutoJob(args) as job:
@@ -247,5 +210,5 @@ def runIngestion(cmdLine=None):
     args = _IngestOnlyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
 
-    workspace = Workspace(_getOutputDir(args.dataset.datasetRoot, args.output, args.rerun))
+    workspace = Workspace(args.output)
     ingestDataset(args.dataset, workspace)
