@@ -84,29 +84,6 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         self.assertIn('dataset', dir(parsed))
         self.assertIn('output', dir(parsed))
 
-    def testRerun(self):
-        """Verify that a command line with reruns is handled correctly.
-        """
-        args = '--dataset %s --rerun me --id "visit=54123"' % CommandLineTestSuite.datasetKey
-        parsed = self._parseString(args)
-        out = ap_verify._getOutputDir('non_lsst_repo/', parsed.output, parsed.rerun)
-        self.assertEqual(out, 'non_lsst_repo/rerun/me')
-
-    def testRerunInput(self):
-        """Verify that a command line trying to redirect input is rejected.
-        """
-        args = '--dataset %s --rerun from:to --id "visit=54123"' % CommandLineTestSuite.datasetKey
-        with self.assertRaises(SystemExit):
-            self._parseString(args)
-
-    def testTwoOutputs(self):
-        """Verify that a command line with both --output and --rerun is rejected.
-        """
-        args = '--dataset %s --output tests/output/foo --rerun me --id "visit=54123"' \
-            % CommandLineTestSuite.datasetKey
-        with self.assertRaises(SystemExit):
-            self._parseString(args)
-
     def testBadDataset(self):
         """Verify that a command line with an unregistered dataset is rejected.
         """
