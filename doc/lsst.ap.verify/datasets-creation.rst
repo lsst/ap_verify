@@ -57,6 +57,9 @@ Each dataset's :file:`config` directory should contain a :ref:`task config file<
 The file typically contains filenames or file patterns specific to the dataset.
 In particular, defect files and reference catalogs are ignored by default and need to be explicitly named.
 
+Each :file:`config` directory may contain a task config file named :file:`apPipe.py`, specifying an `lsst.ap.pipe.ApPipeConfig`.
+The file contains pipeline flags specific to the dataset, such as the available reference catalogs or information about how its image differencing templates were generated.
+
 Configuration settings specific to an instrument rather than a dataset should be handled with ordinary :ref:`configuration override files<command-line-task-config-howto-obs>`.
 
 .. _ap-verify-datasets-creation-obs:

@@ -67,6 +67,7 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         The exact repository locations are not tested, as they are likely to change.
         """
         root = self._testWorkspace
+        self._assertInDir(self._testbed.configDir, root)
         # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
         self._assertInDir(url2pathname(self._testbed.dataRepo), root)
         self._assertInDir(url2pathname(self._testbed.calibRepo), root)

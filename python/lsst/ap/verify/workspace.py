@@ -22,6 +22,7 @@
 #
 
 import os
+import pathlib
 import stat
 
 import lsst.daf.persistence as dafPersist
@@ -30,10 +31,10 @@ import lsst.daf.persistence as dafPersist
 class Workspace:
     """A directory used by ``ap_verify`` to handle data.
 
-    Any object of this class represents a plan for organizing a working
-    directory. At present, constructing a Workspace does not initialize its
-    repositories; for compatibility reasons, this is best deferred to
-    individual tasks.
+    Any object of this class represents a working directory containing
+    (possibly empty) subdirectories for repositories. At present, constructing
+    a Workspace does not *initialize* its repositories; for compatibility
+    reasons, this is best deferred to individual tasks.
 
     Parameters
     ----------
@@ -48,17 +49,26 @@ class Workspace:
     """
 
     def __init__(self, location):
-        # Can't use exceptions to reliably distinguish existing directory from other cases in Python 2
-        if os.path.isdir(location):
-            if not os.access(location, os.R_OK | os.W_OK):
-                raise IOError('Workspace % cannot be read.' % location)
-        else:
-            os.makedirs(location, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
-
         self._location = location
+
+        mode = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH  # a+r, u+rwx
+        kwargs = {"parents": True, "exist_ok": True, "mode": mode}
+        pathlib.Path(self._location).mkdir(**kwargs)
+        pathlib.Path(self.configDir).mkdir(**kwargs)
+        pathlib.Path(self.dataRepo).mkdir(**kwargs)
+        pathlib.Path(self.calibRepo).mkdir(**kwargs)
+        pathlib.Path(self.templateRepo).mkdir(**kwargs)
+        pathlib.Path(self.outputRepo).mkdir(**kwargs)
+
         # Lazy evaluation to optimize workButler and analysisButler
         self._workButler = None
         self._analysisButler = None
+
+    @property
+    def configDir(self):
+        """The location of a directory containing custom Task config files for use with the data.
+        """
+        return os.path.join(self._location, 'config')
 
     @property
     def dataRepo(self):
