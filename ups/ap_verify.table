@@ -9,8 +9,11 @@ setupRequired(verify)
 setupRequired(ap_pipe)
 
 setupOptional(ap_verify_testdata)
-setupOptional(ap_verify_hits2015)
 setupOptional(obs_test)
+
+# Datasets other than ap_verify_testdata must be set up manually
+#     to avoid being inadvertently downloaded by lsstsw
+# See the Sphinx docs for known datasets
 
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)

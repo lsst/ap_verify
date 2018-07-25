@@ -1,6 +1,7 @@
 ---
 datasets:
     HiTS2015: ap_verify_hits2015
+    CI-HiTS2015: ap_verify_ci_hits2015
 measurements:
     timing:
         apPipe:ccdProcessor: pipe_tasks.ProcessCcdTime
