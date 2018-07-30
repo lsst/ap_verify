@@ -118,7 +118,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.addCleanup(patcher.stop)
         return mock
 
-    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
     def testRunApPipeReturn(self, _mockConfig, mockClass):
@@ -131,7 +131,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(len(metadata.paramNames(topLevelOnly=False)), 1)
         self.assertEqual(metadata.getScalar("lsst.ap.pipe.ccdProcessor.cycleCount"), 42)
 
-    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
     def testRunApPipeSteps(self, _mockConfig, mockClass):
@@ -168,7 +168,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
         self.assertEqual(self.job.measurements, self.subtaskJob.measurements)
 
-    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
     def testUpdateMetricsOnError(self, _mockConfig, mockClass):
