@@ -30,7 +30,6 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
-import os
 import re
 
 import lsst.log
@@ -153,11 +152,10 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
     """
-    # TODO: remove this function's dependency on pipeline_driver (DM-13555)
     measurements = []
     measurements.extend(measureFromMetadata(metadata))
     measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
-    measurements.extend(measureFromL1DbSqlite(os.path.join(workspace.outputRepo, "association.db")))
+    measurements.extend(measureFromL1DbSqlite(workspace.dbLocation))
 
     for measurement in measurements:
         metricsJob.measurements.insert(measurement)
