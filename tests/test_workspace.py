@@ -48,6 +48,14 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         ancestor = os.path.commonprefix([_canonPath, _canonDir])
         self.assertEqual(ancestor, _canonDir)
 
+    def _assertNotInDir(self, path, baseDir):
+        """Test that ``path`` is a subpath of ``baseDir``.
+        """
+        _canonPath = os.path.abspath(os.path.realpath(path))
+        _canonDir = os.path.abspath(os.path.realpath(baseDir))
+        ancestor = os.path.commonprefix([_canonPath, _canonDir])
+        self.assertNotEqual(ancestor, _canonDir)
+
     def testMakeDir(self):
         """Verify that a Workspace creates the workspace directory if it does not exist.
         """
@@ -61,6 +69,15 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         finally:
             shutil.rmtree(newPath, ignore_errors=True)
 
+    @staticmethod
+    def _allRepos(workspace):
+        """An iterator over all repos exposed by a Workspace.
+        """
+        yield workspace.dataRepo
+        yield workspace.calibRepo
+        yield workspace.templateRepo
+        yield workspace.outputRepo
+
     def testDirectories(self):
         """Verify that a Workspace creates repositories in the target directory.
 
@@ -68,11 +85,19 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         """
         root = self._testWorkspace
         self._assertInDir(self._testbed.configDir, root)
-        # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
-        self._assertInDir(url2pathname(self._testbed.dataRepo), root)
-        self._assertInDir(url2pathname(self._testbed.calibRepo), root)
-        self._assertInDir(url2pathname(self._testbed.templateRepo), root)
-        self._assertInDir(url2pathname(self._testbed.outputRepo), root)
+        for repo in WorkspaceTestSuite._allRepos(self._testbed):
+            # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+            self._assertInDir(url2pathname(repo), root)
+
+    def testDatabase(self):
+        """Verify that a Workspace requests a database file in the target
+        directory, but not in any repository.
+        """
+        root = self._testWorkspace
+        self._assertInDir(self._testbed.dbLocation, root)
+        for repo in WorkspaceTestSuite._allRepos(self._testbed):
+            # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+            self._assertNotInDir(self._testbed.dbLocation, url2pathname(repo))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
