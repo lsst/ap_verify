@@ -3,15 +3,15 @@ datasets:
     HiTS2015: ap_verify_hits2015
 measurements:
     timing:
-        processCcd: pipe_tasks.ProcessCcdTime
-        processCcd:isr: ip_isr.IsrTime
-        processCcd:charImage: pipe_tasks.CharacterizeImageTime
-        processCcd:calibrate: pipe_tasks.CalibrateTime
-        imageDifference: pipe_tasks.ImageDifferenceTime
-        imageDifference:astrometer: meas_astrom.AstrometryTime
-        imageDifference:register: pipe_tasks.RegisterImageTime
-        imageDifference:subtract: ip_diffim.ImagePsfMatchTime
-        imageDifference:detection: meas_algorithms.SourceDetectionTime
-        imageDifference:measurement: ip_diffim.DipoleFitTime
-        association: ap_association.AssociationTime
+        apPipe:ccdProcessor: pipe_tasks.ProcessCcdTime
+        apPipe:ccdProcessor:isr: ip_isr.IsrTime
+        apPipe:ccdProcessor:charImage: pipe_tasks.CharacterizeImageTime
+        apPipe:ccdProcessor:calibrate: pipe_tasks.CalibrateTime
+        apPipe:differencer: pipe_tasks.ImageDifferenceTime
+        apPipe:differencer:astrometer: meas_astrom.AstrometryTime
+        apPipe:differencer:register: pipe_tasks.RegisterImageTime
+        apPipe:differencer:subtract: ip_diffim.ImagePsfMatchTime
+        apPipe:differencer:detection: meas_algorithms.SourceDetectionTime
+        apPipe:differencer:measurement: ip_diffim.DipoleFitTime
+        apPipe:associator: ap_association.AssociationTime
 ...

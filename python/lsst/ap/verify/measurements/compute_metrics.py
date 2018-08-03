@@ -76,15 +76,15 @@ def measureFromMetadata(metadata):
             result.append(measurement)
 
     measurement = measureNumberNewDiaObjects(
-        metadata, 'association', 'association.numNewDiaObjects')
+        metadata, 'apPipe:associator', 'association.numNewDiaObjects')
     if measurement is not None:
         result.append(measurement)
     measurement = measureFractionUpdatedDiaObjects(
-        metadata, 'association', 'association.fracUpdatedDiaObjects')
+        metadata, 'apPipe:associator', 'association.fracUpdatedDiaObjects')
     if measurement is not None:
         result.append(measurement)
     measurement = measureNumberUnassociatedDiaObjects(
-        metadata, 'association', 'association.numUnassociatedDiaObjects')
+        metadata, 'apPipe:associator', 'association.numUnassociatedDiaObjects')
     if measurement is not None:
         result.append(measurement)
     return result
