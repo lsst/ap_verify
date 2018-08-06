@@ -58,10 +58,10 @@ def measureNumberNewDiaObjects(metadata, taskName, metricName):
         a value of `metricName`, or `None` if the object counts for
         `taskName` are not present in `metadata`
     """
-    if not metadata.exists("association.numNewDiaObjects"):
+    if not metadata.exists("%s.numNewDiaObjects" % taskName):
         return None
 
-    nNew = metadata.getAsInt("association.numNewDiaObjects")
+    nNew = metadata.getAsInt("%s.numNewDiaObjects" % taskName)
     meas = lsst.verify.Measurement(metricName, nNew * u.count)
     return meas
 
@@ -90,11 +90,10 @@ def measureNumberUnassociatedDiaObjects(metadata, taskName, metricName):
         a value for `metricName`, or `None` if the object counts for
         `taskName` are not present in `metadata`
     """
-    if not metadata.exists("association.numUnassociatedDiaObjects"):
+    if not metadata.exists("%s.numUnassociatedDiaObjects" % taskName):
         return None
 
-    nUnassociated = metadata.getAsInt(
-        "association.numUnassociatedDiaObjects")
+    nUnassociated = metadata.getAsInt("%s.numUnassociatedDiaObjects" % taskName)
     meas = lsst.verify.Measurement(metricName, nUnassociated * u.count)
     return meas
 
@@ -123,13 +122,12 @@ def measureFractionUpdatedDiaObjects(metadata, taskName, metricName):
         a value for `metricName`, or `None` if the object counts for
         `taskName` are not present in `metadata`
     """
-    if not metadata.exists("association.numUpdatedDiaObjects") or \
-       not metadata.exists("association.numUnassociatedDiaObjects"):
+    if not metadata.exists("%s.numUpdatedDiaObjects" % taskName) or \
+       not metadata.exists("%s.numUnassociatedDiaObjects" % taskName):
         return None
 
-    nUpdated = metadata.getAsDouble("association.numUpdatedDiaObjects")
-    nUnassociated = metadata.getAsDouble(
-        "association.numUnassociatedDiaObjects")
+    nUpdated = metadata.getAsDouble("%s.numUpdatedDiaObjects" % taskName)
+    nUnassociated = metadata.getAsDouble("%s.numUnassociatedDiaObjects" % taskName)
     if nUpdated <= 0. or nUnassociated <= 0.:
         return lsst.verify.Measurement(metricName, 0. * u.dimensionless_unscaled)
     meas = lsst.verify.Measurement(

@@ -57,15 +57,18 @@ def measureRuntime(metadata, taskName, metricName):
         the value of `metricName`, or `None` if the timing information for
         `taskName` is not present in `metadata`
     """
-    endKey = "%s.runEndCpuTime" % taskName
+    # Some tasks have only run, others only runDataRef
+    # If both are present, run takes precedence
+    for methodName in ("run", "runDataRef"):
+        endKey = "%s.%sEndCpuTime" % (taskName, methodName)
 
-    keys = metadata.names(topLevelOnly=False)
-    timedMethods = [(key.replace("EndCpuTime", "StartCpuTime"), key)
-                    for key in keys if key.endswith(endKey)]
-    if timedMethods:
-        start, end = (metadata.getAsDouble(key) for key in timedMethods[0])
-        meas = lsst.verify.Measurement(metricName, (end - start) * u.second)
-        meas.notes['estimator'] = 'pipe.base.timeMethod'
-        return meas
-    else:
-        return None
+        keys = metadata.paramNames(topLevelOnly=False)
+        timedMethods = [(key.replace("EndCpuTime", "StartCpuTime"), key)
+                        for key in keys if key.endswith(endKey)]
+        if timedMethods:
+            start, end = (metadata.getAsDouble(key) for key in timedMethods[0])
+            meas = lsst.verify.Measurement(metricName, (end - start) * u.second)
+            meas.notes['estimator'] = 'pipe.base.timeMethod'
+            return meas
+
+    return None
