@@ -65,7 +65,7 @@ class DatasetIngestConfig(pexConfig.Config):
     )
     dataFiles = pexConfig.ListField(
         dtype=str,
-        default=["*.fits", "*.fz"],
+        default=["*.fits", "*.fz", "*.fits.gz"],
         doc="Names of raw science files (no path; wildcards allowed) to ingest from the dataset.",
     )
     dataBadFiles = pexConfig.ListField(
@@ -81,7 +81,7 @@ class DatasetIngestConfig(pexConfig.Config):
     )
     calibFiles = pexConfig.ListField(
         dtype=str,
-        default=["*.fits", "*.fz"],
+        default=["*.fits", "*.fz", "*.fits.gz"],
         doc="Names of calib files (no path; wildcards allowed) to ingest from the dataset.",
     )
     calibBadFiles = pexConfig.ListField(
