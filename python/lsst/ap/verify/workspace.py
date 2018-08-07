@@ -95,6 +95,16 @@ class Workspace:
         return os.path.join(self._location, 'output')
 
     @property
+    def dbLocation(self):
+        """The default location of the source association database to be
+        created or updated by the pipeline (`str`, read-only).
+
+        Shall be a filename to a database file suitable
+        for `AssociationDBSqliteTask`.
+        """
+        return os.path.join(self._location, 'association.db')
+
+    @property
     def workButler(self):
         """A Butler that can produce pipeline inputs and outputs
         (`lsst.daf.persistence.Butler`, read-only).

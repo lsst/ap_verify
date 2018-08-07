@@ -39,6 +39,7 @@ import json
 
 import lsst.log
 import lsst.daf.persistence as dafPersist
+from lsst.ap.association import AssociationDBSqliteTask
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
@@ -242,6 +243,9 @@ def _getConfig(workspace):
     packageDir = lsst.utils.getPackageDir(mapper.getPackageName())
 
     config = apPipe.ApPipeTask.ConfigClass()
+    # Equivalent to task-level default for ap_verify
+    config.associator.level1_db.retarget(AssociationDBSqliteTask)
+    config.associator.level1_db.db_name = workspace.dbLocation
     for path in [
         os.path.join(packageDir, 'config'),
         os.path.join(packageDir, 'config', mapper.getCameraName()),

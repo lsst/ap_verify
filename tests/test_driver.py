@@ -52,6 +52,22 @@ def patchApPipe(method):
     return wrapper
 
 
+class InitRecordingMock(unittest.mock.MagicMock):
+    """A MagicMock for classes that records requests for objects of that class.
+
+    Because ``__init__`` cannot be mocked directly, the calls cannot be
+    identified with the usual ``object.method`` syntax. Instead, filter the
+    object's calls for a ``name`` attribute equal to ``__init__``.
+    """
+    def __call__(self, *args, **kwargs):
+        # super() unsafe because MagicMock does not guarantee support
+        instance = unittest.mock.MagicMock.__call__(self, *args, **kwargs)
+        initCall = unittest.mock.call(*args, **kwargs)
+        initCall.name = "__init__"
+        instance.mock_calls.append(initCall)
+        return instance
+
+
 class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def setUp(self):
         self._testDir = tempfile.mkdtemp()
@@ -102,7 +118,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.addCleanup(patcher.stop)
         return mock
 
-    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
     def testRunApPipeReturn(self, _mockConfig, mockClass):
@@ -115,7 +131,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(len(metadata.paramNames(topLevelOnly=False)), 1)
         self.assertEqual(metadata.getScalar("lsst.ap.pipe.ccdProcessor.cycleCount"), 42)
 
-    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
     def testRunApPipeSteps(self, _mockConfig, mockClass):
@@ -152,7 +168,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
         self.assertEqual(self.job.measurements, self.subtaskJob.measurements)
 
-    # Mock up ApPipeTask to avoid doing any processing. _getConfig patch may be unneccessary after DM-13602
+    # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
     def testUpdateMetricsOnError(self, _mockConfig, mockClass):
@@ -179,16 +195,9 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         configFile = os.path.join(self.workspace.configDir, "apPipe.py")
         with open(configFile, "w") as f:
             # Illegal value; would never be set by a real config
-            f.write("config.differencer.doWriteSources = False")
+            f.write("config.differencer.doWriteSources = False\n")
+            f.write("config.associator.level1_db.db_name = ':memory:'\n")
 
-        class InitRecordingMock(unittest.mock.MagicMock):
-            def __call__(self, *args, **kwargs):
-                # super() unsafe because MagicMock does not guarantee support
-                instance = unittest.mock.MagicMock.__call__(self, *args, **kwargs)
-                initCall = unittest.mock.call(*args, **kwargs)
-                initCall.name = "__init__"
-                instance.mock_calls.append(initCall)
-                return instance
         task = self.setUpMockPatch("lsst.ap.pipe.ApPipeTask",
                                    spec=True,
                                    new_callable=InitRecordingMock,
@@ -202,6 +211,24 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
             self.assertIn("config", kwargs)
             taskConfig = kwargs["config"]
             self.assertFalse(taskConfig.differencer.doWriteSources)
+            self.assertNotEqual(taskConfig.associator.level1_db.db_name, self.workspace.dbLocation)
+
+    def testRunApPipeWorkspaceDb(self):
+        """Test that runApPipe places a database in the workspace location by default.
+        """
+        task = self.setUpMockPatch("lsst.ap.pipe.ApPipeTask",
+                                   spec=True,
+                                   new_callable=InitRecordingMock,
+                                   _DefaultName=ApPipeTask._DefaultName,
+                                   ConfigClass=ApPipeTask.ConfigClass).return_value
+
+        pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+        initCalls = (c for c in task.mock_calls if c.name == "__init__")
+        for call in initCalls:
+            kwargs = call[2]
+            self.assertIn("config", kwargs)
+            taskConfig = kwargs["config"]
+            self.assertEqual(taskConfig.associator.level1_db.db_name, self.workspace.dbLocation)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
