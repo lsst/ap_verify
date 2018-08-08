@@ -29,12 +29,12 @@ Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, o
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=54123 ccdnum=25 filter=g" --output workspaces/hits/ --silent
+   ap_verify.py --dataset HiTS2015 --id "visit=412518 ccdnum=25 filter=g" --output workspaces/hits/ --silent
 
 Here the inputs are:
 
 * :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
-* :command:`visit=54123 ccdnum=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :command:`visit=412518 ccdnum=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
 
@@ -42,7 +42,7 @@ while the output is:
 
 * :command:`--silent` disables SQuaSH metrics reporting.
 
-This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 54123 through the entire AP pipeline.
+This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 412518 through the entire AP pipeline.
 
 .. note::
 
