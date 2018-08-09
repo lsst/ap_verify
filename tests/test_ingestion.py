@@ -33,6 +33,8 @@ import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
 import lsst.obs.test
 from lsst.ap.verify import ingestion
+from lsst.ap.verify.dataset import Dataset
+from lsst.ap.verify.workspace import Workspace
 
 
 class IngestionTestSuite(lsst.utils.tests.TestCase):
@@ -45,13 +47,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             message = "obs_test not setup. Skipping."
             raise unittest.SkipTest(message)
 
-        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
-        cls.config = ingestion.DatasetIngestConfig()
-        cls.config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
-        cls.config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        cls.config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        # The real obs_test can't ingest defects because they're hardcoded
-        cls.config.defectIngester.register.tables.append('defect')
+        cls.config = cls.makeTestConfig()
         cls.config.freeze()
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
@@ -66,6 +62,18 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                          {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g', 'date': '1999-01-17'},
                          {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r', 'date': '1999-01-17'},
                          ]
+
+    @staticmethod
+    def makeTestConfig():
+        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
+        config = ingestion.DatasetIngestConfig()
+        config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
+        config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
+        # The real obs_test can't ingest defects because they're hardcoded
+        config.defectIngester.register.tables.append('defect')
+        config.defectTarball = "defects.tar.gz"
+        return config
 
     def setUp(self):
         # Repositories still get used by IngestTask despite Butler being a mock object
@@ -97,12 +105,24 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self._butler.return_value.get = mockGet
         self.addCleanup(butlerPatcher.stop)
 
+        # Fake Dataset and Workspace because it's too hard to make real ones
+        self._dataset = unittest.mock.NonCallableMock(
+            spec=Dataset,
+            rawLocation=os.path.join(IngestionTestSuite.testData, 'raw'),
+            defectLocation=IngestionTestSuite.testApVerifyData
+        )
+        self._workspace = unittest.mock.NonCallableMock(
+            spec=Workspace,
+            dataRepo=self._repo,
+            calibRepo=self._calibRepo,
+        )
+
         self._task = ingestion.DatasetIngestTask(config=IngestionTestSuite.config)
 
     def setUpRawRegistry(self):
         """Mock up the RegisterTask used for ingesting raw data.
 
-        This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
+        This method initializes ``self._registerTask``. It should be
         called at the start of any test case that attempts raw ingestion.
 
         Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
@@ -113,13 +133,11 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                                                      new_callable=unittest.mock.NonCallableMagicMock)
         self._registerTask = patcherRegister.start()
         self.addCleanup(patcherRegister.stop)
-        # the mocked entry point of the Registry context manager, needed for querying the registry
-        self._registryHandle = self._registerTask.openRegistry().__enter__()
 
     def setUpCalibRegistry(self):
         """Mock up the RegisterTask used for ingesting calib data.
 
-        This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
+        This method initializes ``self._registerTask``. It should be
         called at the start of any test case that attempts calib ingestion.
 
         Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
@@ -131,13 +149,11 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self._registerTask = patcherRegister.start()
         self._registerTask.config = self._task.config.calibIngester.register
         self.addCleanup(patcherRegister.stop)
-        # the mocked entry point of the Registry context manager, needed for querying the registry
-        self._registryHandle = self._registerTask.openRegistry().__enter__()
 
     def setUpDefectRegistry(self):
         """Mock up the RegisterTask used for ingesting defect data.
 
-        This method initializes ``self._registerTask`` and ``self._registryHandle``. It should be
+        This method initializes ``self._registerTask``. It should be
         called at the start of any test case that attempts defect ingestion.
 
         Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
@@ -149,27 +165,88 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self._registerTask = patcherRegister.start()
         self._registerTask.config = self._task.config.defectIngester.register
         self.addCleanup(patcherRegister.stop)
-        # the mocked entry point of the Registry context manager, needed for querying the registry
-        self._registryHandle = self._registerTask.openRegistry().__enter__()
 
-    def testDataIngest(self):
-        """Test that ingesting a science image adds it to a repository.
+    def assertRawRegistryCalls(self, registryMock, expectedData):
+        """Test that a particular set of science data is registered correctly.
+
+        Parameters
+        ----------
+        registryMock : `unittest.mock.Mock`
+            a mock object representing the repository's registry. Must have a
+            mock for the `~lsst.pipe.tasks.ingest.RegisterTask.addRow` method.
+        expectedData : iterable of `dict`
+            a collection of dictionaries, each representing one item that
+            should have been ingested. Each dictionary must contain the
+            following keys:
+            - ``file``: file name to be ingested (`str`).
+            - ``filter``: the filter of the file, or "_unknown_" if not applicable (`str`).
+            - ``visit``: visit ID of the file (`int`).
+            - ``exptime``: the exposure time of the file (`float`).
+        calib : `bool`
+            `True` if ``expectedData`` represents calibration data, `False` if
+            it represents science data
         """
-        self.setUpRawRegistry()
-        testDir = os.path.join(IngestionTestSuite.testData, 'raw')
-        files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
-        self._task._doIngestRaws(self._repo, files, [])
-
-        for datum in IngestionTestSuite.rawData:
+        kwargs = {'create': False, 'dryrun': False}
+        for datum in expectedData:
             # TODO: find a way to avoid having to know exact data ID expansion
             dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
             # TODO: I don't think we actually care about the keywords -- especially since they're defaults
-            self._registerTask.addRow.assert_any_call(self._registryHandle, dataId,
-                                                      create=False, dryrun=False)
-        self.assertEqual(self._registerTask.addRow.call_count, len(IngestionTestSuite.rawData))
+            registryMock.addRow.assert_any_call(registryMock.openRegistry().__enter__(), dataId,
+                                                **kwargs)
+
+        self.assertEqual(registryMock.addRow.call_count, len(expectedData))
+
+    def assertCalibRegistryCalls(self, registryMock, expectedData):
+        """Test that a particular set of calibration data is registered correctly.
+
+        Parameters
+        ----------
+        registryMock : `unittest.mock.Mock`
+            a mock object representing the repository's registry. Must have a
+            mock for the `~lsst.pipe.tasks.ingest.CalibsRegisterTask.addRow` method.
+        expectedData : iterable of `dict`
+            a collection of dictionaries, each representing one item that
+            should have been ingested. Each dictionary must contain the
+            following keys:
+            - ``file``: file name to be ingested (`str`).
+            - ``filter``: the filter of the file, or "_unknown_" if not applicable (`str`).
+            - ``type``: a valid calibration dataset type (`str`).
+            - ``date``: the calibration date in YYY-MM-DD format (`str`).
+        calib : `bool`
+            `True` if ``expectedData`` represents calibration data, `False` if
+            it represents science data
+        """
+        kwargs = {'create': False, 'dryrun': False}
+        for datum in expectedData:
+            # TODO: find a way to avoid having to know exact data ID expansion
+            dataId = {'calibDate': datum['date'], 'filter': datum['filter']}
+            kwargs['table'] = datum['type']
+            # TODO: I don't think we actually care about the keywords -- especially since they're defaults
+            registryMock.addRow.assert_any_call(registryMock.openRegistry().__enter__(), dataId,
+                                                **kwargs)
+
+        self.assertEqual(registryMock.addRow.call_count, len(expectedData))
+
+    def testDataIngest(self):
+        """Test that ingesting science images given specific files adds them to a repository.
+        """
+        self.setUpRawRegistry()
+        files = [os.path.join(self._dataset.rawLocation, datum['file'])
+                 for datum in IngestionTestSuite.rawData]
+        self._task._doIngestRaws(self._repo, files, [])
+
+        self.assertRawRegistryCalls(self._registerTask, IngestionTestSuite.rawData)
+
+    def testDataIngestDriver(self):
+        """Test that ingesting science images starting from an abstract dataset adds them to a repository.
+        """
+        self.setUpRawRegistry()
+        self._task._ingestRaws(self._dataset, self._workspace)
+
+        self.assertRawRegistryCalls(self._registerTask, IngestionTestSuite.rawData)
 
     def testCalibIngest(self):
-        """Test that ingesting calibrations adds them to a repository.
+        """Test that ingesting calibrations given specific files adds them to a repository.
         """
         files = [os.path.join(IngestionTestSuite.testData, datum['type'], datum['file'])
                  for datum in IngestionTestSuite.calibData]
@@ -177,25 +254,54 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
-        for datum in IngestionTestSuite.calibData:
-            # TODO: find a way to avoid having to know exact data ID expansion
-            dataId = {'calibDate': datum['date'], 'filter': datum['filter']}
-            # TODO: I don't think we actually care about the keywords -- especially since they're defaults
-            self._registerTask.addRow.assert_any_call(self._registryHandle, dataId,
-                                                      create=False, dryrun=False, table=datum['type'])
-        self.assertEqual(self._registerTask.addRow.call_count, len(IngestionTestSuite.rawData))
+        self.assertCalibRegistryCalls(self._registerTask, IngestionTestSuite.calibData)
+
+    def testCalibIngestDriver(self):
+        """Test that ingesting calibrations starting from an abstract dataset adds them to a repository.
+        """
+        self.setUpCalibRegistry()
+        # obs_test doesn't store calibs together; emulate normal behavior with two calls
+        self._dataset.calibLocation = os.path.join(IngestionTestSuite.testData, 'bias')
+        self._task._ingestCalibs(self._dataset, self._workspace)
+        self._dataset.calibLocation = os.path.join(IngestionTestSuite.testData, 'flat')
+        self._task._ingestCalibs(self._dataset, self._workspace)
+
+        self.assertCalibRegistryCalls(self._registerTask, IngestionTestSuite.calibData)
 
     def testDefectIngest(self):
-        """Test that ingesting defects adds them to a repository.
+        """Test that ingesting defects starting from a concrete file adds them to a repository.
         """
-        defectFilename = os.path.join(IngestionTestSuite.testApVerifyData, 'defects.tar.gz')
+        defectFilename = os.path.join(self._dataset.defectLocation, IngestionTestSuite.config.defectTarball)
         self.setUpDefectRegistry()
         with tarfile.open(defectFilename) as tarContents:
             numDefects = len(tarContents.getnames())
 
         self._task._doIngestDefects(self._repo, self._calibRepo, defectFilename)
 
-        # No interesting arguments get passed in obs_test defect ingestion
+        # obs_test defect ingestion does not have a data ID or other way to check
+        # what got ingested, so don't bother checking call arguments
+        self.assertEqual(self._registerTask.addRow.call_count, numDefects)
+
+    def testDefectIngestEmpty(self):
+        """Test that ingesting defects raises an exception if the defect archive is empty.
+        """
+        defectFilename = os.path.join(self._dataset.defectLocation, 'empty.tar.gz')
+
+        with self.assertRaises(RuntimeError):
+            self._task._doIngestDefects(self._repo, self._calibRepo, defectFilename)
+
+    def testDefectIngestDriver(self):
+        """Test that ingesting defects starting from an abstract dataset adds them to a repository.
+        """
+        defectFilename = os.path.join(self._dataset.defectLocation, IngestionTestSuite.config.defectTarball)
+        self.setUpDefectRegistry()
+        with tarfile.open(defectFilename) as tarContents:
+            numDefects = len(tarContents.getnames())
+
+        self._task._ingestDefects(self._dataset, self._workspace)
+
+        # obs_test defect ingestion does not have a data ID or other way to check
+        # what got ingested, so don't bother checking call arguments
         self.assertEqual(self._registerTask.addRow.call_count, numDefects)
 
     def testNoFileIngest(self):
@@ -211,25 +317,37 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         self._registerTask.addRow.assert_not_called()
 
+    def testNoFileIngestDriver(self):
+        """Test that attempts to ingest nothing using high-level methods raise an exception.
+        """
+        emptyDir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, emptyDir, ignore_errors=True)
+        self._dataset.rawLocation = self._dataset.calibLocation = emptyDir
+        with self.assertRaises(RuntimeError):
+            self._task._ingestRaws(self._dataset, self._workspace)
+        with self.assertRaises(RuntimeError):
+            self._task._ingestCalibs(self._dataset, self._workspace)
+
     def testBadFileIngest(self):
         """Test that ingestion of raw data ignores blacklisted files.
         """
         badFiles = ['raw_v2_fg.fits.gz']
         self.setUpRawRegistry()
 
-        testDir = os.path.join(IngestionTestSuite.testData, 'raw')
-        files = [os.path.join(testDir, datum['file']) for datum in IngestionTestSuite.rawData]
+        files = [os.path.join(self._dataset.rawLocation, datum['file'])
+                 for datum in IngestionTestSuite.rawData]
         self._task._doIngestRaws(self._repo, files, badFiles)
 
+        filteredData = [datum for datum in IngestionTestSuite.rawData if datum['file'] not in badFiles]
+        self.assertRawRegistryCalls(self._registerTask, filteredData)
+
         for datum in IngestionTestSuite.rawData:
-            dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
-            call = unittest.mock.call(self._registryHandle, dataId, create=False, dryrun=False)
-            if datum['file'] not in badFiles:
-                self.assertIn(call, self._registerTask.addRow.mock_calls)
-            else:
+            if datum['file'] in badFiles:
+                dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
+                # This call should never happen for badFiles
+                call = unittest.mock.call(self._registerTask.openRegistry().__enter__(), dataId,
+                                          create=False, dryrun=False)
                 self.assertNotIn(call, self._registerTask.addRow.mock_calls)
-        self.assertEqual(self._registerTask.addRow.call_count,
-                         len(IngestionTestSuite.rawData) - len(badFiles))
 
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
@@ -238,12 +356,12 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         self.assertSetEqual(
             ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz']),
-            {os.path.join(testDir, f) for f in
-             {'raw/raw_v1_fg.fits.gz', 'raw/raw_v2_fg.fits.gz', 'raw/raw_v3_fr.fits.gz'}}
+            {os.path.join(testDir, 'raw', f) for f in
+             {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz', 'raw_v3_fr.fits.gz'}}
         )
         self.assertSetEqual(
             ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*fr*']),
-            {os.path.join(testDir, f) for f in {'raw/raw_v1_fg.fits.gz', 'raw/raw_v2_fg.fits.gz'}}
+            {os.path.join(testDir, 'raw', f) for f in {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz'}}
         )
         self.assertSetEqual(
             ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*_v?_f?.fits.gz']),
