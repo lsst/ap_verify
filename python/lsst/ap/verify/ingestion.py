@@ -34,6 +34,7 @@ import os
 import shutil
 import pathlib
 import tarfile
+from contextlib import contextmanager
 from glob import glob
 import sqlite3
 
@@ -64,7 +65,7 @@ class DatasetIngestConfig(pexConfig.Config):
     )
     dataFiles = pexConfig.ListField(
         dtype=str,
-        default=["*.fits", "*.fz"],
+        default=["*.fits", "*.fz", "*.fits.gz"],
         doc="Names of raw science files (no path; wildcards allowed) to ingest from the dataset.",
     )
     dataBadFiles = pexConfig.ListField(
@@ -80,7 +81,7 @@ class DatasetIngestConfig(pexConfig.Config):
     )
     calibFiles = pexConfig.ListField(
         dtype=str,
-        default=["*.fits", "*.fz"],
+        default=["*.fits", "*.fz", "*.fits.gz"],
         doc="Names of calib files (no path; wildcards allowed) to ingest from the dataset.",
     )
     calibBadFiles = pexConfig.ListField(
@@ -337,17 +338,21 @@ class DatasetIngestTask(pipeBase.Task):
                 opened.extractall(defectDir)
             else:
                 raise RuntimeError("Defect archive %s is empty." % defectTarball)
-        defectFiles = _findMatchingFiles(defectDir, ["*.*"])
 
-        # TODO: --output is workaround for DM-11668
-        defectargs = [repo, "--calib", calibRepo, "--output", os.path.join(calibRepo, "dummy"),
-                      "--calibType", "defect",
-                      "--mode", "skip", "--validity", str(self.config.defectValidity)]
-        defectargs.extend(defectFiles)
-        try:
-            _runIngestTask(self.defectIngester, defectargs)
-        except sqlite3.IntegrityError as detail:
-            raise RuntimeError("Not all defect files are unique") from detail
+        # Note: workaround for DecamCalibsIngestTask assuming defect paths are *already* relative to the repo
+        # Should not harm other cameras that require defect ingestion...?
+        with _tempChDir(calibRepo):
+            defectFiles = _findMatchingFiles(os.path.relpath(defectDir, calibRepo), ["*.*"])
+
+            # TODO: --output is workaround for DM-11668
+            defectargs = [os.path.relpath(repo, calibRepo), "--calib", ".", "--output", "dummy",
+                          "--calibType", "defect",
+                          "--mode", "skip", "--validity", str(self.config.defectValidity)]
+            defectargs.extend(defectFiles)
+            try:
+                _runIngestTask(self.defectIngester, defectargs)
+            except sqlite3.IntegrityError as detail:
+                raise RuntimeError("Not all defect files are unique") from detail
 
     def _ingestRefcats(self, dataset, workspace):
         """Ingest the refcats for use by LSST.
@@ -533,3 +538,34 @@ def _findMatchingFiles(basePath, include, exclude=None):
     for pattern in _exclude:
         allFiles.difference_update(fnmatch.filter(allFiles, pattern))
     return allFiles
+
+
+@contextmanager
+def _tempChDir(newDir):
+    """Change to a new directory, while avoiding side effects in external code.
+
+    Note that no side effects are guaranteed in the case of normal operation or
+    for exceptions raised by the body of a ``with`` statement, but not for
+    exceptions raised by ``_tempChDir`` itself (see below).
+
+    This context manager cannot be used with "with ... as" statements.
+
+    Parameters
+    ----------
+    newDir : `str`
+        The directory to change to for the duration of a ``with`` statement.
+
+    Raises
+    ------
+    OSError
+        Raised if either the program cannot change to ``newDir``, or if it
+        cannot undo the change. Failing to change to ``newDir`` is
+        exception-safe (no side effects), but failing to undo is
+        not recoverable.
+    """
+    startDir = os.path.abspath(os.getcwd())
+    os.chdir(newDir)
+    try:
+        yield
+    finally:
+        os.chdir(startDir)
