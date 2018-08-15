@@ -1,5 +1,4 @@
 setupRequired(python)
-setupRequired(python_future)
 
 setupRequired(utils)
 setupRequired(afw)
