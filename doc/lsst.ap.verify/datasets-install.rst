@@ -22,19 +22,15 @@ EUPS is included in the Stack installation.
 Installation Procedure
 ----------------------
 
-Use Git LFS to clone the desired dataset's GitHub repository.
-To get the URL, see the :ref:`package documentation<ap-verify-datasets-index>` for the dataset in question.
-
-Once the dataset has been installed, use :command:`eups declare` to register the downloaded directory.
-The product name given to EUPS must match the repository name; the version can be anything.
-It is also possible to register the dataset using :command:`setup`, but this is recommended only for temporary tests.
+Use the `LSST Software Build Tool <https://developer.lsst.io/stack/lsstsw.html>`_ to request the dataset by its package name.
+A :ref:`list of existing datasets <ap-verify-datasets-index>` is maintained as part of this documentation.
+Because of their large size (typically hundreds of GB), datasets are *never* installed as a dependency of another package; they must be requested explicitly.
 
 For example, to install the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset,
 
 .. prompt:: bash
 
-   $ git clone https://github.com/lsst/ap_verify_hits2015 mydata
-   $ eups declare -r mydata ap_verify_hits2015 v1
+   rebuild -u ap_verify_hits2015
 
 Once this is done, ``ap_verify`` will be able to find the HiTS data upon request.
 

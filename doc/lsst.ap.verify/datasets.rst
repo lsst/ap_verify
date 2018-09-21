@@ -32,6 +32,7 @@ Existing Datasets
 -----------------
 
 * :ref:`HiTS2015 <ap_verify_hits2015-package>`
+* :ref:`HiTS2015 CI Subset <ap_verify_ci_hits2015-package>`
 
 ..
    TODO: switch to toctree once these docs included in pipelines.lsst.io
@@ -39,4 +40,5 @@ Existing Datasets
       :maxdepth: 1
 
       ../../packages/ap_verify_hits2015/index.rst
+      ../../packages/ap_verify_ci_hits2015/index.rst
 
