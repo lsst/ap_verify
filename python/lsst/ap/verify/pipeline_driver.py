@@ -203,9 +203,7 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     dataId = _parseDataId(parsedCmdLine.dataId)
     processes = parsedCmdLine.processes
 
-    pipeline = apPipe.ApPipeTask(workspace.workButler,
-                                 os.path.join(workspace.outputRepo, 'association.db'),
-                                 config=_getConfig(workspace))
+    pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
     try:
         _process(pipeline, workspace, dataId, processes)
         log.info('Single-frame processing complete')
