@@ -1,6 +1,6 @@
 # lsst.ap.verify
 
-`ap_verify` is a package to be added to the [LSST Science Pipelines](https://pipelines.lsst.io/).
+`ap_verify` is a package in the [LSST Science Pipelines](https://pipelines.lsst.io/).
 
 This package manages end-to-end testing and metric generation for the [LSST DM Alert Production pipeline](https://github.com/lsst-dm/ap_pipe/).
 Metrics are tested against both project- and lower-level requirements, and will be deliverable to the SQuaSH metrics service.
