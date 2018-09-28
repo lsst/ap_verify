@@ -4,7 +4,7 @@ setupRequired(utils)
 setupRequired(afw)
 setupRequired(daf_persistence)
 setupRequired(ip_isr)
-
+setupRequired(pipe_tasks)
 setupRequired(verify)
 setupRequired(ap_pipe)
 
