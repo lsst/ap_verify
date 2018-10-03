@@ -72,8 +72,6 @@ class _ApVerifyParser(argparse.ArgumentParser):
             parents=[_InputOutputParser(), ApPipeParser(), MetricsParser()],
             add_help=True)
 
-        self.add_argument('--version', action='version', version='%(prog)s 0.1.0')
-
 
 class _IngestOnlyParser(argparse.ArgumentParser):
     """An argument parser for data needed by dataset ingestion.
@@ -91,8 +89,6 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             epilog='',
             parents=[_InputOutputParser()],
             add_help=True)
-
-        self.add_argument('--version', action='version', version='%(prog)s 0.1.0')
 
 
 class _FormattedType:

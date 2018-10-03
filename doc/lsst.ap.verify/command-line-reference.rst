@@ -34,7 +34,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    **Butler data ID.**
 
-   The input data ID is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
+   The input data ID is required for all ``ap_verify`` runs except when using :option:`--help`.
 
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
@@ -46,7 +46,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    **Input dataset designation.**
 
-   The input dataset is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
+   The input dataset is required for all ``ap_verify`` runs except when using :option:`--help`.
 
    The argument is a unique name for the dataset, which can be associated with a repository in the :ref:`configuration file<ap-verify-configuration-dataset>`.
    See :ref:`ap-verify-dataset-name` for more information on dataset names.
@@ -82,7 +82,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    **Output and intermediate product path.**
 
-   The output argument is required for all ``ap_verify`` runs except when using :option:`--help` or :option:`--version`.
+   The output argument is required for all ``ap_verify`` runs except when using :option:`--help`.
 
    The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
    The path may be absolute or relative to the current working directory.
@@ -96,12 +96,6 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
    .. note::
 
       Ingestion of `lsst.verify` metrics is not yet supported by SQuaSH, so this flag should always be provided for now.
-
-.. option:: --version
-
-   **Print version number.**
-
-   Since ``ap_verify`` is not yet officially part of the Stack, the version number is arbitrary.
 
 
 .. _command-line-task-envvar:
