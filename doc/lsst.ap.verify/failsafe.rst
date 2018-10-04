@@ -1,16 +1,18 @@
+.. py:currentmodule:: lsst.ap.verify
+
 .. _ap-verify-failsafe:
 
-##############################
-Error-Handling and Failed Runs
-##############################
+###########################################
+Error-handling in ap_verify and failed runs
+###########################################
 
 The Alert Production pipeline may fail for reasons ranging from corrupted data to improperly configured datasets to bugs in the code.
 The ``ap_verify`` framework tries to handle failures gracefully to minimize wasted server time and maximize debugging potential.
 
 .. _ap-verify-failsafe-catch:
 
-Error-Handling Policy
----------------------
+Error-handling policy
+=====================
 
 ``ap_verify`` does not attempt to resolve exceptions emitted by pipeline tasks, on the grounds that it does not have enough information about the pipeline implementation to provide any meaningful resolution.
 Nor does it try to ignore errors and press forward (although it does not prevent individual tasks from adopting this approach), as doing so tends to lead to cascading failures from an incomplete and possibly corrupted data set.
@@ -22,7 +24,7 @@ In particular, where possible it will :ref:`preserve metrics<ap-verify-failsafe-
 .. _ap-verify-failsafe-partialmetric:
 
 Recovering Metrics From Partial Runs
-------------------------------------
+====================================
 
 ``ap_verify`` produces some measurements even if the pipeline cannot run to completion.
 Specifically, if a task fails, any `lsst.verify.Measurement` objects created by previous top-level tasks will be :ref:`stored to disk<ap-verify-results>`.

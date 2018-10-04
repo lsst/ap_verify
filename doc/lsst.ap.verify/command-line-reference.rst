@@ -1,12 +1,16 @@
-.. _ap-verify-cmd:
+.. py:currentmodule:: lsst.ap.verify
 
 .. program:: ap_verify.py
 
-######################
-Command-Line Reference
-######################
+.. _ap-verify-cmd:
+
+################################
+ap_verify command-line reference
+################################
 
 This page describes the command-line arguments and environment variables used by ``ap_verify``.
+
+.. _ap-verify-cmd-basic:
 
 Signature and syntax
 ====================
@@ -19,11 +23,15 @@ The basic call signature of ``ap_verify`` is:
 
 These three arguments are mandatory, all others are optional.
 
+.. _ap-verify-cmd-return:
+
 Status code
 ===========
 
 ``ap_verify`` returns a status code of ``0`` if the pipeline ran to completion.
 If the pipeline fails, the status code will be an interpreter-dependent nonzero value.
+
+.. _ap-verify-cmd-args:
 
 Named arguments
 ===============
@@ -98,7 +106,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
       Ingestion of `lsst.verify` metrics is not yet supported by SQuaSH, so this flag should always be provided for now.
 
 
-.. _command-line-task-envvar:
+.. _ap-verify-cmd-envvar:
 
 Environment variables
 =====================
@@ -119,6 +127,3 @@ The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` e
 .. envvar:: SQUASH_URL
 
    The location for a SQuaSH REST API. Defaults to the SQuaSH server at ``lsst.codes``.
-
-.. _command-line-task-envvar-examples:
-

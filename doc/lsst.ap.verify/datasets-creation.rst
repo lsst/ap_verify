@@ -1,9 +1,11 @@
+.. py:currentmodule:: lsst.ap.verify
+
 .. _ap-verify-datasets-creation:
 
 .. _ap-verify-datasets-structure:
 
 ###########################
-Packaging Data as a Dataset
+Packaging data as a dataset
 ###########################
 
 :ref:`ap-verify-datasets` is designed to be as generic as possible, and should be able to accommodate any collection of observations so long as the source observatory has an :ref:`observatory interface (obs) package<obs-framework>` in the LSST software stack.
@@ -12,8 +14,8 @@ It does not include :ref:`configuring ap_verify to use the dataset<ap-verify-con
 
 .. _ap-verify-datasets-creation-gitlfs:
 
-Creating a Dataset Repository
------------------------------
+Creating a dataset repository
+=============================
 
 Datasets are Git LFS repositories with a particular directory and file structure.
 The easiest way to create a new dataset is to `create an LFS repository <https://developer.lsst.io/git/git-lfs.html#git-lfs-create>`_, and add a copy of the `dataset template repository`_ as the initial commit.
@@ -23,8 +25,8 @@ This will create empty directories for all data and will add placeholder files f
 
 .. _ap-verify-datasets-creation-layout:
 
-Organizing the Data
--------------------
+Organizing the data
+===================
 
 * The :file:`raw` and :file:`calib` directories contain science and calibration data, respectively.
   The directories may have any internal structure.
@@ -36,8 +38,8 @@ The templates and reference catalogs need not be all-sky, but should cover the c
 
 .. _ap-verify-datasets-creation-docs:
 
-Documenting Datasets
---------------------
+Documenting datasets
+====================
 
 Datasets provide package-level documentation in their :file:`doc` directory.
 An example is provided in the `dataset template repository`_.
@@ -50,10 +52,10 @@ The dataset's package-level documentation should include:
 
 .. _ap-verify-datasets-creation-config:
 
-Configuring Dataset Ingestion
------------------------------
+Configuring dataset ingestion
+=============================
 
-Each dataset's :file:`config` directory should contain a :ref:`task config file<command-line-task-config-howto-configfile>` named :file:`datasetIngest.py`, which specifies an `lsst.ap.verify.DatasetIngestConfig`.
+Each dataset's :file:`config` directory should contain a :ref:`task config file<command-line-task-config-howto-configfile>` named :file:`datasetIngest.py`, which specifies a `DatasetIngestConfig`.
 The file typically contains filenames or file patterns specific to the dataset.
 In particular, defect files and reference catalogs are ignored by default and need to be explicitly named.
 
@@ -64,8 +66,8 @@ Configuration settings specific to an instrument rather than a dataset should be
 
 .. _ap-verify-datasets-creation-obs:
 
-Registering an Observatory Package
-----------------------------------
+Registering an observatory package
+==================================
 
 The observatory package must be named in two files:
 
@@ -77,8 +79,8 @@ The observatory package must be named in two files:
 
 .. _ap-verify-datasets-creation-name:
 
-Registering a Dataset Name
---------------------------
+Registering a dataset name
+==========================
 
 In order to be supported by ``ap_verify``, datasets must be registered in ``ap_verify``'s :ref:`configuration file<ap-verify-configuration-dataset>` and registered as an *optional* EUPS dependency of ``ap_verify``.
 The line for the new dataset should be committed to the ``ap_verify`` Git repository.

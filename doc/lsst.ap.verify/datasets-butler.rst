@@ -1,7 +1,9 @@
+.. py:currentmodule:: lsst.ap.verify
+
 .. _ap-verify-datasets-butler:
 
 ################################
-Datasets vs. Butler Repositories
+Datasets vs. Butler repositories
 ################################
 
 Datasets are organized using a :ref:`specific directory structure<ap-verify-datasets-structure>` instead of an :ref:`LSST Butler repository<butler>`.
@@ -15,4 +17,3 @@ The dataset format merely requires that files be segregated into science and cal
 While datasets are not Butler repositories themselves, the dataset format includes a directory, :file:`repo`, that serves as a template for the post-ingestion repository.
 This template helps ensure that all repositories based on the dataset will be properly set up, in particular that any observatory-specific settings will be applied.
 :file:`repo` is never modified by ``ap_verify``; all repositories created by the pipeline must be located elsewhere, whether or not they are backed by the file system.
-

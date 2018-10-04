@@ -1,8 +1,10 @@
+.. py:currentmodule:: lsst.ap.verify
+
 .. _ap-verify-configuration:
 
-############################
-Configuration File Reference
-############################
+######################################
+ap_verify configuration file reference
+######################################
 
 This page describes the file-based configuration options used by ``ap_verify``.
 Most users should not need to adjust these settings, but they allow capabilities such as registering new :ref:`datasets<ap-verify-datasets>`.
@@ -39,4 +41,3 @@ Currently there is only one:
     A dictionary from tasks to the metrics that time them.
     Subtasks must be identified by the name the parent task assigns them, and should be prefixed by the parent task name (as in "imageDifference:detection") to avoid ambiguity.
     Metrics must use the full name following the convention of `lsst.verify.metrics`, as in "meas_algorithms.SourceDetectionTime".
-

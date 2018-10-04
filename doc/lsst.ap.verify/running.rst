@@ -1,7 +1,9 @@
+.. py:currentmodule:: lsst.ap.verify
+
 .. _ap-verify-running:
 
 #######################################
-Running ap_verify From the Command Line
+Running ap_verify from the command line
 #######################################
 
 ``ap_verify`` is a Python script designed to be run on both developer machines and verification servers.
@@ -11,8 +13,8 @@ For more details, see the :ref:`ap-verify-cmd` or run :option:`ap_verify.py -h`.
 
 .. _ap-verify-dataset-name:
 
-Datasets as Input Arguments
----------------------------
+Datasets as input arguments
+===========================
 
 Since ``ap_verify`` begins with an uningested :ref:`dataset<ap-verify-datasets>`, the input argument is a dataset name rather than a repository.
 
@@ -22,8 +24,8 @@ The dataset names are a placeholder for a future data repository versioning syst
 
 .. _ap-verify-run-output:
 
-How to Run ap_verify in a New Workspace
----------------------------------------
+How to run ap_verify in a new workspace
+=======================================
 
 Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ap_verify`` as follows:
 
@@ -52,8 +54,8 @@ This call will create a new directory at :file:`workspaces/hits`, ingest the HiT
 
 .. _ap-verify-run-ingest:
 
-How to Run Ingestion By Itself
-------------------------------
+How to run ingestion by itself
+==============================
 
 ``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that ingests datasets but does not run the pipeline on them.
 This is useful if the data need special processing or as a precursor to massive processing runs.
@@ -70,8 +72,8 @@ Other options from ``ap_verify`` are not available.
 
 .. _ap-verify-results:
 
-How to Use Measurements of Metrics
-----------------------------------
+How to use measurements of metrics
+==================================
 
 After ``ap_verify`` has run, it will produce a file named, by default, :file:`ap_verify.verify.json` in the caller's directory.
 The file name may be customized using the :option:`--metrics-file <ap_verify.py --metrics-file>` command-line argument.
@@ -83,3 +85,7 @@ See the SQuaSH documentation for details.
 If the pipeline is interrupted by a fatal error, completed measurements will be saved to the metrics file for debugging purposes, but nothing will get sent to SQuaSH.
 See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for details.
 
+Further reading
+===============
+
+- :doc:`command-line-reference`
