@@ -19,7 +19,7 @@ It consists of a list of dictionaries, each representing specific aspects of the
 datasets
 ========
 
-The ``datasets`` dictionary maps dataset names (which must be provided on the ``ap_verify`` command line) to GitHub repository names.
+The ``datasets`` dictionary maps dataset names (which must be provided on the :command:`ap_verify.py` command line) to GitHub repository names.
 Adding a dataset to the config is necessary for ``ap_verify`` to recognize it; in practice, the entry will be made once by the dataset author and then committed.
 A dataset must still be :doc:`installed<datasets-install>` on the machine before it can be used.
 

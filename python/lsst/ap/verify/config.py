@@ -44,8 +44,8 @@ class Config:
 
         Raises
         ------
-        `RuntimeError`
-            Validation failed
+        RuntimeError
+            Raised if validation failed
         """
         try:
             datasetMap = self._allInfo['datasets']

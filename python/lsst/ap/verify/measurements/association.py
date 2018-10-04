@@ -152,7 +152,7 @@ def measureNumberSciSources(butler, dataIdDict, metricName):
 
     Returns
     -------
-    measurement: `lsst.verify.Measurement`
+    measurement : `lsst.verify.Measurement`
         a value for `metricName`, or `None`
     """
 

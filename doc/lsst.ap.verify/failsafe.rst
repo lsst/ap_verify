@@ -18,7 +18,7 @@ Error-handling policy
 Nor does it try to ignore errors and press forward (although it does not prevent individual tasks from adopting this approach), as doing so tends to lead to cascading failures from an incomplete and possibly corrupted data set.
 Terminating on failure allows pipeline problems to be detected quickly during testing, rather than after a day or more of processing.
 
-If a task fails with a fatal error, ``ap_verify`` will clean up and shut down.
+If a task fails with a fatal error, :command:`ap_verify.py` will clean up and shut down.
 In particular, where possible it will :ref:`preserve metrics<ap-verify-failsafe-partialmetric>` computed before the failure point.
 
 .. _ap-verify-failsafe-partialmetric:

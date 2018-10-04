@@ -7,7 +7,7 @@ lsst.ap.verify
 ##############
 
 The ``lsst.ap.verify`` package provides an executable python program for pipeline verification.
-It runs the alert production pipeline (encapsulated in the `lsst.ap.pipe` package), computes `lsst.verify` metrics on both the pipeline's state and its output, and works with the `SQuaSH <https://squash.lsst.codes/>`_ system to allow their monitoring and analysis.
+It runs the alert production pipeline (encapsulated in the :doc:`lsst.ap.pipe </modules/lsst.ap.pipe/index>` package), computes :doc:`lsst.verify </modules/lsst.verify/index>` metrics on both the pipeline's state and its output, and works with the `SQuaSH <https://squash.lsst.codes/>`_ system to allow their monitoring and analysis.
 
 ``ap_verify`` is designed to work with small, standardized :doc:`datasets<datasets>` that can be interchanged to test the Stack's performance under different conditions.
 To ensure consistent results, it :doc:`runs the entire AP pipeline<running>` as a single unit, from data ingestion to source association.

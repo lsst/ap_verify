@@ -44,8 +44,8 @@ class Workspace:
 
     Raises
     ------
-    `EnvironmentError`
-        ``location`` is not readable or not writeable
+    EnvironmentError
+        Raised if ``location`` is not readable or not writeable
     """
 
     def __init__(self, location):
