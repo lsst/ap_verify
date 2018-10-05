@@ -7,18 +7,18 @@ Running ap_verify from the command line
 #######################################
 
 ``ap_verify`` is a Python script designed to be run on both developer machines and verification servers.
-While ``ap_verify`` is not a :ref:`command-line task<lsst.pipe.base>`, the command-line interface is designed to resemble that of command-line tasks where practical.
+While ``ap_verify`` is not a :doc:`command-line task</modules/lsst.pipe.base/index>`, the command-line interface is designed to resemble that of command-line tasks where practical.
 This page describes the minimum options needed to run ``ap_verify``.
-For more details, see the :ref:`ap-verify-cmd` or run :option:`ap_verify.py -h`.
+For more details, see the :doc:`command-line-reference` or run :option:`ap_verify.py -h`.
 
 .. _ap-verify-dataset-name:
 
 Datasets as input arguments
 ===========================
 
-Since ``ap_verify`` begins with an uningested :ref:`dataset<ap-verify-datasets>`, the input argument is a dataset name rather than a repository.
+Since ``ap_verify`` begins with an uningested :doc:`dataset<datasets>`, the input argument is a dataset name rather than a repository.
 
-Datasets are identified by a name that gets mapped to an :ref:`eups-registered directory <ap-verify-datasets-install>` containing the data.
+Datasets are identified by a name that gets mapped to an :doc:`eups-registered directory <datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
 The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
 
@@ -27,7 +27,7 @@ The dataset names are a placeholder for a future data repository versioning syst
 How to run ap_verify in a new workspace
 =======================================
 
-Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ap_verify`` as follows:
+Using the :doc:`HiTS 2015 </packages/ap_verify_hits2015/index>` dataset as an example, one can run ``ap_verify`` as follows:
 
 .. prompt:: bash
 
@@ -50,7 +50,7 @@ This call will create a new directory at :file:`workspaces/hits`, ingest the HiT
 
    The command-line interface for ``ap_verify`` is at present much more limited than those of command-line tasks.
    In particular, only file-based repositories are supported, and compound dataIds cannot be provided.
-   See the :ref:`ap-verify-cmd` for details.
+   See the :doc:`command-line-reference` for details.
 
 .. _ap-verify-run-ingest:
 
@@ -61,7 +61,7 @@ How to run ingestion by itself
 This is useful if the data need special processing or as a precursor to massive processing runs.
 Running ``ap_verify`` with the same arguments as a previous run of ``ingest_dataset`` will automatically skip ingestion.
 
-Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ingest_dataset`` as follows:
+Using the :doc:`HiTS 2015 </packages/ap_verify_hits2015/index>` dataset as an example, one can run ``ingest_dataset`` as follows:
 
 .. prompt:: bash
 
@@ -88,4 +88,5 @@ See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for deta
 Further reading
 ===============
 
+- :doc:`datasets-install`
 - :doc:`command-line-reference`

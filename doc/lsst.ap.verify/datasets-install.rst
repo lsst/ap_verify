@@ -6,7 +6,7 @@
 Installing datasets
 ###################
 
-:ref:`ap-verify-datasets` packages data in self-contained units that are intended to be easy to install for LSST Stack users.
+:doc:`datasets` packages data in self-contained units that are intended to be easy to install for LSST Stack users.
 It is not necessary to install all datasets supported by ``ap_verify``, only those you intend to use.
 
 Prerequisites
@@ -28,7 +28,7 @@ Use the `LSST Software Build Tool <https://developer.lsst.io/stack/lsstsw.html>`
 A :ref:`list of existing datasets <ap-verify-datasets-index>` is maintained as part of this documentation.
 Because of their large size (typically hundreds of GB), datasets are *never* installed as a dependency of another package; they must be requested explicitly.
 
-For example, to install the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset,
+For example, to install the :doc:`HiTS 2015 </packages/ap_verify_hits2015/index>` dataset,
 
 .. prompt:: bash
 

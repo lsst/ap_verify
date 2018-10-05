@@ -47,7 +47,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
    
-   Currently this argument is heavily restricted compared to its :ref:`command line task counterpart<command-line-task-dataid-howto>`.
+   Currently this argument is heavily restricted compared to its :doc:`command line task counterpart</modules/lsst.pipe/base/command-line-task-dataid-howto>`.
    In particular, the dataId must specify exactly one visit and exactly one CCD, and may not be left blank to mean "all data".
 
 .. option:: --dataset <dataset_name>
@@ -111,7 +111,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 Environment variables
 =====================
 
-The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` environment variables are used by :ref:`the verify framework<lsst.verify>` to configure SQuaSH upload.
+The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` environment variables are used by :doc:`the verify framework</packages/lsst.verify/index>` to configure SQuaSH upload.
 :envvar:`SQUASH_USER` and :envvar:`SQUASH_PASSWORD` must be defined in any environment where ``ap_verify`` is run unless the :option:`--silent` flag is used.
 
 .. TODO: remove this once `lsst.verify` documents them, and update the link (DM-12849)

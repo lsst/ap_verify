@@ -8,9 +8,9 @@
 Packaging data as a dataset
 ###########################
 
-:ref:`ap-verify-datasets` is designed to be as generic as possible, and should be able to accommodate any collection of observations so long as the source observatory has an :ref:`observatory interface (obs) package<obs-framework>` in the LSST software stack.
+:doc:`datasets` is designed to be as generic as possible, and should be able to accommodate any collection of observations so long as the source observatory has an :ref:`observatory interface (obs) package<obs-framework>` in the LSST software stack.
 This page describes how to create and maintain a dataset.
-It does not include :ref:`configuring ap_verify to use the dataset<ap-verify-configuration>`.
+It does not include :ref:`configuring ap_verify to use the dataset<ap-verify-configuration-dataset>`.
 
 .. _ap-verify-datasets-creation-gitlfs:
 

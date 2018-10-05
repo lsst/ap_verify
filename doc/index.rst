@@ -9,4 +9,4 @@ ap_verify documentation preview
 .. toctree::
    :maxdepth: 1
 
-   lsst.ap.verify/index.rst
+   lsst.ap.verify/index

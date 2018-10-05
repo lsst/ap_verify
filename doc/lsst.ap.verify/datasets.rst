@@ -28,9 +28,9 @@ In depth
 .. toctree::
    :maxdepth: 1
 
-   datasets-creation.rst
-   datasets-install.rst
-   datasets-butler.rst
+   datasets-creation
+   datasets-install
+   datasets-butler
 
 .. _ap-verify-datasets-index:
 
@@ -45,6 +45,6 @@ Existing datasets
    .. toctree::
       :maxdepth: 1
 
-      /packages/ap_verify_hits2015/index.rst
-      /packages/ap_verify_ci_hits2015/index.rst
+      /packages/ap_verify_hits2015/index
+      /packages/ap_verify_ci_hits2015/index
 
