@@ -27,7 +27,7 @@ The dataset names are a placeholder for a future data repository versioning syst
 How to run ap_verify in a new workspace
 =======================================
 
-Using the :doc:`HiTS 2015 </packages/ap_verify_hits2015/index>` dataset as an example, one can run :command:`ap_verify.py` as follows:
+Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run :command:`ap_verify.py` as follows:
 
 .. prompt:: bash
 
@@ -61,7 +61,7 @@ How to run ingestion by itself
 This is useful if the data need special processing or as a precursor to massive processing runs.
 Running :command:`ap_verify.py` with the same arguments as a previous run of :command:`ingest_dataset.py` will automatically skip ingestion.
 
-Using the :doc:`HiTS 2015 </packages/ap_verify_hits2015/index>` dataset as an example, one can run ``ingest_dataset`` as follows:
+Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run ``ingest_dataset`` as follows:
 
 .. prompt:: bash
 
