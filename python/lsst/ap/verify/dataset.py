@@ -45,10 +45,10 @@ class Dataset:
 
     Raises
     ------
-    `RuntimeError`
-        `datasetId` exists, but is not correctly organized or incomplete
-    `ValueError`
-        `datasetId` is not a recognized dataset. No side effects if this
+    RuntimeError
+        Raised if `datasetId` exists, but is not correctly organized or incomplete
+    ValueError
+        Raised if `datasetId` is not a recognized dataset. No side effects if this
         exception is raised.
     """
 
@@ -95,10 +95,10 @@ class Dataset:
 
         Raises
         ------
-        `IoError`
-            if the config file does not exist or is not readable
-        `RuntimeError`
-            if the config file exists, but does not contain the expected data
+        IoError
+            Raised if the config file does not exist or is not readable
+        RuntimeError
+            Raised if the config file exists, but does not contain the expected data
         """
         return Dataset._getDatasetInfo().keys()
 
@@ -115,8 +115,8 @@ class Dataset:
 
         Raises
         ------
-        `RuntimeError`
-            the config file exists, but does not contain the expected data
+        RuntimeError
+            Raised if the config file exists, but does not contain the expected data
         """
         return Config.instance['datasets']
 
@@ -186,8 +186,8 @@ class Dataset:
 
         Raises
         ------
-        `RuntimeError`
-            the package represented by this object does not conform to the
+        RuntimeError
+            Raised if the package represented by this object does not conform to the
             dataset framework
 
         Notes

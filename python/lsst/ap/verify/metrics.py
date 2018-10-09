@@ -55,8 +55,8 @@ def checkSquashReady(parsedCmdLine):
 
     Raises
     ------
-    `RuntimeError`
-        A configuration problem would prevent SQuaSH features from being used.
+    RuntimeError
+        Raised if a configuration problem would prevent SQuaSH features from being used.
     """
     if parsedCmdLine.submitMetrics:
         for var in (_ENV_USER, _ENV_PASSWORD):

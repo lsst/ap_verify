@@ -63,7 +63,7 @@ def measureFromMetadata(metadata):
 
     Raises
     ------
-    `RuntimeError`
+    RuntimeError
         the ``ap_verify`` configuration file exists, but does not contain the
         expected data under ``measurements``
     """

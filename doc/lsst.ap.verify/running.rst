@@ -1,31 +1,33 @@
+.. py:currentmodule:: lsst.ap.verify
+
 .. _ap-verify-running:
 
 #######################################
-Running ap_verify From the Command Line
+Running ap_verify from the command line
 #######################################
 
-``ap_verify`` is a Python script designed to be run on both developer machines and verification servers.
-While ``ap_verify`` is not a :ref:`command-line task<lsst.pipe.base>`, the command-line interface is designed to resemble that of command-line tasks where practical.
+:command:`ap_verify.py` is a Python script designed to be run on both developer machines and verification servers.
+While :command:`ap_verify.py` is not a :doc:`command-line task</modules/lsst.pipe.base/index>`, the command-line interface is designed to resemble that of command-line tasks where practical.
 This page describes the minimum options needed to run ``ap_verify``.
-For more details, see the :ref:`ap-verify-cmd` or run :option:`ap_verify.py -h`.
+For more details, see the :doc:`command-line-reference` or run :option:`ap_verify.py -h`.
 
 .. _ap-verify-dataset-name:
 
-Datasets as Input Arguments
----------------------------
+Datasets as input arguments
+===========================
 
-Since ``ap_verify`` begins with an uningested :ref:`dataset<ap-verify-datasets>`, the input argument is a dataset name rather than a repository.
+Since ``ap_verify`` begins with an uningested :doc:`dataset<datasets>`, the input argument is a dataset name rather than a repository.
 
-Datasets are identified by a name that gets mapped to an :ref:`eups-registered directory <ap-verify-datasets-install>` containing the data.
+Datasets are identified by a name that gets mapped to an :doc:`eups-registered directory <datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
 The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
 
 .. _ap-verify-run-output:
 
-How to Run ap_verify in a New Workspace
----------------------------------------
+How to run ap_verify in a new workspace
+=======================================
 
-Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ap_verify`` as follows:
+Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run :command:`ap_verify.py` as follows:
 
 .. prompt:: bash
 
@@ -46,36 +48,36 @@ This call will create a new directory at :file:`workspaces/hits`, ingest the HiT
 
 .. note::
 
-   The command-line interface for ``ap_verify`` is at present much more limited than those of command-line tasks.
+   The command-line interface for :command:`ap_verify.py` is at present much more limited than those of command-line tasks.
    In particular, only file-based repositories are supported, and compound dataIds cannot be provided.
-   See the :ref:`ap-verify-cmd` for details.
+   See the :doc:`command-line-reference` for details.
 
 .. _ap-verify-run-ingest:
 
-How to Run Ingestion By Itself
-------------------------------
+How to run ingestion by itself
+==============================
 
 ``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that ingests datasets but does not run the pipeline on them.
 This is useful if the data need special processing or as a precursor to massive processing runs.
-Running ``ap_verify`` with the same arguments as a previous run of ``ingest_dataset`` will automatically skip ingestion.
+Running :command:`ap_verify.py` with the same arguments as a previous run of :command:`ingest_dataset.py` will automatically skip ingestion.
 
-Using the :ref:`HiTS 2015 <ap_verify_hits2015-package>` dataset as an example, one can run ``ingest_dataset`` as follows:
+Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run ``ingest_dataset`` as follows:
 
 .. prompt:: bash
 
    ingest_dataset.py --dataset HiTS2015 --output workspaces/hits/
 
-The :option:`--dataset <ap_verify.py --dataset>` and :option:`--output <ap_verify.py --output>` arguments behave the same way as for ``ap_verify``.
-Other options from ``ap_verify`` are not available.
+The :option:`--dataset <ap_verify.py --dataset>` and :option:`--output <ap_verify.py --output>` arguments behave the same way as for :command:`ap_verify.py`.
+Other options from :command:`ap_verify.py` are not available.
 
 .. _ap-verify-results:
 
-How to Use Measurements of Metrics
-----------------------------------
+How to use measurements of metrics
+==================================
 
 After ``ap_verify`` has run, it will produce a file named, by default, :file:`ap_verify.verify.json` in the caller's directory.
 The file name may be customized using the :option:`--metrics-file <ap_verify.py --metrics-file>` command-line argument.
-This file contains metric measurements in `lsst.verify` format, and can be loaded and read as described in the `lsst.verify` documentation or in `SQR-019 <https://sqr-019.lsst.io>`_.
+This file contains metric measurements in ``lsst.verify`` format, and can be loaded and read as described in the :doc:`lsst.verify documentation</modules/lsst.verify/index>` or in `SQR-019 <https://sqr-019.lsst.io>`_.
 
 Unless the :option:`--silent <ap_verify.py --silent>` argument is provided, ``ap_verify`` will also upload measurements to the `SQuaSH service <https://squash.lsst.codes/>`_ on completion.
 See the SQuaSH documentation for details.
@@ -83,3 +85,8 @@ See the SQuaSH documentation for details.
 If the pipeline is interrupted by a fatal error, completed measurements will be saved to the metrics file for debugging purposes, but nothing will get sent to SQuaSH.
 See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for details.
 
+Further reading
+===============
+
+- :doc:`datasets-install`
+- :doc:`command-line-reference`

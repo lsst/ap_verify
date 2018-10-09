@@ -88,8 +88,8 @@ def _updateMetrics(metadata, job):
 
     Raises
     ------
-    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
-        A "verify_json_path" key does not map to a string, or serialized
+    lsst.ap.verify.pipeline_driver.MeasurementStorageError
+        Raised if a "verify_json_path" key does not map to a string, or serialized
         measurements could not be located or read from disk.
     """
     try:
@@ -193,8 +193,8 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
 
     Raises
     ------
-    `lsst.ap.verify.pipeline_driver.MeasurementStorageError`
-        Measurements were made, but `metricsJob` could not be updated
+    lsst.ap.verify.pipeline_driver.MeasurementStorageError
+        Raised if measurements were made, but `metricsJob` could not be updated
         with all of them. This exception may suppress exceptions raised by
         the pipeline itself.
     """
@@ -261,7 +261,7 @@ def _deStringDataId(dataId):
 
     Parameters
     ----------
-    dataId: `dict` from `str` to any
+    dataId : `dict` from `str` to any
         The dataId to be cleaned up.
     '''
     integer = re.compile(r'^\s*[+-]?\d+\s*$')
@@ -280,7 +280,7 @@ def _parseDataId(rawDataId):
 
     Returns
     -------
-    dataId: `dict` from `str` to any type
+    dataId : `dict` from `str` to any type
         A dataId ready for passing to Stack operations.
     """
     dataIdItems = re.split('[ +=]', rawDataId)

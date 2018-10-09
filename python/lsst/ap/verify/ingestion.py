@@ -56,7 +56,7 @@ class DatasetIngestConfig(pexConfig.Config):
     Because `DatasetIngestTask` is not designed to be run from the command line,
     and its arguments are completely determined by the choice of dataset,
     this config includes settings that would normally be passed as command-line
-    arguments to `IngestTask`.
+    arguments to `~lsst.pipe.tasks.ingest.IngestTask`.
     """
 
     dataIngester = pexConfig.ConfigurableField(

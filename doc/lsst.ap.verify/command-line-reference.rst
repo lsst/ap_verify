@@ -1,17 +1,21 @@
-.. _ap-verify-cmd:
+.. py:currentmodule:: lsst.ap.verify
 
 .. program:: ap_verify.py
 
-######################
-Command-Line Reference
-######################
+.. _ap-verify-cmd:
 
-This page describes the command-line arguments and environment variables used by ``ap_verify``.
+################################
+ap_verify command-line reference
+################################
+
+This page describes the command-line arguments and environment variables used by :command:`ap_verify.py`.
+
+.. _ap-verify-cmd-basic:
 
 Signature and syntax
 ====================
 
-The basic call signature of ``ap_verify`` is:
+The basic call signature of :command:`ap_verify.py` is:
 
 .. prompt:: bash
 
@@ -19,11 +23,15 @@ The basic call signature of ``ap_verify`` is:
 
 These three arguments are mandatory, all others are optional.
 
+.. _ap-verify-cmd-return:
+
 Status code
 ===========
 
-``ap_verify`` returns a status code of ``0`` if the pipeline ran to completion.
+:command:`ap_verify.py` returns a status code of ``0`` if the pipeline ran to completion.
 If the pipeline fails, the status code will be an interpreter-dependent nonzero value.
+
+.. _ap-verify-cmd-args:
 
 Named arguments
 ===============
@@ -39,7 +47,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
    
-   Currently this argument is heavily restricted compared to its :ref:`command line task counterpart<command-line-task-dataid-howto>`.
+   Currently this argument is heavily restricted compared to its :doc:`command line task counterpart</modules/lsst.pipe.base/command-line-task-dataid-howto>`.
    In particular, the dataId must specify exactly one visit and exactly one CCD, and may not be left blank to mean "all data".
 
 .. option:: --dataset <dataset_name>
@@ -73,7 +81,7 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    **Output metrics file.**
 
-   The name of a file to contain the metrics measured by ``ap_verify``, in a format readable by the `lsst.verify` framework.
+   The name of a file to contain the metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
    If omitted, the output will go to a file named :file:`ap_verify.verify.json` in the user's working directory.
 
    This argument can be used to run multiple instances of ``ap_verify`` concurrently, with each instance producing output to a different metrics file.
@@ -95,16 +103,16 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    .. note::
 
-      Ingestion of `lsst.verify` metrics is not yet supported by SQuaSH, so this flag should always be provided for now.
+      Ingestion of :doc:`lsst.verify</modules/lsst.verify/index>` metrics is not yet supported by SQuaSH, so this flag should always be provided for now.
 
 
-.. _command-line-task-envvar:
+.. _ap-verify-cmd-envvar:
 
 Environment variables
 =====================
 
-The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` environment variables are used by :ref:`the verify framework<lsst.verify>` to configure SQuaSH upload.
-:envvar:`SQUASH_USER` and :envvar:`SQUASH_PASSWORD` must be defined in any environment where ``ap_verify`` is run unless the :option:`--silent` flag is used.
+The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` environment variables are used by :doc:`the verify framework</modules/lsst.verify/index>` to configure SQuaSH upload.
+:envvar:`SQUASH_USER` and :envvar:`SQUASH_PASSWORD` must be defined in any environment where :command:`ap_verify.py` is run unless the :option:`--silent` flag is used.
 
 .. TODO: remove this once `lsst.verify` documents them, and update the link (DM-12849)
 
@@ -119,6 +127,3 @@ The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` e
 .. envvar:: SQUASH_URL
 
    The location for a SQuaSH REST API. Defaults to the SQuaSH server at ``lsst.codes``.
-
-.. _command-line-task-envvar-examples:
-
