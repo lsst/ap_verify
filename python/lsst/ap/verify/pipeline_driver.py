@@ -103,76 +103,6 @@ def _updateMetrics(metadata, job):
         raise MeasurementStorageError('Task metadata could not be read; possible downstream bug') from e
 
 
-def _process(pipeline, workspace, dataId, parallelization):
-    """Run single-frame processing on a dataset.
-
-    Parameters
-    ----------
-    pipeline : `lsst.ap.pipe.ApPipeTask`
-        An instance of the AP pipeline.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location containing input and output repositories.
-    dataId : `dict` from `str` to any
-        Butler identifier naming the data to be processed by the underlying
-        task(s).
-    parallelization : `int`
-        Parallelization level at which to run underlying task(s).
-    """
-    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw', dataId=dataId):
-        pipeline.runProcessCcd(dataRef)
-
-
-def _difference(pipeline, workspace, dataId, parallelization):
-    """Run image differencing on a dataset.
-
-    Parameters
-    ----------
-    pipeline : `lsst.ap.pipe.ApPipeTask`
-        An instance of the AP pipeline.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location containing input and output repositories.
-    dataId : `dict` from `str` to any
-        Butler identifier naming the data to be processed by the underlying
-        task(s).
-    parallelization : `int`
-        Parallelization level at which to run underlying task(s).
-    """
-    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
-        pipeline.runDiffIm(dataRef)
-
-
-def _associate(pipeline, workspace, dataId, parallelization):
-    """Run source association on a dataset.
-
-    Parameters
-    ----------
-    pipeline : `lsst.ap.pipe.ApPipeTask`
-        An instance of the AP pipeline.
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location containing output repositories.
-    dataId : `dict` from `str` to any
-        Butler identifier naming the data to be processed by the underlying
-        task(s).
-    parallelization : `int`
-        Parallelization level at which to run underlying task(s).
-    """
-    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
-        pipeline.runAssociation(dataRef)
-
-
-def _postProcess(workspace):
-    """Run post-processing on a dataset.
-
-    This step is called the "afterburner" in some design documents.
-
-    Parameters
-    ----------
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location containing output repositories.
-    """
-    pass
-
-
 def runApPipe(metricsJob, workspace, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
@@ -195,20 +125,12 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     dataId = _parseDataId(parsedCmdLine.dataId)
-    processes = parsedCmdLine.processes
 
     pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
     try:
-        _process(pipeline, workspace, dataId, processes)
-        log.info('Single-frame processing complete')
-
-        _difference(pipeline, workspace, dataId, processes)
-        log.info('Image differencing complete')
-        _associate(pipeline, workspace, dataId, processes)
-        log.info('Source association complete')
-
-        _postProcess(workspace)
-        for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
+        for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw',
+                                                 dataId=dataId):
+            pipeline.runDataRef(dataRef)
             pipeline.writeMetadata(dataRef)
         log.info('Pipeline complete')
     finally:

@@ -124,13 +124,9 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def testRunApPipeSteps(self, _mockConfig, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """
-        # This test case is sensitive to the implementation of pipeline_driver
-        # Specifically, it needs to know that ApPipeTask.run is not called
         pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
 
-        mockClass.return_value.runProcessCcd.assert_called_once()
-        mockClass.return_value.runDiffIm.assert_called_once()
-        mockClass.return_value.runAssociation.assert_called_once()
+        mockClass.return_value.runDataRef.assert_called_once()
 
     def testUpdateMetricsEmpty(self):
         """Test that _updateMetrics does not add metrics if no job files are provided.
@@ -167,7 +163,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         metadata.add("lsst.ap.pipe.ccdProcessor.verify_json_path", subtaskFile)
 
         mockClass.return_value.getFullMetadata.return_value = metadata
-        mockClass.return_value.runDiffIm.side_effect = RuntimeError("DECam is weird!")
+        mockClass.return_value.runDataRef.side_effect = RuntimeError("DECam is weird!")
 
         self.assertNotEqual(self.job.measurements, self.subtaskJob.measurements)
 
