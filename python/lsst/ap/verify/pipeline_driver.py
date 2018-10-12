@@ -213,6 +213,8 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
         log.info('Source association complete')
 
         _postProcess(workspace)
+        for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
+            pipeline.writeMetadata(dataRef)
         log.info('Pipeline complete')
         return pipeline.getFullMetadata()
     finally:
