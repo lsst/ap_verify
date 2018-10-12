@@ -185,11 +185,6 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
 
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The metadata from any tasks called by the pipeline. May be empty.
-
     Raises
     ------
     lsst.ap.verify.pipeline_driver.MeasurementStorageError
@@ -216,7 +211,6 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
         for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='calexp', dataId=dataId):
             pipeline.writeMetadata(dataRef)
         log.info('Pipeline complete')
-        return pipeline.getFullMetadata()
     finally:
         # Recover any metrics from completed pipeline steps, even if the pipeline fails
         _updateMetrics(pipeline.getFullMetadata(), metricsJob)

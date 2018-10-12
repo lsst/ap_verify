@@ -121,19 +121,6 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
-    def testRunApPipeReturn(self, _mockConfig, mockClass):
-        """Test that runApPipe runs the pipeline and returns the Task object's(s') metadata.
-        """
-        mockClass.return_value.getFullMetadata.return_value = PipelineDriverTestSuite.dummyMetadata()
-
-        metadata = pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
-
-        self.assertEqual(len(metadata.paramNames(topLevelOnly=False)), 1)
-        self.assertEqual(metadata.getScalar("lsst.ap.pipe.ccdProcessor.cycleCount"), 42)
-
-    # Mock up ApPipeTask to avoid doing any processing.
-    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
-    @patchApPipe
     def testRunApPipeSteps(self, _mockConfig, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """

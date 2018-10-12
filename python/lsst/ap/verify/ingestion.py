@@ -447,11 +447,6 @@ def ingestDataset(dataset, workspace):
         If the repositories already exist, they must be compatible with
         ``dataset`` (in particular, they must support the relevant
         ``obs`` package).
-
-    Returns
-    -------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from any Tasks called by this function.
     """
     # TODO: generalize to support arbitrary URIs (DM-11482)
     log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
@@ -459,7 +454,6 @@ def ingestDataset(dataset, workspace):
     ingester = DatasetIngestTask(config=_getConfig(dataset))
     ingester.run(dataset, workspace)
     log.info("Data ingested")
-    return ingester.getFullMetadata()
 
 
 def _getConfig(dataset):
