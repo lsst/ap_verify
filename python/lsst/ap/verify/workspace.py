@@ -100,7 +100,7 @@ class Workspace:
         created or updated by the pipeline (`str`, read-only).
 
         Shall be a filename to a database file suitable
-        for `AssociationDBSqliteTask`.
+        for the sqlite backend of `Ppdb`.
         """
         return os.path.join(self._location, 'association.db')
 

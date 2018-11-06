@@ -36,10 +36,10 @@ import lsst.log
 from .dataset import Dataset
 from .ingestion import ingestDataset
 from .metrics import MetricsParser, checkSquashReady, AutoJob
-from .pipeline_driver import ApPipeParser, runApPipe
+from .pipeline_driver import ApPipeParser, runApPipe, _getConfig
 from .measurements import measureFromMetadata, \
     measureFromButlerRepo, \
-    measureFromL1DbSqlite
+    measureFromPpdb
 from .workspace import Workspace
 
 
@@ -151,7 +151,7 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
     measurements = []
     measurements.extend(measureFromMetadata(metadata))
     measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
-    measurements.extend(measureFromL1DbSqlite(workspace.dbLocation))
+    measurements.extend(measureFromPpdb(_getConfig(worskpace).ppdb))
 
     for measurement in measurements:
         metricsJob.measurements.insert(measurement)
