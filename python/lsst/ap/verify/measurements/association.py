@@ -50,7 +50,7 @@ def measureNumberNewDiaObjects(metadata, taskName, metricName):
         contexts, the information for only one run will be provided.
     metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
-        "association.numNewDiaObjects"
+        "ap_association.numNewDiaObjects"
 
     Returns
     -------
@@ -82,7 +82,7 @@ def measureNumberUnassociatedDiaObjects(metadata, taskName, metricName):
         contexts, the information for only one run will be provided.
     metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
-        "association.numUnassociatedDiaObjects"
+        "ap_association.numUnassociatedDiaObjects"
 
     Returns
     -------
@@ -114,7 +114,7 @@ def measureFractionUpdatedDiaObjects(metadata, taskName, metricName):
         contexts, the information for only one run will be provided.
     metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
-        "association.fracUpdatedDiaObjects"
+        "ap_association.fracUpdatedDiaObjects"
 
     Returns
     -------
@@ -209,7 +209,7 @@ def measureTotalUnassociatedDiaObjects(dbCursor, metricName):
         AssociationDBSqlite task to load.
     metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
-        "association.totalUnassociatedDiaObjects"
+        "ap_association.totalUnassociatedDiaObjects"
 
     Returns
     -------
