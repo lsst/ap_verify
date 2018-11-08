@@ -76,15 +76,15 @@ def measureFromMetadata(metadata):
             result.append(measurement)
 
     measurement = measureNumberNewDiaObjects(
-        metadata, 'apPipe:associator', 'association.numNewDiaObjects')
+        metadata, 'apPipe:associator', 'ap_association.numNewDiaObjects')
     if measurement is not None:
         result.append(measurement)
     measurement = measureFractionUpdatedDiaObjects(
-        metadata, 'apPipe:associator', 'association.fracUpdatedDiaObjects')
+        metadata, 'apPipe:associator', 'ap_association.fracUpdatedDiaObjects')
     if measurement is not None:
         result.append(measurement)
     measurement = measureNumberUnassociatedDiaObjects(
-        metadata, 'apPipe:associator', 'association.numUnassociatedDiaObjects')
+        metadata, 'apPipe:associator', 'ap_association.numUnassociatedDiaObjects')
     if measurement is not None:
         result.append(measurement)
     return result
@@ -172,7 +172,7 @@ def measureFromL1DbSqlite(dbName):
 
     result = []
     measurement = measureTotalUnassociatedDiaObjects(
-        dbCursor, "association.totalUnassociatedDiaObjects")
+        dbCursor, "ap_association.totalUnassociatedDiaObjects")
     if measurement is not None:
         result.append(measurement)
 
