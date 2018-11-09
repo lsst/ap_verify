@@ -160,12 +160,11 @@ def _convertDataIdString(dataId):
 
 
 def measureFromPpdb(configurable):
-    """Make measurements on an sqlite database containing the results of
+    """Make measurements on a ppdb database containing the results of
     source association.
 
-    dbName : `str`
-        Name of the sqlite database created from a previous run of
-        `lsst.ap.association.AssociationDBSqliteTask` to load.
+    configurable : `lsst.pex.config.Config`
+        ApVerify configuration with Ppdb configs set.
     """
     result = []
     ppdb = daxPpdb.Ppdb(config=configurable)

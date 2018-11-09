@@ -151,7 +151,7 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
     measurements = []
     measurements.extend(measureFromMetadata(metadata))
     measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
-    measurements.extend(measureFromPpdb(_getConfig(worskpace).ppdb))
+    measurements.extend(measureFromPpdb(_getConfig(workspace).ppdb))
 
     for measurement in measurements:
         metricsJob.measurements.insert(measurement)

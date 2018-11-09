@@ -244,6 +244,7 @@ def _getConfig(workspace):
 
     # ApVerify will use the sqlite hooks for the Ppdb.
     config.ppdb.db_url = "sqlite:///" + workspace.dbLocation
+    config.ppdb.isolation_level = "READ_UNCOMMITTED"
 
     for path in [
         os.path.join(packageDir, 'config'),

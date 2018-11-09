@@ -26,8 +26,8 @@ from unittest.mock import NonCallableMock
 
 import astropy.units as u
 import os
-import sqlite3
 
+import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
 import lsst.dax.ppdb as daxPpdb
 import lsst.afw.geom as afwGeom
@@ -130,8 +130,24 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
 
         self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
+        self.ppdbCfg = daxPpdb.PpdbConfig()
+        # Create DB in memory.
+        self.ppdbCfg.db_url = 'sqlite://'
+        self.ppdbCfg.isolation_level = "READ_UNCOMMITTED"
+        self.ppdbCfg.dia_object_index = "baseline"
+        self.ppdbCfg.dia_object_columns = []
+        self.ppdb = daxPpdb.Ppdb(
+            config=self.ppdbCfg,
+            afw_schemas=dict(DiaObject=make_dia_object_schema(),
+                             DiaSource=make_dia_source_schema()))
+        self.ppdb._schema.makeSchema()
+
+        dateTime = dafBase.DateTime(nsecs=1400000000 * 10**9)
+        self.ppdb.storeDiaObjects(self.diaObjects, dateTime.toPython())
+
     def tearDown(self):
         del self.assocTask
+        del self.ppdb
 
         if hasattr(self, "butler"):
             del self.butler
@@ -169,8 +185,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(
                 metric='association.fracUpdatedDIAObjects'))
-        self.assertEqual(meas.quantity,
-                         nUnassociatedDiaObjects * u.count)
+        self.assertEqual(meas.quantity, nUnassociatedDiaObjects * u.count)
 
         meas = measureFractionUpdatedDiaObjects(
             metadata,
@@ -208,17 +223,10 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                          self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromPpdb(self):
-        # Fake DB handle to avoid DB initialization overhead
-        ppdb = NonCallableMock(
-            spec=daxPpdb.Ppdb,
-            _schema=NonCallableMock(spec=daxPpdb.PpdbSchema,
-                                    objects=NonCallableMock()),
-            _engine=NonCallableMock())
-        ppdb._engine.scalar.return_value = self.numTestDiaSources
-        ppdb._schema.objects.c.nDiaSources = 1
-
+        # Need to have a valid ppdb object so that the internal sqlalchemy
+        # calls work.
         meas = measureTotalUnassociatedDiaObjects(
-            ppdb,
+            self.ppdb,
             metricName='association.numTotalUnassociatedDiaObjects')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
@@ -296,12 +304,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 self.butler, dataId=dataIdDict,
                 metricName='foo.bar.FooBar')
 
-        # Fake DB handle to avoid DB initialization overhead
-        cursor = NonCallableMock(spec=sqlite3.Cursor)
-        cursor.fetchall.return_value = [(0,)]
         with self.assertRaises(TypeError):
             measureTotalUnassociatedDiaObjects(
-                cursor, metricName='foo.bar.FooBar')
+                self.ppdb, metricName='foo.bar.FooBar')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

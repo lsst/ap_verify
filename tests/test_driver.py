@@ -196,7 +196,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         with open(configFile, "w") as f:
             # Illegal value; would never be set by a real config
             f.write("config.differencer.doWriteSources = False\n")
-            f.write("config.associator.level1_db.db_name = ':memory:'\n")
+            f.write("config.ppdb.db_url = 'sqlite://'\n")
 
         task = self.setUpMockPatch("lsst.ap.pipe.ApPipeTask",
                                    spec=True,
@@ -211,7 +211,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
             self.assertIn("config", kwargs)
             taskConfig = kwargs["config"]
             self.assertFalse(taskConfig.differencer.doWriteSources)
-            self.assertNotEqual(taskConfig.associator.level1_db.db_name, self.workspace.dbLocation)
+            self.assertNotEqual(taskConfig.ppdb.db_url, "sqlite:///" + self.workspace.dbLocation)
 
     def testRunApPipeWorkspaceDb(self):
         """Test that runApPipe places a database in the workspace location by default.
@@ -228,7 +228,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
             kwargs = call[2]
             self.assertIn("config", kwargs)
             taskConfig = kwargs["config"]
-            self.assertEqual(taskConfig.associator.level1_db.db_name, self.workspace.dbLocation)
+            self.assertEqual(taskConfig.ppdb.db_url, "sqlite:///" + self.workspace.dbLocation)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
