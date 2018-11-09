@@ -209,19 +209,16 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
 
     def testValidFromPpdb(self):
         # Fake DB handle to avoid DB initialization overhead
-        cursor = NonCallableMock(spec=sqlite3.Cursor)
-        cursor.fetchall.return_value = [(len(self.diaObjects),)]
-
         ppdb = NonCallableMock(
             spec=daxPpdb.Ppdb,
-            _schema=NonCallableMock(spec=daxPpdb.PpdbSchema(),
+            _schema=NonCallableMock(spec=daxPpdb.PpdbSchema,
                                     objects=NonCallableMock()),
             _engine=NonCallableMock())
-        ppdb._engine.scalar.return_value = self.nDiaObjects
+        ppdb._engine.scalar.return_value = self.numTestDiaSources
         ppdb._schema.objects.c.nDiaSources = 1
 
         meas = measureTotalUnassociatedDiaObjects(
-            cursor,
+            ppdb,
             metricName='association.numTotalUnassociatedDiaObjects')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
