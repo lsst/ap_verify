@@ -82,8 +82,10 @@ def createTestPoints(nPoints,
     for src_idx in range(nPoints):
         src = sources.addNew()
         # Set everything to a simple default value.
-        for name in schema.getNames():
-            src[name] = 1
+        for subSchema in schema:
+            if subSchema.getField().getTypeString() == "Angle":
+                continue
+            src[subSchema.getField().getName()] = 1
         # Set the ids by hand
         src['id'] = src_idx + startId
         coord = afwGeom.SpherePoint(src_idx, src_idx, afwGeom.degrees)
