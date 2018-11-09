@@ -85,7 +85,10 @@ def createTestPoints(nPoints,
         for subSchema in schema:
             if subSchema.getField().getTypeString() == "Angle":
                 continue
-            src[subSchema.getField().getName()] = 1
+            elif subSchema.getField().getTypeString() == "String":
+                src[subSchema.getField().getName()] = 'g'
+            else:
+                src[subSchema.getField().getName()] = 1
         # Set the ids by hand
         src['id'] = src_idx + startId
         coord = afwGeom.SpherePoint(src_idx, src_idx, afwGeom.degrees)
@@ -166,7 +169,8 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(
                 metric='association.fracUpdatedDIAObjects'))
-        self.assertEqual(meas.quantity, nUnassociatedDiaObjects * u.count)
+        self.assertEqual(meas.quantity,
+                         nUnassociatedDiaObjects * u.count)
 
         meas = measureFractionUpdatedDiaObjects(
             metadata,
@@ -177,7 +181,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             meas.metric_name,
             lsst.verify.Name(metric='association.fracUpdatedDIAObjects'))
         value = nUpdatedDiaObjects / (nUpdatedDiaObjects + nUnassociatedDiaObjects)
-        self.assertEqual(meas.quantity, value * u.count)
+        self.assertEqual(meas.quantity, value * u.dimensionless_unscaled)
 
     def testValidFromButler(self):
         """ Test the association measurements that require a butler.
