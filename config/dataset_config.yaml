@@ -4,6 +4,7 @@ datasets:
     CI-HiTS2015: ap_verify_ci_hits2015
 measurements:
     timing:
+        apPipe: ap_pipe.ApPipeTime
         apPipe:ccdProcessor: pipe_tasks.ProcessCcdTime
         apPipe:ccdProcessor:isr: ip_isr.IsrTime
         apPipe:ccdProcessor:charImage: pipe_tasks.CharacterizeImageTime
