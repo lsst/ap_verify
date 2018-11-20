@@ -82,7 +82,11 @@ class MeasureRuntimeTestSuite(lsst.utils.tests.TestCase):
         config.large = size // 4
         config.pedestal = False
         self.task = FringeTask(name="fringe", config=config)
-        self.task.run(exp, exp)
+
+        # As an optimization, let test cases choose whether to run the dummy task
+        def runTask():
+            self.task.run(exp, exp)
+        self.runTask = runTask
 
     def tearDown(self):
         del self.task
@@ -90,6 +94,7 @@ class MeasureRuntimeTestSuite(lsst.utils.tests.TestCase):
     def testValid(self):
         """Verify that timing information can be recovered.
         """
+        self.runTask()
         meas = measureRuntime(self.task.getFullMetadata(), taskName='fringe', metricName='ip_isr.IsrTime')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(meas.metric_name, Name(metric='ip_isr.IsrTime'))
@@ -100,14 +105,14 @@ class MeasureRuntimeTestSuite(lsst.utils.tests.TestCase):
     def testNoMetric(self):
         """Verify that trying to measure a nonexistent metric fails.
         """
+        self.runTask()
         with self.assertRaises(TypeError):
             measureRuntime(self.task.getFullMetadata(), taskName='fringe', metricName='foo.bar.FooBarTime')
 
     def testNotRun(self):
         """Verify that trying to measure a real but inapplicable metric returns None.
         """
-        notRun = FringeTask(name="fringe", config=FringeTask.ConfigClass())
-        meas = measureRuntime(notRun.getFullMetadata(), taskName='fringe', metricName='ip_isr.IsrTime')
+        meas = measureRuntime(self.task.getFullMetadata(), taskName='fringe', metricName='ip_isr.IsrTime')
         self.assertIsNone(meas)
 
 
@@ -130,7 +135,8 @@ class TimingMetricTestSuite(MetricTaskTestCase):
         return config
 
     def setUp(self):
-        """Run a dummy instance of `FringeTask` so that test cases can measure it.
+        """Create a dummy instance of `FringeTask` so that test cases can
+        run and measure it.
         """
         super().setUp()
         self.config = TimingMetricTestSuite._standardConfig()
