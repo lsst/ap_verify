@@ -159,7 +159,7 @@ def _convertDataIdString(dataId):
     return dataIdDict
 
 
-def measureFromPpdb(configurable):
+def measureFromPpdb(config):
     """Make measurements on a ppdb database containing the results of
     source association.
 
@@ -167,9 +167,9 @@ def measureFromPpdb(configurable):
         ApVerify configuration with Ppdb configs set.
     """
     result = []
-    ppdb = daxPpdb.Ppdb(config=configurable)
+    ppdb = daxPpdb.Ppdb(config=config)
     measurement = measureTotalUnassociatedDiaObjects(
-        ppdb, "association.totalUnassociatedDiaObjects")
+        ppdb, "ap_association.totalUnassociatedDiaObjects")
     if measurement is not None:
         result.append(measurement)
 

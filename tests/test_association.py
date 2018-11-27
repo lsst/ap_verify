@@ -86,6 +86,7 @@ def createTestPoints(nPoints,
             if subSchema.getField().getTypeString() == "Angle":
                 continue
             elif subSchema.getField().getTypeString() == "String":
+                # Assume that the string column contains the filter name.
                 src[subSchema.getField().getName()] = 'g'
             else:
                 src[subSchema.getField().getName()] = 1
