@@ -110,6 +110,12 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         testSources = createTestPoints(self.numTestSciSources)
         testDiaSources = createTestPoints(self.numTestDiaSources)
 
+        self.numTestDiaObjects = 5
+        self.diaObjects = createTestPoints(
+            5, schema=make_dia_object_schema())
+        for diaObject in self.diaObjects:
+            diaObject['nDiaSources'] = 1
+
         # Fake Butler to avoid initialization and I/O overhead
         def mockGet(datasetType, dataId=None):
             """An emulator for `lsst.daf.persistence.Butler.get` that can only handle test data.
@@ -121,12 +127,6 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 elif datasetType == 'deepDiff_diaSrc':
                     return testDiaSources
             raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
-
-        self.numTestDiaObjects = 5
-        self.diaObjects = createTestPoints(
-            5, schema=make_dia_object_schema())
-        for diaObject in self.diaObjects:
-            diaObject['nDiaSources'] = 1
 
         self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
@@ -140,7 +140,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
             config=self.ppdbCfg,
             afw_schemas=dict(DiaObject=make_dia_object_schema(),
                              DiaSource=make_dia_source_schema()))
-        self.ppdb._schema.makeSchema()
+        self.ppdb.makeSchema(drop=True)
 
         dateTime = dafBase.DateTime(nsecs=1400000000 * 10**9)
         self.ppdb.storeDiaObjects(self.diaObjects, dateTime.toPython())
