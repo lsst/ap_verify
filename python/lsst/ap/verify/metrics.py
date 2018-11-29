@@ -28,6 +28,7 @@ processing of individual measurements. Measurements are handled in the
 ``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
+# TODO: module deprecated by lsst.verify.compatibility.MetricsControllerTask, remove after DM-16536
 __all__ = ["AutoJob", "MetricsParser", "checkSquashReady"]
 
 import argparse
