@@ -25,16 +25,16 @@ import unittest
 from unittest.mock import NonCallableMock
 
 import astropy.units as u
-import numpy as np
 import os
-import sqlite3
 
+import lsst.daf.base as dafBase
 import lsst.daf.persistence as dafPersist
+import lsst.dax.ppdb as daxPpdb
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 from lsst.ap.association import \
-    make_minimal_dia_source_schema, \
-    make_minimal_dia_object_schema, \
+    make_dia_source_schema, \
+    make_dia_object_schema, \
     AssociationTask
 import lsst.pipe.base as pipeBase
 import lsst.utils.tests
@@ -55,31 +55,20 @@ dataIdDict = {'visit': 1111,
               'filter': 'r'}
 
 
-def createTestPoints(pointLocsDeg,
+def createTestPoints(nPoints,
                      startId=0,
-                     schema=None,
-                     scatterArcsec=1.0,
-                     indexerIds=None,
-                     associatedIds=None):
+                     schema=None):
     """Create dummy DIASources or DIAObjects for use in our tests.
 
     Parameters
     ----------
-    pointLocsDeg : array-like (N, 2) of `float`s
-        Positions of the test points to create in RA, DEC.
+    nPoints : `int`
+        Number of data points to create.
     startId : `int`
         Unique id of the first object to create. The remaining sources are
         incremented by one from the first id.
     schema : `lsst.afw.table.Schema`
         Schema of the objects to create. Defaults to the DIASource schema.
-    scatterArcsec : `float`
-        Scatter to add to the position of each DIASource.
-    indexerIds : `list` of `ints`s
-        Id numbers of pixelization indexer to store. Must be the same length
-        as the first dimension of point_locs_deg.
-    associatedIds : `list` of `ints`s
-        Id numbers of associated DIAObjects to store. Must be the same length
-        as the first dimension of point_locs_deg.
 
     Returns
     -------
@@ -87,21 +76,23 @@ def createTestPoints(pointLocsDeg,
         Catalog of points to test.
     """
     if schema is None:
-        schema = make_minimal_dia_source_schema()
+        schema = make_dia_source_schema()
     sources = afwTable.SourceCatalog(schema)
 
-    for src_idx, (ra, dec,) in enumerate(pointLocsDeg):
+    for src_idx in range(nPoints):
         src = sources.addNew()
+        # Set everything to a simple default value.
+        for subSchema in schema:
+            if subSchema.getField().getTypeString() == "Angle":
+                continue
+            elif subSchema.getField().getTypeString() == "String":
+                # Assume that the string column contains the filter name.
+                src[subSchema.getField().getName()] = 'g'
+            else:
+                src[subSchema.getField().getName()] = 1
+        # Set the ids by hand
         src['id'] = src_idx + startId
-        coord = afwGeom.SpherePoint(ra, dec, afwGeom.degrees)
-        if scatterArcsec > 0.0:
-            coord = coord.offset(
-                np.random.rand() * 360 * afwGeom.degrees,
-                np.random.rand() * scatterArcsec * afwGeom.arcseconds)
-        if indexerIds is not None:
-            src['pixelId'] = indexerIds[src_idx]
-        if associatedIds is not None:
-            src['diaObjectId'] = associatedIds[src_idx]
+        coord = afwGeom.SpherePoint(src_idx, src_idx, afwGeom.degrees)
         src.setCoord(coord)
 
     return sources
@@ -117,12 +108,14 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         # Create a empty butler repository and put data in it.
         self.numTestSciSources = 10
         self.numTestDiaSources = 5
-        testSources = createTestPoints(
-            pointLocsDeg=[[idx, idx] for idx in
-                          range(self.numTestSciSources)])
-        testDiaSources = createTestPoints(
-            pointLocsDeg=[[idx, idx] for idx in
-                          range(self.numTestDiaSources)])
+        testSources = createTestPoints(self.numTestSciSources)
+        testDiaSources = createTestPoints(self.numTestDiaSources)
+
+        self.numTestDiaObjects = 5
+        self.diaObjects = createTestPoints(
+            5, schema=make_dia_object_schema())
+        for diaObject in self.diaObjects:
+            diaObject['nDiaSources'] = 1
 
         # Fake Butler to avoid initialization and I/O overhead
         def mockGet(datasetType, dataId=None):
@@ -135,18 +128,27 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 elif datasetType == 'deepDiff_diaSrc':
                     return testDiaSources
             raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
+
         self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
-        self.numTestDiaObjects = 5
-        self.diaObjects = createTestPoints(
-            pointLocsDeg=[[idx, idx] for idx in
-                          range(self.numTestDiaObjects)],
-            schema=make_minimal_dia_object_schema(['r']))
-        for diaObject in self.diaObjects:
-            diaObject['nDiaSources'] = 1
+        self.ppdbCfg = daxPpdb.PpdbConfig()
+        # Create DB in memory.
+        self.ppdbCfg.db_url = 'sqlite://'
+        self.ppdbCfg.isolation_level = "READ_UNCOMMITTED"
+        self.ppdbCfg.dia_object_index = "baseline"
+        self.ppdbCfg.dia_object_columns = []
+        self.ppdb = daxPpdb.Ppdb(
+            config=self.ppdbCfg,
+            afw_schemas=dict(DiaObject=make_dia_object_schema(),
+                             DiaSource=make_dia_source_schema()))
+        self.ppdb.makeSchema(drop=True)
+
+        dateTime = dafBase.DateTime(nsecs=1400000000 * 10**9)
+        self.ppdb.storeDiaObjects(self.diaObjects, dateTime.toPython())
 
     def tearDown(self):
         del self.assocTask
+        del self.ppdb
 
         if hasattr(self, "butler"):
             del self.butler
@@ -194,10 +196,8 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(
             meas.metric_name,
             lsst.verify.Name(metric='association.fracUpdatedDIAObjects'))
-        self.assertEqual(meas.quantity,
-                         nUpdatedDiaObjects /
-                         (nUpdatedDiaObjects + nUnassociatedDiaObjects) *
-                         u.dimensionless_unscaled)
+        value = nUpdatedDiaObjects / (nUpdatedDiaObjects + nUnassociatedDiaObjects)
+        self.assertEqual(meas.quantity, value * u.dimensionless_unscaled)
 
     def testValidFromButler(self):
         """ Test the association measurements that require a butler.
@@ -223,13 +223,11 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(meas.quantity,
                          self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
-    def testValidFromSqlite(self):
-        # Fake DB handle to avoid DB initialization overhead
-        cursor = NonCallableMock(spec=sqlite3.Cursor)
-        cursor.fetchall.return_value = [(len(self.diaObjects),)]
-
+    def testValidFromPpdb(self):
+        # Need to have a valid ppdb object so that the internal sqlalchemy
+        # calls work.
         meas = measureTotalUnassociatedDiaObjects(
-            cursor,
+            self.ppdb,
             metricName='association.numTotalUnassociatedDiaObjects')
         self.assertIsInstance(meas, Measurement)
         self.assertEqual(
@@ -307,12 +305,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 self.butler, dataId=dataIdDict,
                 metricName='foo.bar.FooBar')
 
-        # Fake DB handle to avoid DB initialization overhead
-        cursor = NonCallableMock(spec=sqlite3.Cursor)
-        cursor.fetchall.return_value = [(0,)]
         with self.assertRaises(TypeError):
             measureTotalUnassociatedDiaObjects(
-                cursor, metricName='foo.bar.FooBar')
+                self.ppdb, metricName='foo.bar.FooBar')
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

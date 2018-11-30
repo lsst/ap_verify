@@ -33,6 +33,7 @@ __all__ = ["measureNumberNewDiaObjects",
 
 import astropy.units as u
 import lsst.verify
+from lsst.dax.ppdb import countUnassociatedObjects
 
 
 def measureNumberNewDiaObjects(metadata, taskName, metricName):
@@ -199,14 +200,13 @@ def measureFractionDiaSourcesToSciSources(butler,
     return meas
 
 
-def measureTotalUnassociatedDiaObjects(dbCursor, metricName):
+def measureTotalUnassociatedDiaObjects(ppdb, metricName):
     """ Compute number of DIAObjects with only one association DIASource.
 
     Parameters
     ----------
-    dbCursor : `sqlite3.Cursor`
-        Cursor to the sqlite data base created from a previous run of
-        AssociationDBSqlite task to load.
+    ppdb : `lsst.dax.ppdb.Ppdb`
+        Ppdb object connected to the relevant database.
     metricName : `str`
         The fully qualified name of the metric being measured, e.g.,
         "ap_association.totalUnassociatedDiaObjects"
@@ -216,10 +216,7 @@ def measureTotalUnassociatedDiaObjects(dbCursor, metricName):
     measurement : `lsst.verify.Measurement`
         a value for `metricName`, or `None`
     """
-
-    dbCursor.execute("SELECT count(*) FROM dia_objects "
-                     "WHERE nDiaSources = 1")
-    (nUnassociatedDiaObjects,) = dbCursor.fetchall()[0]
+    nUnassociatedDiaObjects = countUnassociatedObjects(ppdb)
 
     meas = lsst.verify.Measurement(
         metricName,

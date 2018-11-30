@@ -29,13 +29,13 @@ defined here, rather than depending on individual measurement functions.
 
 __all__ = ["measureFromMetadata",
            "measureFromButlerRepo",
-           "measureFromL1DbSqlite"]
+           "measureFromPpdb"]
 
-import sqlite3
 import re
 
 from lsst.ap.verify.config import Config
 import lsst.daf.persistence as dafPersist
+import lsst.dax.ppdb as daxPpdb
 from .profiling import measureRuntime
 from .association import measureNumberNewDiaObjects, \
     measureNumberUnassociatedDiaObjects, \
@@ -159,22 +159,18 @@ def _convertDataIdString(dataId):
     return dataIdDict
 
 
-def measureFromL1DbSqlite(dbName):
-    """Make measurements on an sqlite database containing the results of
+def measureFromPpdb(config):
+    """Make measurements on a ppdb database containing the results of
     source association.
 
-    dbName : `str`
-        Name of the sqlite database created from a previous run of
-        `lsst.ap.association.AssociationDBSqliteTask` to load.
+    configurable : `lsst.pex.config.Config`
+        ApVerify configuration with Ppdb configs set.
     """
-    dbConnection = sqlite3.connect(dbName)
-    dbCursor = dbConnection.cursor()
-
     result = []
+    ppdb = daxPpdb.Ppdb(config=config)
     measurement = measureTotalUnassociatedDiaObjects(
-        dbCursor, "ap_association.totalUnassociatedDiaObjects")
+        ppdb, "ap_association.totalUnassociatedDiaObjects")
     if measurement is not None:
         result.append(measurement)
 
-    dbConnection.close()
     return result

@@ -39,7 +39,6 @@ import json
 
 import lsst.log
 import lsst.daf.persistence as dafPersist
-from lsst.ap.association import AssociationDBSqliteTask
 import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
@@ -242,8 +241,11 @@ def _getConfig(workspace):
 
     config = apPipe.ApPipeTask.ConfigClass()
     # Equivalent to task-level default for ap_verify
-    config.associator.level1_db.retarget(AssociationDBSqliteTask)
-    config.associator.level1_db.db_name = workspace.dbLocation
+
+    # ApVerify will use the sqlite hooks for the Ppdb.
+    config.ppdb.db_url = "sqlite:///" + workspace.dbLocation
+    config.ppdb.isolation_level = "READ_UNCOMMITTED"
+
     for path in [
         os.path.join(packageDir, 'config'),
         os.path.join(packageDir, 'config', mapper.getCameraName()),
