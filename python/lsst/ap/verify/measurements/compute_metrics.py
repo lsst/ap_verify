@@ -27,12 +27,12 @@ The rest of `ap_verify` should access `measurements` through the functions
 defined here, rather than depending on individual measurement functions.
 """
 
-__all__ = ["measureFromMetadata",
-           "measureFromButlerRepo",
+__all__ = ["measureFromButlerRepo",
            "measureFromPpdb"]
 
 import re
 
+from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify.config import Config
 import lsst.daf.persistence as dafPersist
 import lsst.dax.ppdb as daxPpdb
@@ -120,6 +120,9 @@ def measureFromButlerRepo(repo, dataId):
         butler, dataIdDict, "ip_diffim.fracDiaSourcesToSciSources")
     if measurement is not None:
         result.append(measurement)
+
+    metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataIdDict)
+    result.extend(measureFromMetadata(metadata))
     return result
 
 

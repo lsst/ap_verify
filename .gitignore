@@ -5,6 +5,7 @@
 *~
 .cache
 .coverage
+.pytest_cache
 pytest_session.txt
 .sconf_temp
 .sconsign.dblite

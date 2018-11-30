@@ -37,9 +37,7 @@ from .dataset import Dataset
 from .ingestion import ingestDataset
 from .metrics import MetricsParser, checkSquashReady, AutoJob
 from .pipeline_driver import ApPipeParser, runApPipe, _getConfig
-from .measurements import measureFromMetadata, \
-    measureFromButlerRepo, \
-    measureFromPpdb
+from .measurements import measureFromButlerRepo, measureFromPpdb
 from .workspace import Workspace
 
 
@@ -132,7 +130,7 @@ class _DatasetAction(argparse.Action):
         setattr(namespace, self.dest, Dataset(values))
 
 
-def _measureFinalProperties(metricsJob, metadata, workspace, args):
+def _measureFinalProperties(metricsJob, workspace, args):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
@@ -140,8 +138,6 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
     ----------
     metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
-    metadata : `lsst.daf.base.PropertySet`
-        The metadata produced by the AP pipeline.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
     args : `argparse.Namespace`
@@ -149,7 +145,6 @@ def _measureFinalProperties(metricsJob, metadata, workspace, args):
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
     """
     measurements = []
-    measurements.extend(measureFromMetadata(metadata))
     measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
     # TODO: Add butler storage and retrieval of the Ppdb config. DM-16645
     measurements.extend(measureFromPpdb(_getConfig(workspace).ppdb))
@@ -183,8 +178,8 @@ def runApVerify(cmdLine=None):
 
     with AutoJob(args) as job:
         log.info('Running pipeline...')
-        metadata = runApPipe(job, workspace, args)
-        _measureFinalProperties(job, metadata, workspace, args)
+        runApPipe(job, workspace, args)
+        _measureFinalProperties(job, workspace, args)
 
 
 def runIngestion(cmdLine=None):

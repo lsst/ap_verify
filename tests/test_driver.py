@@ -121,29 +121,12 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     # Mock up ApPipeTask to avoid doing any processing.
     @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
-    def testRunApPipeReturn(self, _mockConfig, mockClass):
-        """Test that runApPipe runs the pipeline and returns the Task object's(s') metadata.
-        """
-        mockClass.return_value.getFullMetadata.return_value = PipelineDriverTestSuite.dummyMetadata()
-
-        metadata = pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
-
-        self.assertEqual(len(metadata.paramNames(topLevelOnly=False)), 1)
-        self.assertEqual(metadata.getScalar("lsst.ap.pipe.ccdProcessor.cycleCount"), 42)
-
-    # Mock up ApPipeTask to avoid doing any processing.
-    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
-    @patchApPipe
     def testRunApPipeSteps(self, _mockConfig, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """
-        # This test case is sensitive to the implementation of pipeline_driver
-        # Specifically, it needs to know that ApPipeTask.run is not called
         pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
 
-        mockClass.return_value.runProcessCcd.assert_called_once()
-        mockClass.return_value.runDiffIm.assert_called_once()
-        mockClass.return_value.runAssociation.assert_called_once()
+        mockClass.return_value.runDataRef.assert_called_once()
 
     def testUpdateMetricsEmpty(self):
         """Test that _updateMetrics does not add metrics if no job files are provided.
@@ -180,7 +163,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         metadata.add("lsst.ap.pipe.ccdProcessor.verify_json_path", subtaskFile)
 
         mockClass.return_value.getFullMetadata.return_value = metadata
-        mockClass.return_value.runDiffIm.side_effect = RuntimeError("DECam is weird!")
+        mockClass.return_value.runDataRef.side_effect = RuntimeError("DECam is weird!")
 
         self.assertNotEqual(self.job.measurements, self.subtaskJob.measurements)
 
