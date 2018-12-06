@@ -162,15 +162,15 @@ def _convertDataIdString(dataId):
     return dataIdDict
 
 
-def measureFromPpdb(config):
+def measureFromPpdb(configurable):
     """Make measurements on a ppdb database containing the results of
     source association.
 
-    configurable : `lsst.pex.config.Config`
-        ApVerify configuration with Ppdb configs set.
+    configurable : `lsst.pex.config.ConfigurableInstance`
+        A configurable object for a `lsst.dax.ppdb.Ppdb` or similar type.
     """
     result = []
-    ppdb = daxPpdb.Ppdb(config=config)
+    ppdb = daxPpdb.Ppdb(config=configurable)
     measurement = measureTotalUnassociatedDiaObjects(
         ppdb, "ap_association.totalUnassociatedDiaObjects")
     if measurement is not None:
