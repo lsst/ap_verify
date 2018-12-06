@@ -31,9 +31,8 @@ __all__ = ["measureFromButlerRepo"]
 
 import re
 
+from lsst.verify.compatibility import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
-from lsst.ap.verify.config import Config
-from .profiling import measureRuntime
 from .association import measureNumberNewDiaObjects, \
     measureNumberUnassociatedDiaObjects, \
     measureFractionUpdatedDiaObjects, \
@@ -65,12 +64,6 @@ def measureFromMetadata(metadata):
         expected data under ``measurements``
     """
     result = []
-
-    timingMap = Config.instance['measurements.timing']
-    for task in timingMap.names():
-        measurement = measureRuntime(metadata, task, timingMap[task])
-        if measurement is not None:
-            result.append(measurement)
 
     measurement = measureNumberNewDiaObjects(
         metadata, 'apPipe:associator', 'ap_association.numNewDiaObjects')
@@ -107,6 +100,10 @@ def measureFromButlerRepo(butler, dataId):
 
     dataIdDict = _convertDataIdString(dataId)
 
+    timingConfig = MetricsControllerTask.ConfigClass()
+    timingConfig.jobFileTemplate = "ap_verify.metricTask{id}.{dataId}.verify.json"
+    _runMetricTasks(timingConfig, butler, dataIdDict)
+
     measurement = measureNumberSciSources(
         butler, dataIdDict, "ip_diffim.numSciSources")
     if measurement is not None:
@@ -123,6 +120,26 @@ def measureFromButlerRepo(butler, dataId):
     metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataIdDict)
     result.extend(measureFromMetadata(metadata))
     return result
+
+
+def _runMetricTasks(config, butler, dataId):
+    """Run MetricControllerTask on a single dataset.
+
+    Parameters
+    ----------
+    config : `lsst.verify.compatibility.MetricsControllerConfig`
+        The config for running `~lsst.verify.compatibility.MetricsControllerTask`.
+    butler : `lsst.daf.persistence.Butler`
+        A butler opened to ap_verify's output repository.
+    dataId : `dict`
+        The data ID for this run of ``ap_verify``.
+    """
+    allMetricTasks = MetricsControllerTask(config)
+
+    # Don't particularly want calexps, but they tend to have compatible
+    # data IDs with other processed data types
+    processedDatarefs = butler.subset('calexp', dataId=dataId)
+    allMetricTasks.runDataRefs(processedDatarefs)
 
 
 def _convertDataIdString(dataId):
