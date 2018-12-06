@@ -144,7 +144,7 @@ def _measureFinalProperties(metricsJob, workspace, args):
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
     """
-    measurements = measureFromButlerRepo(workspace.outputRepo, args.dataId)
+    measurements = measureFromButlerRepo(workspace.analysisButler, args.dataId)
 
     for measurement in measurements:
         metricsJob.measurements.insert(measurement)

@@ -33,7 +33,6 @@ import re
 
 from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify.config import Config
-import lsst.daf.persistence as dafPersist
 from .profiling import measureRuntime
 from .association import measureNumberNewDiaObjects, \
     measureNumberUnassociatedDiaObjects, \
@@ -88,13 +87,13 @@ def measureFromMetadata(metadata):
     return result
 
 
-def measureFromButlerRepo(repo, dataId):
+def measureFromButlerRepo(butler, dataId):
     """Create measurements from a butler repository.
 
     Parameters
     ----------
-    repo : `str`
-        The output repository location to read from disk.
+    butler : `lsst.daf.persistence.Butler`
+        A butler opened to the repository to read.
     dataId : `str`
         Butler identifier naming the data to be processed (e.g., visit and
         ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
@@ -108,7 +107,6 @@ def measureFromButlerRepo(repo, dataId):
 
     dataIdDict = _convertDataIdString(dataId)
 
-    butler = dafPersist.Butler(repo)
     measurement = measureNumberSciSources(
         butler, dataIdDict, "ip_diffim.numSciSources")
     if measurement is not None:
