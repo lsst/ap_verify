@@ -27,8 +27,7 @@ The rest of `ap_verify` should access `measurements` through the functions
 defined here, rather than depending on individual measurement functions.
 """
 
-__all__ = ["measureFromButlerRepo",
-           "measureFromPpdb"]
+__all__ = ["measureFromButlerRepo"]
 
 import re
 
@@ -120,6 +119,9 @@ def measureFromButlerRepo(repo, dataId):
         butler, dataIdDict, "ip_diffim.fracDiaSourcesToSciSources")
     if measurement is not None:
         result.append(measurement)
+
+    config = butler.get(ApPipeTask._DefaultName + '_config')
+    result.extend(measureFromPpdb(config.ppdb))
 
     metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataIdDict)
     result.extend(measureFromMetadata(metadata))
