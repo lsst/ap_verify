@@ -34,7 +34,6 @@ import re
 from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify.config import Config
 import lsst.daf.persistence as dafPersist
-import lsst.dax.ppdb as daxPpdb
 from .profiling import measureRuntime
 from .association import measureNumberNewDiaObjects, \
     measureNumberUnassociatedDiaObjects, \
@@ -172,7 +171,7 @@ def measureFromPpdb(configurable):
         A configurable object for a `lsst.dax.ppdb.Ppdb` or similar type.
     """
     result = []
-    ppdb = daxPpdb.Ppdb(config=configurable)
+    ppdb = configurable.apply()
     measurement = measureTotalUnassociatedDiaObjects(
         ppdb, "ap_association.totalUnassociatedDiaObjects")
     if measurement is not None:
