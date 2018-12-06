@@ -144,7 +144,6 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     #  Insert job metadata including dataId
     metricsJob.meta.update({'instrument': _extract_instrument_from_butler(workspace.workButler)})
     metricsJob.meta.update(dataId)
-    #  I think we could probably send in the test repo directory too, but I don't know how to get that here.
 
     pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
     try:
