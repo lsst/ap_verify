@@ -43,6 +43,19 @@ import lsst.ap.pipe as apPipe
 from lsst.verify import Job
 
 
+# borrowed from validate_drp
+def _extract_instrument_from_butler(butler):
+    """Extract the last part of the mapper name from a Butler repo.
+    'lsst.obs.lsstSim.lsstSimMapper.LsstSimMapper' -> 'LSSTSIM'
+    'lsst.obs.cfht.megacamMapper.MegacamMapper' -> 'CFHT'
+    'lsst.obs.decam.decamMapper.DecamMapper' -> 'DECAM'
+    'lsst.obs.hsc.hscMapper.HscMapper' -> 'HSC'
+    """
+    camera = butler.get('camera')
+    instrument = camera.getName()
+    return instrument.upper()
+
+
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ``ap_pipe`` activities.
 
@@ -125,6 +138,12 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     dataId = _parseDataId(parsedCmdLine.dataId)
+    #  After processes are implemented, remove the flake exception
+    processes = parsedCmdLine.processes  # noqa: F841
+
+    #  Insert job metadata including dataId
+    metricsJob.meta.update({'instrument': _extract_instrument_from_butler(workspace.workButler)})
+    metricsJob.meta.update(dataId)
 
     pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
     try:
