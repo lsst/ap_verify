@@ -76,7 +76,8 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         # Fake Butler to avoid Workspace initialization overhead
         butler = self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
         butler.getMapperClass.return_value = lsst.obs.test.TestMapper
-        self.setUpMockPatch("lsst.daf.persistence.searchDataRefs", return_value=[{"visit": 42, "ccd": 0}])
+        dataRef = self.setUpMockPatch("lsst.daf.persistence.ButlerDataRef", autospec=True)
+        self.setUpMockPatch("lsst.daf.persistence.searchDataRefs", return_value=[dataRef])
 
         self.job = lsst.verify.Job()
         self.workspace = Workspace(self._testDir)

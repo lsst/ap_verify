@@ -149,6 +149,7 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     try:
         for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw',
                                                  dataId=dataId):
+            pipeline.writeConfig(dataRef.getButler(), clobber=True, doBackup=False)
             pipeline.runDataRef(dataRef)
             pipeline.writeMetadata(dataRef)
         log.info('Pipeline complete')
