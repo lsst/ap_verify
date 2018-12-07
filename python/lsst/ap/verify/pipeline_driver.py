@@ -138,8 +138,6 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     dataId = _parseDataId(parsedCmdLine.dataId)
-    #  After processes are implemented, remove the flake exception
-    processes = parsedCmdLine.processes  # noqa: F841
 
     #  Insert job metadata including dataId
     metricsJob.meta.update({'instrument': _extract_instrument_from_butler(workspace.workButler)})
