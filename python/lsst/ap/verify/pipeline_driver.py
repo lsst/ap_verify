@@ -35,6 +35,7 @@ import re
 
 import lsst.log
 import lsst.daf.persistence as dafPersist
+from lsst.pipe.base import DataIdContainer
 import lsst.ap.pipe as apPipe
 
 
@@ -81,6 +82,11 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
+
+    Returns
+    -------
+    dataIds : `lsst.pipe.base.DataIdContainer`
+        The set of complete data IDs fed into ``ap_pipe``.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
@@ -91,12 +97,18 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     metricsJob.meta.update(dataId)
 
     pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
-    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw',
-                                             dataId=dataId):
+    matchingDataRefs = dafPersist.searchDataRefs(workspace.workButler, datasetType='raw', dataId=dataId)
+    for dataRef in matchingDataRefs:
         pipeline.writeConfig(dataRef.getButler(), clobber=True, doBackup=False)
         pipeline.runDataRef(dataRef)
         pipeline.writeMetadata(dataRef)
     log.info('Pipeline complete')
+
+    container = DataIdContainer()
+    container.setDatasetType('raw')
+    container.idList = [ref.dataId for ref in matchingDataRefs]
+    container.refList = matchingDataRefs
+    return container
 
 
 def _getConfig(workspace):

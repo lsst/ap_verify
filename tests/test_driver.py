@@ -74,7 +74,9 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         # Fake Butler to avoid Workspace initialization overhead
         butler = self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
         butler.getMapperClass.return_value = lsst.obs.test.TestMapper
-        dataRef = self.setUpMockPatch("lsst.daf.persistence.ButlerDataRef", autospec=True)
+        self.dataIds = [{"visit": 42, "ccd": 0}]
+        dataRef = self.setUpMockPatch("lsst.daf.persistence.ButlerDataRef",
+                                      autospec=True, dataId=self.dataIds[0])
         self.setUpMockPatch("lsst.daf.persistence.searchDataRefs", return_value=[dataRef])
 
         self.job = lsst.verify.Job()
@@ -124,6 +126,15 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
 
         mockClass.return_value.runDataRef.assert_called_once()
+
+    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
+    @patchApPipe
+    def testRunApPipeDataIdReporting(self, _mockConfig, mockClass):
+        """Test that runApPipe reports the data IDs that were processed.
+        """
+        ids = pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+
+        self.assertEqual(ids.idList, self.dataIds)
 
     def testRunApPipeCustomConfig(self):
         """Test that runApPipe can pass custom configs from a workspace to ApPipeTask.
