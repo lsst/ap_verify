@@ -27,8 +27,6 @@ import shutil
 import tempfile
 import unittest.mock
 
-import astropy.units as u
-
 from lsst.daf.base import PropertySet
 import lsst.utils.tests
 import lsst.verify
@@ -83,8 +81,6 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.workspace = Workspace(self._testDir)
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(["--id", "visit=42"])
 
-        self.subtaskJob = lsst.verify.Job(measurements=[lsst.verify.Measurement("ip_isr.IsrTime", 2.0 * u.s)])
-
     @staticmethod
     def dummyMetadata():
         result = PropertySet()
@@ -128,50 +124,6 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
 
         mockClass.return_value.runDataRef.assert_called_once()
-
-    def testUpdateMetricsEmpty(self):
-        """Test that _updateMetrics does not add metrics if no job files are provided.
-        """
-        metadata = PipelineDriverTestSuite.dummyMetadata()
-
-        pipeline_driver._updateMetrics(metadata, self.job)
-
-        self.assertFalse(self.job.measurements)
-
-    def testUpdateMetricsReal(self):
-        """Test that _updateMetrics can load metrics when given temporary Job files.
-        """
-        subtaskFile = os.path.join(self._testDir, "ccdProcessor.persist")
-        self.subtaskJob.write(subtaskFile)
-        metadata = PipelineDriverTestSuite.dummyMetadata()
-        metadata.add("lsst.ap.pipe.ccdProcessor.verify_json_path", subtaskFile)
-
-        self.assertNotEqual(self.job.measurements, self.subtaskJob.measurements)
-
-        pipeline_driver._updateMetrics(metadata, self.job)
-
-        self.assertEqual(self.job.measurements, self.subtaskJob.measurements)
-
-    # Mock up ApPipeTask to avoid doing any processing.
-    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
-    @patchApPipe
-    def testUpdateMetricsOnError(self, _mockConfig, mockClass):
-        """Test that runApPipe stores metrics in a job even when the pipeline fails.
-        """
-        subtaskFile = os.path.join(self._testDir, "ccdProcessor.persist")
-        self.subtaskJob.write(subtaskFile)
-        metadata = PipelineDriverTestSuite.dummyMetadata()
-        metadata.add("lsst.ap.pipe.ccdProcessor.verify_json_path", subtaskFile)
-
-        mockClass.return_value.getFullMetadata.return_value = metadata
-        mockClass.return_value.runDataRef.side_effect = RuntimeError("DECam is weird!")
-
-        self.assertNotEqual(self.job.measurements, self.subtaskJob.measurements)
-
-        with self.assertRaises(RuntimeError):
-            pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
-
-        self.assertEqual(self.job.measurements, self.subtaskJob.measurements)
 
     def testRunApPipeCustomConfig(self):
         """Test that runApPipe can pass custom configs from a workspace to ApPipeTask.

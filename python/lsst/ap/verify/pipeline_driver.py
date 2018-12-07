@@ -24,23 +24,18 @@
 """Interface between `ap_verify` and `ap_pipe`.
 
 This module handles calling `ap_pipe` and converting any information
-as needed. It also attempts to collect measurements step-by-step, so
-that a total pipeline failure still allows some measurements to be
-recovered.
+as needed.
 """
 
-__all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
+__all__ = ["ApPipeParser", "runApPipe"]
 
 import argparse
 import os
 import re
 
-import json
-
 import lsst.log
 import lsst.daf.persistence as dafPersist
 import lsst.ap.pipe as apPipe
-from lsst.verify import Job
 
 
 # borrowed from validate_drp
@@ -74,48 +69,6 @@ class ApPipeParser(argparse.ArgumentParser):
                           help="Number of processes to use. Not yet implemented.")
 
 
-class MeasurementStorageError(RuntimeError):
-    pass
-
-
-def _updateMetrics(metadata, job):
-    """Update a Job object with the measurements created from running a task.
-
-    The metadata shall be searched for the locations of Job dump files from
-    the most recent run of a task and its subtasks; the contents of these
-    files shall be added to `job`. This method is a temporary workaround
-    for the `verify` framework's limited persistence support, and will be
-    removed in a future version.
-
-    Parameters
-    ----------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from running a task(s). Assumed to contain keys of
-        the form "<standard task prefix>.verify_json_path" that maps to the
-        absolute file location of that task's serialized measurements.
-        All other metadata fields are ignored.
-    job : `lsst.verify.Job`
-        The Job object to which to add measurements. This object shall be
-        left in a consistent state if this method raises exceptions.
-
-    Raises
-    ------
-    lsst.ap.verify.pipeline_driver.MeasurementStorageError
-        Raised if a "verify_json_path" key does not map to a string, or serialized
-        measurements could not be located or read from disk.
-    """
-    try:
-        keys = metadata.names(topLevelOnly=False)
-        files = [metadata.getAsString(key) for key in keys if key.endswith('verify_json_path')]
-
-        for measurementFile in files:
-            with open(measurementFile) as f:
-                taskJob = Job.deserialize(**json.load(f))
-            job += taskJob
-    except (IOError, TypeError) as e:
-        raise MeasurementStorageError('Task metadata could not be read; possible downstream bug') from e
-
-
 def runApPipe(metricsJob, workspace, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
@@ -123,17 +76,11 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     ----------
     metricsJob : `lsst.verify.Job`
         The Job object to which to add any metric measurements made.
+        Currently unused.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
-
-    Raises
-    ------
-    lsst.ap.verify.pipeline_driver.MeasurementStorageError
-        Raised if measurements were made, but `metricsJob` could not be updated
-        with all of them. This exception may suppress exceptions raised by
-        the pipeline itself.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
@@ -144,16 +91,12 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     metricsJob.meta.update(dataId)
 
     pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
-    try:
-        for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw',
-                                                 dataId=dataId):
-            pipeline.writeConfig(dataRef.getButler(), clobber=True, doBackup=False)
-            pipeline.runDataRef(dataRef)
-            pipeline.writeMetadata(dataRef)
-        log.info('Pipeline complete')
-    finally:
-        # Recover any metrics from completed pipeline steps, even if the pipeline fails
-        _updateMetrics(pipeline.getFullMetadata(), metricsJob)
+    for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw',
+                                             dataId=dataId):
+        pipeline.writeConfig(dataRef.getButler(), clobber=True, doBackup=False)
+        pipeline.runDataRef(dataRef)
+        pipeline.writeMetadata(dataRef)
+    log.info('Pipeline complete')
 
 
 def _getConfig(workspace):
