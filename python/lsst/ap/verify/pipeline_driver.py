@@ -39,19 +39,6 @@ from lsst.pipe.base import DataIdContainer
 import lsst.ap.pipe as apPipe
 
 
-# borrowed from validate_drp
-def _extract_instrument_from_butler(butler):
-    """Extract the last part of the mapper name from a Butler repo.
-    'lsst.obs.lsstSim.lsstSimMapper.LsstSimMapper' -> 'LSSTSIM'
-    'lsst.obs.cfht.megacamMapper.MegacamMapper' -> 'CFHT'
-    'lsst.obs.decam.decamMapper.DecamMapper' -> 'DECAM'
-    'lsst.obs.hsc.hscMapper.HscMapper' -> 'HSC'
-    """
-    camera = butler.get('camera')
-    instrument = camera.getName()
-    return instrument.upper()
-
-
 class ApPipeParser(argparse.ArgumentParser):
     """An argument parser for data needed by ``ap_pipe`` activities.
 
@@ -70,14 +57,11 @@ class ApPipeParser(argparse.ArgumentParser):
                           help="Number of processes to use. Not yet implemented.")
 
 
-def runApPipe(metricsJob, workspace, parsedCmdLine):
+def runApPipe(workspace, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
     ----------
-    metricsJob : `lsst.verify.Job`
-        The Job object to which to add any metric measurements made.
-        Currently unused.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
@@ -91,10 +75,6 @@ def runApPipe(metricsJob, workspace, parsedCmdLine):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     dataId = _parseDataId(parsedCmdLine.dataId)
-
-    #  Insert job metadata including dataId
-    metricsJob.meta.update({'instrument': _extract_instrument_from_butler(workspace.workButler)})
-    metricsJob.meta.update(dataId)
 
     pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
     matchingDataRefs = dafPersist.searchDataRefs(workspace.workButler, datasetType='raw', dataId=dataId)

@@ -79,7 +79,6 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
                                       autospec=True, dataId=self.dataIds[0])
         self.setUpMockPatch("lsst.daf.persistence.searchDataRefs", return_value=[dataRef])
 
-        self.job = lsst.verify.Job()
         self.workspace = Workspace(self._testDir)
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(["--id", "visit=42"])
 
@@ -123,7 +122,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def testRunApPipeSteps(self, _mockConfig, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """
-        pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
 
         mockClass.return_value.runDataRef.assert_called_once()
 
@@ -132,7 +131,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def testRunApPipeDataIdReporting(self, _mockConfig, mockClass):
         """Test that runApPipe reports the data IDs that were processed.
         """
-        ids = pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+        ids = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
 
         self.assertEqual(ids.idList, self.dataIds)
 
@@ -151,7 +150,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
                                    _DefaultName=ApPipeTask._DefaultName,
                                    ConfigClass=ApPipeTask.ConfigClass).return_value
 
-        pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
         initCalls = (c for c in task.mock_calls if c.name == "__init__")
         for call in initCalls:
             kwargs = call[2]
@@ -169,7 +168,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
                                    _DefaultName=ApPipeTask._DefaultName,
                                    ConfigClass=ApPipeTask.ConfigClass).return_value
 
-        pipeline_driver.runApPipe(self.job, self.workspace, self.apPipeArgs)
+        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
         initCalls = (c for c in task.mock_calls if c.name == "__init__")
         for call in initCalls:
             kwargs = call[2]

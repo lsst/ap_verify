@@ -86,6 +86,19 @@ class MetricsParser(argparse.ArgumentParser):
                           squashUrl=os.getenv(_ENV_URL, _SQUASH_DEFAULT_URL))
 
 
+# borrowed from validate_drp
+def _extract_instrument_from_butler(butler):
+    """Extract the last part of the mapper name from a Butler repo.
+    'lsst.obs.lsstSim.lsstSimMapper.LsstSimMapper' -> 'LSSTSIM'
+    'lsst.obs.cfht.megacamMapper.MegacamMapper' -> 'CFHT'
+    'lsst.obs.decam.decamMapper.DecamMapper' -> 'DECAM'
+    'lsst.obs.hsc.hscMapper.HscMapper' -> 'HSC'
+    """
+    camera = butler.get('camera')
+    instrument = camera.getName()
+    return instrument.upper()
+
+
 class AutoJob:
     """A wrapper for an `lsst.verify.Job` that automatically handles
     initialization and shutdown.
@@ -98,13 +111,23 @@ class AutoJob:
 
     Parameters
     ----------
+    butler : `lsst.daf.persistence.Butler`
+        The repository associated with this ``Job``.
+    dataId : `lsst.daf.persistence.DataId` or `dict`
+        The data ID associated with this job. Must be complete, and represent
+        the finest granularity of any measurement that may be stored in
+        this job.
     args : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `MetricsParser`.
     """
 
-    def __init__(self, args):
+    def __init__(self, butler, dataId, args):
         self._job = lsst.verify.Job.load_metrics_package()
-        # TODO: add Job metadata (camera, filter, etc.) in DM-11321
+
+        #  Insert job metadata including dataId
+        self._job.meta.update({'instrument': _extract_instrument_from_butler(butler)})
+        self._job.meta.update(dataId)
+
         self._submitMetrics = args.submitMetrics
         self._outputFile = args.metrics_file
         self._squashUser = args.user
@@ -123,11 +146,6 @@ class AutoJob:
 
     def _sendToSquash(self):
         """Submit a set of measurements to the SQuaSH system.
-
-        Parameters
-        ----------
-        fileName : `str`
-            a file containing measurements in lsst.verify format
         """
         self.job.dispatch(api_user=self._squashUser, api_password=self._squashPassword,
                           api_url=self._squashUrl)

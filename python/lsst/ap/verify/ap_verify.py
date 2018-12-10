@@ -130,25 +130,24 @@ class _DatasetAction(argparse.Action):
         setattr(namespace, self.dest, Dataset(values))
 
 
-def _measureFinalProperties(metricsJob, workspace, dataIds):
+def _measureFinalProperties(workspace, dataIds, args):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
 
     Parameters
     ----------
-    metricsJob : `lsst.verify.Job`
-        The Job object to which to add any metric measurements made.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
     dataIds : `lsst.pipe.base.DataIdContainer`
         The data IDs ap_pipe was run on. Each data ID must be complete.
+    args : `argparse.Namespace`
+        Command-line arguments, including arguments controlling output.
     """
-    measurements = []
     for dataId in dataIds.idList:
-        measurements.extend(measureFromButlerRepo(workspace.analysisButler, dataId))
-
-    for measurement in measurements:
-        metricsJob.measurements.insert(measurement)
+        with AutoJob(workspace.workButler, dataId, args) as metricsJob:
+            measurements = measureFromButlerRepo(workspace.analysisButler, dataId)
+            for measurement in measurements:
+                metricsJob.measurements.insert(measurement)
 
 
 def runApVerify(cmdLine=None):
@@ -174,10 +173,9 @@ def runApVerify(cmdLine=None):
     workspace = Workspace(args.output)
     ingestDataset(args.dataset, workspace)
 
-    with AutoJob(args) as job:
-        log.info('Running pipeline...')
-        expandedDataIds = runApPipe(job, workspace, args)
-        _measureFinalProperties(job, workspace, expandedDataIds)
+    log.info('Running pipeline...')
+    expandedDataIds = runApPipe(workspace, args)
+    _measureFinalProperties(workspace, expandedDataIds, args)
 
 
 def runIngestion(cmdLine=None):
