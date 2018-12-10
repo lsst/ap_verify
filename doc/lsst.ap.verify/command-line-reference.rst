@@ -81,10 +81,9 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    **Output metrics file.**
 
-   The name of a file to contain the metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
-   If omitted, the output will go to a file named :file:`ap_verify.verify.json` in the user's working directory.
-
-   This argument can be used to run multiple instances of ``ap_verify`` concurrently, with each instance producing output to a different metrics file.
+   The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
+   The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.
+   If omitted, the output will go to files named after ``ap_verify.{dataId}.verify.json`` in the user's working directory.
 
 .. option:: --output <workspace_dir>
 

@@ -76,9 +76,11 @@ class MetricsParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--metrics-file', default='ap_verify.verify.json',
-                          help='The file to which to output metrics in lsst.verify format. '
-                               'Defaults to ap_verify.verify.json.')
+        self.add_argument(
+            '--metrics-file', default='ap_verify.{dataId}.verify.json',
+            help="The file template to which to output metrics in lsst.verify "
+                 "format; {dataId} will be replaced with the job\'s data ID. "
+                 "Defaults to ap_verify.{dataId}.verify.json.")
         self.add_argument('--silent', dest='submitMetrics', action='store_false',
                           help='Do NOT submit metrics to SQuaSH (not yet implemented).')
         # Config info we don't want on the command line
@@ -128,8 +130,11 @@ class AutoJob:
         self._job.meta.update({'instrument': _extract_instrument_from_butler(butler)})
         self._job.meta.update(dataId)
 
+        # Construct an OS-friendly string (i.e., no quotes, {}, or spaces)
+        idString = "_".join("%s%s" % (key, dataId[key]) for key in dataId)
+        self._outputFile = args.metrics_file.format(dataId=idString)
+
         self._submitMetrics = args.submitMetrics
-        self._outputFile = args.metrics_file
         self._squashUser = args.user
         self._squashPassword = args.password
         self._squashUrl = args.squashUrl
