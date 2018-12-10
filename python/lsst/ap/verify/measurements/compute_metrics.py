@@ -27,15 +27,12 @@ The rest of `ap_verify` should access `measurements` through the functions
 defined here, rather than depending on individual measurement functions.
 """
 
-__all__ = ["measureFromButlerRepo",
-           "measureFromPpdb"]
+__all__ = ["measureFromButlerRepo"]
 
 import re
 
 from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify.config import Config
-import lsst.daf.persistence as dafPersist
-import lsst.dax.ppdb as daxPpdb
 from .profiling import measureRuntime
 from .association import measureNumberNewDiaObjects, \
     measureNumberUnassociatedDiaObjects, \
@@ -90,13 +87,13 @@ def measureFromMetadata(metadata):
     return result
 
 
-def measureFromButlerRepo(repo, dataId):
+def measureFromButlerRepo(butler, dataId):
     """Create measurements from a butler repository.
 
     Parameters
     ----------
-    repo : `str`
-        The output repository location to read from disk.
+    butler : `lsst.daf.persistence.Butler`
+        A butler opened to the repository to read.
     dataId : `str`
         Butler identifier naming the data to be processed (e.g., visit and
         ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
@@ -110,7 +107,6 @@ def measureFromButlerRepo(repo, dataId):
 
     dataIdDict = _convertDataIdString(dataId)
 
-    butler = dafPersist.Butler(repo)
     measurement = measureNumberSciSources(
         butler, dataIdDict, "ip_diffim.numSciSources")
     if measurement is not None:
@@ -120,6 +116,9 @@ def measureFromButlerRepo(repo, dataId):
         butler, dataIdDict, "ip_diffim.fracDiaSourcesToSciSources")
     if measurement is not None:
         result.append(measurement)
+
+    config = butler.get(ApPipeTask._DefaultName + '_config')
+    result.extend(measureFromPpdb(config.ppdb))
 
     metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataIdDict)
     result.extend(measureFromMetadata(metadata))
@@ -162,15 +161,15 @@ def _convertDataIdString(dataId):
     return dataIdDict
 
 
-def measureFromPpdb(config):
+def measureFromPpdb(configurable):
     """Make measurements on a ppdb database containing the results of
     source association.
 
-    configurable : `lsst.pex.config.Config`
-        ApVerify configuration with Ppdb configs set.
+    configurable : `lsst.pex.config.ConfigurableInstance`
+        A configurable object for a `lsst.dax.ppdb.Ppdb` or similar type.
     """
     result = []
-    ppdb = daxPpdb.Ppdb(config=config)
+    ppdb = configurable.apply()
     measurement = measureTotalUnassociatedDiaObjects(
         ppdb, "ap_association.totalUnassociatedDiaObjects")
     if measurement is not None:

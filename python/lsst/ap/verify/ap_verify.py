@@ -36,8 +36,8 @@ import lsst.log
 from .dataset import Dataset
 from .ingestion import ingestDataset
 from .metrics import MetricsParser, checkSquashReady, AutoJob
-from .pipeline_driver import ApPipeParser, runApPipe, _getConfig
-from .measurements import measureFromButlerRepo, measureFromPpdb
+from .pipeline_driver import ApPipeParser, runApPipe
+from .measurements import measureFromButlerRepo
 from .workspace import Workspace
 
 
@@ -144,10 +144,7 @@ def _measureFinalProperties(metricsJob, workspace, args):
         All command-line arguments passed to this program, including those
         supported by `lsst.ap.verify.pipeline_driver.ApPipeParser`.
     """
-    measurements = []
-    measurements.extend(measureFromButlerRepo(workspace.outputRepo, args.dataId))
-    # TODO: Add butler storage and retrieval of the Ppdb config. DM-16645
-    measurements.extend(measureFromPpdb(_getConfig(workspace).ppdb))
+    measurements = measureFromButlerRepo(workspace.analysisButler, args.dataId)
 
     for measurement in measurements:
         metricsJob.measurements.insert(measurement)
