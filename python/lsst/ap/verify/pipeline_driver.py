@@ -31,10 +31,8 @@ __all__ = ["ApPipeParser", "runApPipe"]
 
 import argparse
 import os
-import re
 
 import lsst.log
-import lsst.daf.persistence as dafPersist
 import lsst.ap.pipe as apPipe
 
 
@@ -89,43 +87,6 @@ def runApPipe(workspace, parsedCmdLine):
     return results.parsedCmd.id
 
 
-def _getConfig(workspace):
-    """Return the config for running ApPipeTask on this workspace.
-
-    Parameters
-    ----------
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        A Workspace whose config directory may contain an
-        `~lsst.ap.pipe.ApPipeTask` config.
-
-    Returns
-    -------
-    config : `lsst.ap.pipe.ApPipeConfig`
-        The config for running `~lsst.ap.pipe.ApPipeTask`.
-    """
-    overrideFile = apPipe.ApPipeTask._DefaultName + ".py"
-    # TODO: may not be needed depending on resolution of DM-13887
-    mapper = dafPersist.Butler.getMapperClass(workspace.dataRepo)
-    packageDir = lsst.utils.getPackageDir(mapper.getPackageName())
-
-    config = apPipe.ApPipeTask.ConfigClass()
-    # Equivalent to task-level default for ap_verify
-
-    # ApVerify will use the sqlite hooks for the Ppdb.
-    config.ppdb.db_url = "sqlite:///" + workspace.dbLocation
-    config.ppdb.isolation_level = "READ_UNCOMMITTED"
-
-    for path in [
-        os.path.join(packageDir, 'config'),
-        os.path.join(packageDir, 'config', mapper.getCameraName()),
-        workspace.configDir,
-    ]:
-        overridePath = os.path.join(path, overrideFile)
-        if os.path.exists(overridePath):
-            config.load(overridePath)
-    return config
-
-
 def _getConfigArguments(workspace):
     """Return the config options for running ApPipeTask on this workspace, as
     command-line arguments.
@@ -151,37 +112,3 @@ def _getConfigArguments(workspace):
     args.extend(["--config", "ppdb.isolation_level=READ_UNCOMMITTED"])
 
     return args
-
-
-def _deStringDataId(dataId):
-    '''
-    Replace a dataId's values with numbers, where appropriate.
-
-    Parameters
-    ----------
-    dataId : `dict` from `str` to any
-        The dataId to be cleaned up.
-    '''
-    integer = re.compile(r'^\s*[+-]?\d+\s*$')
-    for key, value in dataId.items():
-        if isinstance(value, str) and integer.match(value) is not None:
-            dataId[key] = int(value)
-
-
-def _parseDataId(rawDataId):
-    """Convert a dataId from a command-line string to a dict.
-
-    Parameters
-    ----------
-    rawDataId : `str`
-        A string in a format like "visit=54321 ccdnum=7".
-
-    Returns
-    -------
-    dataId : `dict` from `str` to any type
-        A dataId ready for passing to Stack operations.
-    """
-    dataIdItems = re.split('[ +=]', rawDataId)
-    dataId = dict(zip(dataIdItems[::2], dataIdItems[1::2]))
-    _deStringDataId(dataId)
-    return dataId

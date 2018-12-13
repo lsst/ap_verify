@@ -31,7 +31,6 @@ import unittest.mock
 from lsst.daf.base import PropertySet
 from lsst.pipe.base import DataIdContainer, Struct
 import lsst.utils.tests
-import lsst.obs.test
 from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify import pipeline_driver
 from lsst.ap.verify.workspace import Workspace
@@ -63,37 +62,17 @@ def patchApPipe(method):
     return wrapper
 
 
-class InitRecordingMock(unittest.mock.MagicMock):
-    """A MagicMock for classes that records requests for objects of that class.
-
-    Because ``__init__`` cannot be mocked directly, the calls cannot be
-    identified with the usual ``object.method`` syntax. Instead, filter the
-    object's calls for a ``name`` attribute equal to ``__init__``.
-    """
-    def __call__(self, *args, **kwargs):
-        # super() unsafe because MagicMock does not guarantee support
-        instance = unittest.mock.MagicMock.__call__(self, *args, **kwargs)
-        initCall = unittest.mock.call(*args, **kwargs)
-        initCall.name = "__init__"
-        instance.mock_calls.append(initCall)
-        return instance
-
-
 class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def setUp(self):
         self._testDir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self._testDir, ignore_errors=True)
 
         # Fake Butler to avoid Workspace initialization overhead
-        butler = self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
-        butler.getMapperClass.return_value = lsst.obs.test.TestMapper
-        self.dataIds = _getDataIds()
-        dataRef = self.setUpMockPatch("lsst.daf.persistence.ButlerDataRef",
-                                      autospec=True, dataId=self.dataIds[0])
-        self.setUpMockPatch("lsst.daf.persistence.searchDataRefs", return_value=[dataRef])
+        self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
 
         self.workspace = Workspace(self._testDir)
-        self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(["--id", "visit=42"])
+        self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(
+            ["--id", "visit=%d" % _getDataIds()[0]["visit"]])
 
     @staticmethod
     def dummyMetadata():
@@ -130,23 +109,21 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         return mock
 
     # Mock up ApPipeTask to avoid doing any processing.
-    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
-    def testRunApPipeSteps(self, _mockConfig, mockClass):
+    def testRunApPipeSteps(self, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """
         pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
 
         mockClass.parseAndRun.assert_called_once()
 
-    @unittest.mock.patch("lsst.ap.verify.pipeline_driver._getConfig", return_value=None)
     @patchApPipe
-    def testRunApPipeDataIdReporting(self, _mockConfig, mockClass):
+    def testRunApPipeDataIdReporting(self, mockClass):
         """Test that runApPipe reports the data IDs that were processed.
         """
         ids = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
 
-        self.assertEqual(ids.idList, self.dataIds)
+        self.assertEqual(ids.idList, _getDataIds())
 
     def _getCmdLineArgs(self, parseAndRunArgs):
         if parseAndRunArgs[0]:
@@ -156,23 +133,25 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         else:
             self.fail("No command-line args passed to parseAndRun!")
 
-    def testRunApPipeCustomConfig(self):
+    @patchApPipe
+    def testRunApPipeCustomConfig(self, mockClass):
         """Test that runApPipe can pass custom configs from a workspace to ApPipeTask.
         """
-        with unittest.mock.patch.object(ApPipeTask, "parseAndRun") as mockParse:
-            pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
-            mockParse.assert_called_once()
-            cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-            self.assertIn(os.path.join(self.workspace.configDir, "apPipe.py"), cmdLineArgs)
+        mockParse = mockClass.parseAndRun
+        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        mockParse.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
+        self.assertIn(os.path.join(self.workspace.configDir, "apPipe.py"), cmdLineArgs)
 
-    def testRunApPipeWorkspaceDb(self):
+    @patchApPipe
+    def testRunApPipeWorkspaceDb(self, mockClass):
         """Test that runApPipe places a database in the workspace location by default.
         """
-        with unittest.mock.patch.object(ApPipeTask, "parseAndRun") as mockParse:
-            pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
-            mockParse.assert_called_once()
-            cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-            self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        mockParse = mockClass.parseAndRun
+        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        mockParse.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
+        self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
