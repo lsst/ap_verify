@@ -24,9 +24,8 @@
 # Simple script for running an entire dataset through ap_verify
 # Assumes that the requested dataset is already set up in EUPS
 #
-# The ap_verify workspace is a directory with the dataset name; until DM-13887
-# gets resolved, metrics are dumped to the workspace directory with names
-# containing each run's data ID.
+# The ap_verify workspace is a directory with the dataset name; metrics are
+# dumped to the workspace directory with names containing each run's data ID.
 
 set -e
 
@@ -71,7 +70,7 @@ fi
 # Would be created by ap_verify, but the OS might try to open the log first
 mkdir "${WORKSPACE}"
 
-# Store processor count (parellelism not yet implemented, see DM-13887)
+# Store processor count
 MACH=$(uname -s)
 if [[ $MACH == Darwin ]]; then
     sys_proc=$(sysctl -n hw.logicalcpu)
@@ -81,17 +80,10 @@ fi
 max_proc=8
 NUMPROC=${NUMPROC:-$((sys_proc < max_proc ? sys_proc : max_proc))}
 
-# Extract desired dataIds runs from config file
-# Workaround for DM-13887
-IDLIST="${PRODUCT_DIR}"/config/${DATASET}.list
-
-while read -r ID; do
-    echo "Running ap_verify on ${ID}..."
-    ap_verify.py --dataset "${DATASET}" \
-        --id "${ID}" \
-        --output "${WORKSPACE}" \
-        --processes "${NUMPROC}" \
-        --metrics-file "${WORKSPACE}/ap_verify.${ID}.verify.json" \
-        --silent \
-        &>> "${WORKSPACE}"/apVerify.log
-done < "${IDLIST}"
+echo "Running ap_verify on ${DATASET}..."
+ap_verify.py --dataset "${DATASET}" \
+    --output "${WORKSPACE}" \
+    --processes "${NUMPROC}" \
+    --metrics-file "${WORKSPACE}/ap_verify.{dataId}.verify.json" \
+    --silent \
+    &>> "${WORKSPACE}"/apVerify.log
