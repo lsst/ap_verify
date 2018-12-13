@@ -19,9 +19,9 @@ The basic call signature of :command:`ap_verify.py` is:
 
 .. prompt:: bash
 
-   ap_verify.py --dataset DATASET --output WORKSPACE --id DATAID
+   ap_verify.py --dataset DATASET --output WORKSPACE
 
-These three arguments are mandatory, all others are optional.
+These two arguments are mandatory, all others are optional.
 
 .. _ap-verify-cmd-return:
 
@@ -36,16 +36,15 @@ If the pipeline fails, the status code will be an interpreter-dependent nonzero 
 Named arguments
 ===============
 
-Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--output`.
+Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: --id <dataId>
 
    **Butler data ID.**
 
-   The input data ID is required for all ``ap_verify`` runs except when using :option:`--help`.
-
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
+   If this argument is omitted, then all data IDs in the dataset will be processed.
    
 .. option:: --dataset <dataset_name>
 
