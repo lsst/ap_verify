@@ -35,7 +35,6 @@ import re
 
 import lsst.log
 import lsst.daf.persistence as dafPersist
-from lsst.pipe.base import DataIdContainer
 import lsst.ap.pipe as apPipe
 
 
@@ -50,11 +49,9 @@ class ApPipeParser(argparse.ArgumentParser):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
         self.add_argument('--id', dest='dataId', required=True,
-                          help='An identifier for the data to process. '
-                          'May not support all features of a Butler dataId; '
-                          'see the ap_pipe documentation for details.')
+                          help='An identifier for the data to process.')
         self.add_argument("-j", "--processes", default=1, type=int,
-                          help="Number of processes to use. Not yet implemented.")
+                          help="Number of processes to use.")
 
 
 def runApPipe(workspace, parsedCmdLine):
@@ -74,21 +71,19 @@ def runApPipe(workspace, parsedCmdLine):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
-    dataId = _parseDataId(parsedCmdLine.dataId)
+    args = [workspace.dataRepo,
+            "--output", workspace.outputRepo,
+            "--calib", workspace.calibRepo,
+            "--template", workspace.templateRepo]
+    args.extend(_getConfigArguments(workspace))
+    args.extend(["--id", *parsedCmdLine.dataId.split(" ")])
+    args.extend(["--processes", str(parsedCmdLine.processes)])
+    args.extend(["--noExit"])
 
-    pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
-    matchingDataRefs = dafPersist.searchDataRefs(workspace.workButler, datasetType='raw', dataId=dataId)
-    for dataRef in matchingDataRefs:
-        pipeline.writeConfig(dataRef.getButler(), clobber=True, doBackup=False)
-        pipeline.runDataRef(dataRef)
-        pipeline.writeMetadata(dataRef)
+    results = apPipe.ApPipeTask.parseAndRun(args)
     log.info('Pipeline complete')
 
-    container = DataIdContainer()
-    container.setDatasetType('raw')
-    container.idList = [ref.dataId for ref in matchingDataRefs]
-    container.refList = matchingDataRefs
-    return container
+    return results.parsedCmd.id
 
 
 def _getConfig(workspace):
@@ -126,6 +121,33 @@ def _getConfig(workspace):
         if os.path.exists(overridePath):
             config.load(overridePath)
     return config
+
+
+def _getConfigArguments(workspace):
+    """Return the config options for running ApPipeTask on this workspace, as
+    command-line arguments.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        A Workspace whose config directory may contain an
+        `~lsst.ap.pipe.ApPipeTask` config.
+
+    Returns
+    -------
+    args : `list` of `str`
+        Command-line arguments calling ``--config`` or ``--configFile``,
+        following the conventions of `sys.argv`.
+    """
+    overrideFile = apPipe.ApPipeTask._DefaultName + ".py"
+    overridePath = os.path.join(workspace.configDir, overrideFile)
+
+    args = ["--configfile", overridePath]
+    # ApVerify will use the sqlite hooks for the Ppdb.
+    args.extend(["--config", "ppdb.db_url=sqlite:///" + workspace.dbLocation])
+    args.extend(["--config", "ppdb.isolation_level=READ_UNCOMMITTED"])
+
+    return args
 
 
 def _deStringDataId(dataId):

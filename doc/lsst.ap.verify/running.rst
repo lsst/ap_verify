@@ -31,12 +31,12 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=412518 ccdnum=25 filter=g" --output workspaces/hits/ --silent
+   ap_verify.py --dataset HiTS2015 --id "visit=412518 filter=g" --output workspaces/hits/ --silent
 
 Here the inputs are:
 
 * :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
-* :command:`visit=412518 ccdnum=25 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :command:`visit=412518 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
 

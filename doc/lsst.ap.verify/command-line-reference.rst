@@ -47,9 +47,6 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
    
-   Currently this argument is heavily restricted compared to its :doc:`command line task counterpart</modules/lsst.pipe.base/command-line-task-dataid-howto>`.
-   In particular, the dataId must specify exactly one visit and exactly one CCD, and may not be left blank to mean "all data".
-
 .. option:: --dataset <dataset_name>
 
    **Input dataset designation.**
@@ -73,10 +70,6 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
    
-   .. note::
-
-      This option is provided for forward-compatibility, but is not yet supported by ``ap_verify``.
-
 .. option:: --metrics-file <filename>
 
    **Output metrics file.**

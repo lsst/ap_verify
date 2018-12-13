@@ -143,9 +143,9 @@ def _measureFinalProperties(workspace, dataIds, args):
     args : `argparse.Namespace`
         Command-line arguments, including arguments controlling output.
     """
-    for dataId in dataIds.idList:
-        with AutoJob(workspace.workButler, dataId, args) as metricsJob:
-            measurements = measureFromButlerRepo(workspace.analysisButler, dataId)
+    for dataRef in dataIds.refList:
+        with AutoJob(workspace.workButler, dataRef.dataId, args) as metricsJob:
+            measurements = measureFromButlerRepo(workspace.analysisButler, dataRef.dataId)
             for measurement in measurements:
                 metricsJob.measurements.insert(measurement)
 
