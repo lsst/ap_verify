@@ -31,7 +31,7 @@ __all__ = ["measureRuntime", "TimingMetricConfig", "TimingMetricTask"]
 import astropy.units as u
 
 import lsst.pex.config as pexConfig
-from lsst.pipe.base import Struct
+from lsst.pipe.base import Struct, InputDatasetField
 from lsst.verify import Measurement, Name, MetricComputationError
 from lsst.verify.compatibility import MetricTask
 
@@ -80,13 +80,12 @@ def measureRuntime(metadata, taskName, metricName):
 class TimingMetricConfig(MetricTask.ConfigClass):
     """Information that distinguishes one timing metric from another.
     """
-    # It would be more user-friendly to identify the top-level task and call
-    # CmdLineTask._getMetadataName, but doing so bypasses the public API and
-    # requires reconstruction of the full task just in case the dataset is
-    # config-dependent.
-    metadataDataset = pexConfig.Field(dtype=str,
-                                      doc="The dataset type of the timed top-level task's metadata, "
-                                          "such as 'processCcd_metadata'.")
+    metadata = InputDatasetField(
+        doc="The timed top-level task's metadata. The name must be set to the "
+            "metadata's butler type, such as 'processCcd_metadata'.",
+        storageClass="PropertySet",
+        dimensions=["Instrument", "Exposure", "Detector"],
+    )
     target = pexConfig.Field(dtype=str,
                              doc="The method to time, optionally prefixed by one or more tasks "
                                  "in the format of `lsst.pipe.base.Task.getFullMetadata()`. "
@@ -212,6 +211,7 @@ class TimingMetricTask(MetricTask):
             meas = None
         return Struct(measurement=meas)
 
+    # TODO: remove this once MetricTask has a generic implementation
     @classmethod
     def getInputDatasetTypes(cls, config):
         """Return input dataset types for this task.
@@ -224,9 +224,10 @@ class TimingMetricTask(MetricTask):
         Returns
         -------
         metadata : `dict` from `str` to `str`
-            Dictionary from ``"metadata"`` to the dataset type of the target task's metadata.
+            Dictionary with one key, ``"metadata"``, mapping to the dataset
+            type of the target task's metadata.s
         """
-        return {'metadata': config.metadataDataset}
+        return {'metadata': config.metadata.name}
 
     @classmethod
     def getOutputMetricName(cls, config):

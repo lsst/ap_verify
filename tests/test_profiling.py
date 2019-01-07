@@ -129,7 +129,7 @@ class TimingMetricTestSuite(MetricTaskTestCase):
     @staticmethod
     def _standardConfig():
         config = TimingMetricTask.ConfigClass()
-        config.metadataDataset = TimingMetricTestSuite._SCIENCE_TASK_NAME + "_metadata"
+        config.metadata.name = TimingMetricTestSuite._SCIENCE_TASK_NAME + "_metadata"
         config.target = TimingMetricTestSuite._SCIENCE_TASK_NAME + ".run"
         config.metric = "ip_isr.IsrTime"
         return config
