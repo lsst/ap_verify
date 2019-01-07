@@ -213,24 +213,6 @@ class TimingMetricTask(MetricTask):
             meas = None
         return Struct(measurement=meas)
 
-    # TODO: remove this once MetricTask has a generic implementation
-    @classmethod
-    def getInputDatasetTypes(cls, config):
-        """Return input dataset types for this task.
-
-        Parameters
-        ----------
-        config : ``cls.ConfigClass``
-            Configuration for this task.
-
-        Returns
-        -------
-        metadata : `dict` from `str` to `str`
-            Dictionary with one key, ``"metadata"``, mapping to the dataset
-            type of the target task's metadata.s
-        """
-        return {'metadata': config.metadata.name}
-
     @classmethod
     def getOutputMetricName(cls, config):
         return Name(config.metric)
