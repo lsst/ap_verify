@@ -86,12 +86,14 @@ class TimingMetricConfig(MetricTask.ConfigClass):
         storageClass="PropertySet",
         dimensions=["Instrument", "Exposure", "Detector"],
     )
-    target = pexConfig.Field(dtype=str,
-                             doc="The method to time, optionally prefixed by one or more tasks "
-                                 "in the format of `lsst.pipe.base.Task.getFullMetadata()`. "
-                                 "The times of all matching methods/tasks are added together.")
-    metric = pexConfig.Field(dtype=str,
-                             doc="The fully qualified name of the metric to store the timing information.")
+    target = pexConfig.Field(
+        dtype=str,
+        doc="The method to time, optionally prefixed by one or more tasks "
+            "in the format of `lsst.pipe.base.Task.getFullMetadata()`. "
+            "The times of all matching methods/tasks are added together.")
+    metric = pexConfig.Field(
+        dtype=str,
+        doc="The fully qualified name of the metric to store the timing information.")
 
 
 class TimingMetricTask(MetricTask):
