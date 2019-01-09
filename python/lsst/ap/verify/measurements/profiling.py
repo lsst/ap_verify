@@ -31,7 +31,7 @@ __all__ = ["measureRuntime", "TimingMetricConfig", "TimingMetricTask"]
 import astropy.units as u
 
 import lsst.pex.config as pexConfig
-from lsst.pipe.base import Struct
+from lsst.pipe.base import Struct, InputDatasetField
 from lsst.verify import Measurement, Name, MetricComputationError
 from lsst.verify.compatibility import MetricTask
 
@@ -80,19 +80,20 @@ def measureRuntime(metadata, taskName, metricName):
 class TimingMetricConfig(MetricTask.ConfigClass):
     """Information that distinguishes one timing metric from another.
     """
-    # It would be more user-friendly to identify the top-level task and call
-    # CmdLineTask._getMetadataName, but doing so bypasses the public API and
-    # requires reconstruction of the full task just in case the dataset is
-    # config-dependent.
-    metadataDataset = pexConfig.Field(dtype=str,
-                                      doc="The dataset type of the timed top-level task's metadata, "
-                                          "such as 'processCcd_metadata'.")
-    target = pexConfig.Field(dtype=str,
-                             doc="The method to time, optionally prefixed by one or more tasks "
-                                 "in the format of `lsst.pipe.base.Task.getFullMetadata()`. "
-                                 "The times of all matching methods/tasks are added together.")
-    metric = pexConfig.Field(dtype=str,
-                             doc="The fully qualified name of the metric to store the timing information.")
+    metadata = InputDatasetField(
+        doc="The timed top-level task's metadata. The name must be set to the "
+            "metadata's butler type, such as 'processCcd_metadata'.",
+        storageClass="PropertySet",
+        dimensions=["Instrument", "Exposure", "Detector"],
+    )
+    target = pexConfig.Field(
+        dtype=str,
+        doc="The method to time, optionally prefixed by one or more tasks "
+            "in the format of `lsst.pipe.base.Task.getFullMetadata()`. "
+            "The times of all matching methods/tasks are added together.")
+    metric = pexConfig.Field(
+        dtype=str,
+        doc="The fully qualified name of the metric to store the timing information.")
 
 
 class TimingMetricTask(MetricTask):
@@ -211,22 +212,6 @@ class TimingMetricTask(MetricTask):
             self.log.info("Nothing to do: no timing information for %s found.", keyBase)
             meas = None
         return Struct(measurement=meas)
-
-    @classmethod
-    def getInputDatasetTypes(cls, config):
-        """Return input dataset types for this task.
-
-        Parameters
-        ----------
-        config : ``cls.ConfigClass``
-            Configuration for this task.
-
-        Returns
-        -------
-        metadata : `dict` from `str` to `str`
-            Dictionary from ``"metadata"`` to the dataset type of the target task's metadata.
-        """
-        return {'metadata': config.metadataDataset}
 
     @classmethod
     def getOutputMetricName(cls, config):
