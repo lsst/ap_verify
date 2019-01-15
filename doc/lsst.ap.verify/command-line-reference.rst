@@ -19,9 +19,9 @@ The basic call signature of :command:`ap_verify.py` is:
 
 .. prompt:: bash
 
-   ap_verify.py --dataset DATASET --output WORKSPACE --id DATAID
+   ap_verify.py --dataset DATASET --output WORKSPACE
 
-These three arguments are mandatory, all others are optional.
+These two arguments are mandatory, all others are optional.
 
 .. _ap-verify-cmd-return:
 
@@ -36,20 +36,16 @@ If the pipeline fails, the status code will be an interpreter-dependent nonzero 
 Named arguments
 ===============
 
-Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--output`.
+Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: --id <dataId>
 
    **Butler data ID.**
 
-   The input data ID is required for all ``ap_verify`` runs except when using :option:`--help`.
-
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
+   If this argument is omitted, then all data IDs in the dataset will be processed.
    
-   Currently this argument is heavily restricted compared to its :doc:`command line task counterpart</modules/lsst.pipe.base/command-line-task-dataid-howto>`.
-   In particular, the dataId must specify exactly one visit and exactly one CCD, and may not be left blank to mean "all data".
-
 .. option:: --dataset <dataset_name>
 
    **Input dataset designation.**
@@ -73,18 +69,13 @@ Required arguments are :option:`--dataset`, :option:`--id`, and :option:`--outpu
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
    
-   .. note::
-
-      This option is provided for forward-compatibility, but is not yet supported by ``ap_verify``.
-
 .. option:: --metrics-file <filename>
 
    **Output metrics file.**
 
-   The name of a file to contain the metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
-   If omitted, the output will go to a file named :file:`ap_verify.verify.json` in the user's working directory.
-
-   This argument can be used to run multiple instances of ``ap_verify`` concurrently, with each instance producing output to a different metrics file.
+   The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
+   The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.
+   If omitted, the output will go to files named after ``ap_verify.{dataId}.verify.json`` in the user's working directory.
 
 .. option:: --output <workspace_dir>
 

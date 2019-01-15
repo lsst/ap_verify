@@ -29,8 +29,7 @@ defined here, rather than depending on individual measurement functions.
 
 __all__ = ["measureFromButlerRepo"]
 
-import re
-
+import copy
 from lsst.verify.compatibility import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
 from .association import measureNumberNewDiaObjects, \
@@ -80,16 +79,15 @@ def measureFromMetadata(metadata):
     return result
 
 
-def measureFromButlerRepo(butler, dataId):
+def measureFromButlerRepo(butler, rawDataId):
     """Create measurements from a butler repository.
 
     Parameters
     ----------
     butler : `lsst.daf.persistence.Butler`
         A butler opened to the repository to read.
-    dataId : `str`
-        Butler identifier naming the data to be processed (e.g., visit and
-        ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
+    rawDataId : `lsst.daf.persistence.DataId` or `dict`
+        Butler identifier naming the data given to ap_pipe.
 
     Returns
     -------
@@ -98,26 +96,30 @@ def measureFromButlerRepo(butler, dataId):
     """
     result = []
 
-    dataIdDict = _convertDataIdString(dataId)
+    dataId = copy.copy(rawDataId)
+    # Workaround for bug where Butler tries to load HDU
+    # even when template doesn't have one
+    if "hdu" in dataId:
+        del dataId["hdu"]
 
     timingConfig = MetricsControllerTask.ConfigClass()
     timingConfig.jobFileTemplate = "ap_verify.metricTask{id}.{dataId}.verify.json"
-    _runMetricTasks(timingConfig, butler, dataIdDict)
+    _runMetricTasks(timingConfig, butler, dataId)
 
     measurement = measureNumberSciSources(
-        butler, dataIdDict, "ip_diffim.numSciSources")
+        butler, dataId, "ip_diffim.numSciSources")
     if measurement is not None:
         result.append(measurement)
 
     measurement = measureFractionDiaSourcesToSciSources(
-        butler, dataIdDict, "ip_diffim.fracDiaSourcesToSciSources")
+        butler, dataId, "ip_diffim.fracDiaSourcesToSciSources")
     if measurement is not None:
         result.append(measurement)
 
     config = butler.get(ApPipeTask._DefaultName + '_config')
     result.extend(measureFromPpdb(config.ppdb))
 
-    metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataIdDict)
+    metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataId)
     result.extend(measureFromMetadata(metadata))
     return result
 
@@ -131,7 +133,7 @@ def _runMetricTasks(config, butler, dataId):
         The config for running `~lsst.verify.compatibility.MetricsControllerTask`.
     butler : `lsst.daf.persistence.Butler`
         A butler opened to ap_verify's output repository.
-    dataId : `dict`
+    dataId : `lsst.daf.persistence.DataId` or `dict`
         The data ID for this run of ``ap_verify``.
     """
     allMetricTasks = MetricsControllerTask(config)
@@ -140,42 +142,6 @@ def _runMetricTasks(config, butler, dataId):
     # data IDs with other processed data types
     processedDatarefs = butler.subset('calexp', dataId=dataId)
     allMetricTasks.runDataRefs(processedDatarefs)
-
-
-def _convertDataIdString(dataId):
-    """Convert the input data ID string information to a `dict` readable by the
-    butler.
-
-    Parameters
-    ----------
-    dataId : `str`
-        Butler identifier naming the data to be processed (e.g., visit and
-        ccdnum) formatted in the usual way (e.g., 'visit=54321 ccdnum=7').
-
-    Returns
-    -------
-    dataId : `dict`
-        the data units, in a format compatible with the
-        `lsst.daf.persistence` API
-    """
-    dataIdItems = re.split('[ +=]', dataId)
-    dataIdDict = dict(zip(dataIdItems[::2], dataIdItems[1::2]))
-    # Unfortunately this currently hard codes these measurements to be
-    # from one ccd/visit and requires them to be from DECam because
-    # of ccdnum. Buttler.get appears to require that visit and ccdnum
-    # both be ints rather than allowing them to be string type.
-    if 'visit' not in dataIdDict.keys():
-        raise RuntimeError('The dataId string is missing \'visit\'')
-    else:
-        visit = int(dataIdDict['visit'])
-        dataIdDict['visit'] = visit
-    if 'ccdnum' not in dataIdDict.keys():
-        raise RuntimeError('The dataId string is missing \'ccdnum\'')
-    else:
-        ccdnum = int(dataIdDict['ccdnum'])
-        dataIdDict['ccdnum'] = ccdnum
-
-    return dataIdDict
 
 
 def measureFromPpdb(configurable):

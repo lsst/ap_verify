@@ -56,7 +56,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
     def testMissingMain(self):
         """Verify that a command line consisting missing required arguments is rejected.
         """
-        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.datasetKey
+        args = '--id "visit=54123" --output tests/output/foo'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 

@@ -24,36 +24,16 @@
 """Interface between `ap_verify` and `ap_pipe`.
 
 This module handles calling `ap_pipe` and converting any information
-as needed. It also attempts to collect measurements step-by-step, so
-that a total pipeline failure still allows some measurements to be
-recovered.
+as needed.
 """
 
-__all__ = ["ApPipeParser", "MeasurementStorageError", "runApPipe"]
+__all__ = ["ApPipeParser", "runApPipe"]
 
 import argparse
 import os
-import re
-
-import json
 
 import lsst.log
-import lsst.daf.persistence as dafPersist
 import lsst.ap.pipe as apPipe
-from lsst.verify import Job
-
-
-# borrowed from validate_drp
-def _extract_instrument_from_butler(butler):
-    """Extract the last part of the mapper name from a Butler repo.
-    'lsst.obs.lsstSim.lsstSimMapper.LsstSimMapper' -> 'LSSTSIM'
-    'lsst.obs.cfht.megacamMapper.MegacamMapper' -> 'CFHT'
-    'lsst.obs.decam.decamMapper.DecamMapper' -> 'DECAM'
-    'lsst.obs.hsc.hscMapper.HscMapper' -> 'HSC'
-    """
-    camera = butler.get('camera')
-    instrument = camera.getName()
-    return instrument.upper()
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -66,98 +46,50 @@ class ApPipeParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--id', dest='dataId', required=True,
-                          help='An identifier for the data to process. '
-                          'May not support all features of a Butler dataId; '
-                          'see the ap_pipe documentation for details.')
+        self.add_argument('--id', dest='dataId', default="",
+                          help='An identifier for the data to process.')
         self.add_argument("-j", "--processes", default=1, type=int,
-                          help="Number of processes to use. Not yet implemented.")
+                          help="Number of processes to use.")
 
 
-class MeasurementStorageError(RuntimeError):
-    pass
-
-
-def _updateMetrics(metadata, job):
-    """Update a Job object with the measurements created from running a task.
-
-    The metadata shall be searched for the locations of Job dump files from
-    the most recent run of a task and its subtasks; the contents of these
-    files shall be added to `job`. This method is a temporary workaround
-    for the `verify` framework's limited persistence support, and will be
-    removed in a future version.
-
-    Parameters
-    ----------
-    metadata : `lsst.daf.base.PropertySet`
-        The full metadata from running a task(s). Assumed to contain keys of
-        the form "<standard task prefix>.verify_json_path" that maps to the
-        absolute file location of that task's serialized measurements.
-        All other metadata fields are ignored.
-    job : `lsst.verify.Job`
-        The Job object to which to add measurements. This object shall be
-        left in a consistent state if this method raises exceptions.
-
-    Raises
-    ------
-    lsst.ap.verify.pipeline_driver.MeasurementStorageError
-        Raised if a "verify_json_path" key does not map to a string, or serialized
-        measurements could not be located or read from disk.
-    """
-    try:
-        keys = metadata.names(topLevelOnly=False)
-        files = [metadata.getAsString(key) for key in keys if key.endswith('verify_json_path')]
-
-        for measurementFile in files:
-            with open(measurementFile) as f:
-                taskJob = Job.deserialize(**json.load(f))
-            job += taskJob
-    except (IOError, TypeError) as e:
-        raise MeasurementStorageError('Task metadata could not be read; possible downstream bug') from e
-
-
-def runApPipe(metricsJob, workspace, parsedCmdLine):
+def runApPipe(workspace, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
     ----------
-    metricsJob : `lsst.verify.Job`
-        The Job object to which to add any metric measurements made.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
 
-    Raises
-    ------
-    lsst.ap.verify.pipeline_driver.MeasurementStorageError
-        Raised if measurements were made, but `metricsJob` could not be updated
-        with all of them. This exception may suppress exceptions raised by
-        the pipeline itself.
+    Returns
+    -------
+    dataIds : `lsst.pipe.base.DataIdContainer`
+        The set of complete data IDs fed into ``ap_pipe``.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
-    dataId = _parseDataId(parsedCmdLine.dataId)
+    args = [workspace.dataRepo,
+            "--output", workspace.outputRepo,
+            "--calib", workspace.calibRepo,
+            "--template", workspace.templateRepo]
+    args.extend(_getConfigArguments(workspace))
+    if parsedCmdLine.dataId:
+        args.extend(["--id", *parsedCmdLine.dataId.split(" ")])
+    else:
+        args.extend(["--id"])
+    args.extend(["--processes", str(parsedCmdLine.processes)])
+    args.extend(["--noExit"])
 
-    #  Insert job metadata including dataId
-    metricsJob.meta.update({'instrument': _extract_instrument_from_butler(workspace.workButler)})
-    metricsJob.meta.update(dataId)
+    results = apPipe.ApPipeTask.parseAndRun(args)
+    log.info('Pipeline complete')
 
-    pipeline = apPipe.ApPipeTask(workspace.workButler, config=_getConfig(workspace))
-    try:
-        for dataRef in dafPersist.searchDataRefs(workspace.workButler, datasetType='raw',
-                                                 dataId=dataId):
-            pipeline.writeConfig(dataRef.getButler(), clobber=True, doBackup=False)
-            pipeline.runDataRef(dataRef)
-            pipeline.writeMetadata(dataRef)
-        log.info('Pipeline complete')
-    finally:
-        # Recover any metrics from completed pipeline steps, even if the pipeline fails
-        _updateMetrics(pipeline.getFullMetadata(), metricsJob)
+    return results.parsedCmd.id
 
 
-def _getConfig(workspace):
-    """Return the config for running ApPipeTask on this workspace.
+def _getConfigArguments(workspace):
+    """Return the config options for running ApPipeTask on this workspace, as
+    command-line arguments.
 
     Parameters
     ----------
@@ -167,61 +99,16 @@ def _getConfig(workspace):
 
     Returns
     -------
-    config : `lsst.ap.pipe.ApPipeConfig`
-        The config for running `~lsst.ap.pipe.ApPipeTask`.
+    args : `list` of `str`
+        Command-line arguments calling ``--config`` or ``--configFile``,
+        following the conventions of `sys.argv`.
     """
     overrideFile = apPipe.ApPipeTask._DefaultName + ".py"
-    # TODO: may not be needed depending on resolution of DM-13887
-    mapper = dafPersist.Butler.getMapperClass(workspace.dataRepo)
-    packageDir = lsst.utils.getPackageDir(mapper.getPackageName())
+    overridePath = os.path.join(workspace.configDir, overrideFile)
 
-    config = apPipe.ApPipeTask.ConfigClass()
-    # Equivalent to task-level default for ap_verify
-
+    args = ["--configfile", overridePath]
     # ApVerify will use the sqlite hooks for the Ppdb.
-    config.ppdb.db_url = "sqlite:///" + workspace.dbLocation
-    config.ppdb.isolation_level = "READ_UNCOMMITTED"
+    args.extend(["--config", "ppdb.db_url=sqlite:///" + workspace.dbLocation])
+    args.extend(["--config", "ppdb.isolation_level=READ_UNCOMMITTED"])
 
-    for path in [
-        os.path.join(packageDir, 'config'),
-        os.path.join(packageDir, 'config', mapper.getCameraName()),
-        workspace.configDir,
-    ]:
-        overridePath = os.path.join(path, overrideFile)
-        if os.path.exists(overridePath):
-            config.load(overridePath)
-    return config
-
-
-def _deStringDataId(dataId):
-    '''
-    Replace a dataId's values with numbers, where appropriate.
-
-    Parameters
-    ----------
-    dataId : `dict` from `str` to any
-        The dataId to be cleaned up.
-    '''
-    integer = re.compile(r'^\s*[+-]?\d+\s*$')
-    for key, value in dataId.items():
-        if isinstance(value, str) and integer.match(value) is not None:
-            dataId[key] = int(value)
-
-
-def _parseDataId(rawDataId):
-    """Convert a dataId from a command-line string to a dict.
-
-    Parameters
-    ----------
-    rawDataId : `str`
-        A string in a format like "visit=54321 ccdnum=7".
-
-    Returns
-    -------
-    dataId : `dict` from `str` to any type
-        A dataId ready for passing to Stack operations.
-    """
-    dataIdItems = re.split('[ +=]', rawDataId)
-    dataId = dict(zip(dataIdItems[::2], dataIdItems[1::2]))
-    _deStringDataId(dataId)
-    return dataId
+    return args
