@@ -33,7 +33,7 @@ import astropy.units as u
 import lsst.pex.config as pexConfig
 from lsst.pipe.base import Struct, InputDatasetField
 from lsst.verify import Measurement, Name, MetricComputationError
-from lsst.verify.compatibility import MetricTask
+from lsst.verify.compatibility import registerMultiple, MetricTask
 
 
 def measureRuntime(metadata, taskName, metricName):
@@ -96,6 +96,7 @@ class TimingMetricConfig(MetricTask.ConfigClass):
         doc="The fully qualified name of the metric to store the timing information.")
 
 
+@registerMultiple("timing")
 class TimingMetricTask(MetricTask):
     """A Task that measures a timing metric using metadata produced by the
     `lsst.pipe.base.timeMethod` decorator.

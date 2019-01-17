@@ -30,6 +30,9 @@ defined here, rather than depending on individual measurement functions.
 __all__ = ["measureFromButlerRepo"]
 
 import copy
+import os
+
+import lsst.utils
 from lsst.verify.compatibility import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
 from .association import measureNumberNewDiaObjects, \
@@ -103,7 +106,7 @@ def measureFromButlerRepo(butler, rawDataId):
         del dataId["hdu"]
 
     timingConfig = MetricsControllerTask.ConfigClass()
-    timingConfig.jobFileTemplate = "ap_verify.metricTask{id}.{dataId}.verify.json"
+    timingConfig.load(os.path.join(lsst.utils.getPackageDir("ap_verify"), "config", "default_metrics.py"))
     _runMetricTasks(timingConfig, butler, dataId)
 
     measurement = measureNumberSciSources(
