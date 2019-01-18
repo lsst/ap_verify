@@ -82,8 +82,9 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         """
         args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.datasetKey
         parsed = self._parseString(args, ap_verify._IngestOnlyParser())
-        self.assertIn('dataset', dir(parsed))
-        self.assertIn('output', dir(parsed))
+        self.assertEqual(parsed.dataset.datasetRoot,
+                         lsst.utils.getPackageDir(CommandLineTestSuite.testDataset))
+        self.assertEqual(parsed.output, "tests/output/foo")
 
     def testDataId(self):
         """Verify that a command line consisting only of required arguments parses correctly.
