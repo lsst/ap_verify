@@ -44,9 +44,6 @@ from .association import measureNumberNewDiaObjects, \
 def measureFromMetadata(metadata):
     """Compute all known metrics on Task metadata.
 
-    Metrics and measurement information are registered in the ``ap_verify``
-    configuration file under the ``measurements`` label.
-
     Parameters
     ----------
     metadata : `lsst.daf.base.PropertySet`
@@ -56,12 +53,6 @@ def measureFromMetadata(metadata):
     -------
     measurements : iterable of `lsst.verify.Measurement`
         all the measurements derived from ``metadata``. May be empty.
-
-    Raises
-    ------
-    RuntimeError
-        the ``ap_verify`` configuration file exists, but does not contain the
-        expected data under ``measurements``
     """
     result = []
 

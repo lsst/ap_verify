@@ -2,18 +2,4 @@
 datasets:
     HiTS2015: ap_verify_hits2015
     CI-HiTS2015: ap_verify_ci_hits2015
-measurements:
-    timing:
-        apPipe: ap_pipe.ApPipeTime
-        apPipe:ccdProcessor: pipe_tasks.ProcessCcdTime
-        apPipe:ccdProcessor:isr: ip_isr.IsrTime
-        apPipe:ccdProcessor:charImage: pipe_tasks.CharacterizeImageTime
-        apPipe:ccdProcessor:calibrate: pipe_tasks.CalibrateTime
-        apPipe:differencer: pipe_tasks.ImageDifferenceTime
-        apPipe:differencer:astrometer: meas_astrom.AstrometryTime
-        apPipe:differencer:register: pipe_tasks.RegisterImageTime
-        apPipe:differencer:subtract: ip_diffim.ImagePsfMatchTime
-        apPipe:differencer:detection: meas_algorithms.SourceDetectionTime
-        apPipe:differencer:measurement: ip_diffim.DipoleFitTime
-        apPipe:associator: ap_association.AssociationTime
 ...
