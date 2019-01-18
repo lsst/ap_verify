@@ -44,6 +44,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    Specify data ID to process using data ID syntax.
    For example, ``--id "visit=12345 ccd=1 filter=g"``.
+   Multiple copies of this argument are allowed.
    If this argument is omitted, then all data IDs in the dataset will be processed.
    
 .. option:: --dataset <dataset_name>
