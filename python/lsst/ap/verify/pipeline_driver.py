@@ -46,7 +46,7 @@ class ApPipeParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--id', dest='dataId', default="",
+        self.add_argument('--id', dest='dataIds', action='append', default=[],
                           help='An identifier for the data to process.')
         self.add_argument("-j", "--processes", default=1, type=int,
                           help="Number of processes to use.")
@@ -74,8 +74,9 @@ def runApPipe(workspace, parsedCmdLine):
             "--calib", workspace.calibRepo,
             "--template", workspace.templateRepo]
     args.extend(_getConfigArguments(workspace))
-    if parsedCmdLine.dataId:
-        args.extend(["--id", *parsedCmdLine.dataId.split(" ")])
+    if parsedCmdLine.dataIds:
+        for singleId in parsedCmdLine.dataIds:
+            args.extend(["--id", *singleId.split(" ")])
     else:
         args.extend(["--id"])
     args.extend(["--processes", str(parsedCmdLine.processes)])
