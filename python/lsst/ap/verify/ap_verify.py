@@ -30,9 +30,11 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
+import os
 import re
 
 import lsst.log
+import lsst.utils
 from .dataset import Dataset
 from .ingestion import ingestDataset
 from .metrics import MetricsParser, checkSquashReady, AutoJob
@@ -53,9 +55,11 @@ class _InputOutputParser(argparse.ArgumentParser):
         argparse.ArgumentParser.__init__(self, add_help=False)
         self.add_argument('--dataset', action=_DatasetAction, choices=Dataset.getSupportedDatasets(),
                           required=True, help='The source of data to pass through the pipeline.')
-
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
+        self.add_argument('--metrics-config',
+                          help='The config file specifying the metrics to measure. '
+                               'Defaults to config/default_metrics.py.')
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -143,9 +147,15 @@ def _measureFinalProperties(workspace, dataIds, args):
     args : `argparse.Namespace`
         Command-line arguments, including arguments controlling output.
     """
+    if args.metrics_config is not None:
+        metricFile = args.metrics_config
+    else:
+        metricFile = os.path.join(lsst.utils.getPackageDir("ap_verify"),
+                                  "config", "default_metrics.py")
+
     for dataRef in dataIds.refList:
         with AutoJob(workspace.workButler, dataRef.dataId, args) as metricsJob:
-            measurements = measureFromButlerRepo(workspace.analysisButler, dataRef.dataId)
+            measurements = measureFromButlerRepo(metricFile, workspace.analysisButler, dataRef.dataId)
             for measurement in measurements:
                 metricsJob.measurements.insert(measurement)
 

@@ -70,6 +70,13 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
    
+.. option:: --metrics-config <filename>
+
+   **Input metrics config.**
+
+   A config file containing a `~lsst.verify.compatibility.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
+   If this argument is omitted, :file:`config/default_metrics.py` will be used.
+
 .. option:: --metrics-file <filename>
 
    **Output metrics file.**

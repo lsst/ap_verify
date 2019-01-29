@@ -54,16 +54,6 @@ class Config:
         except (KeyError, TypeError) as e:
             raise RuntimeError('Invalid config file.') from e
 
-        try:
-            measurementMap = self._allInfo['measurements']
-            if not isinstance(measurementMap, Policy):
-                raise TypeError('`measurements` is not a dictionary')
-            timingMap = measurementMap['timing']
-            if not isinstance(timingMap, Policy):
-                raise TypeError('`measurements.timing` is not a dictionary')
-        except (KeyError, TypeError) as e:
-            raise RuntimeError('Invalid config file.') from e
-
     def __getitem__(self, key):
         return self._allInfo[key]
 

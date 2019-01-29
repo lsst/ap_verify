@@ -30,6 +30,7 @@ defined here, rather than depending on individual measurement functions.
 __all__ = ["measureFromButlerRepo"]
 
 import copy
+
 from lsst.verify.compatibility import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
 from .association import measureNumberNewDiaObjects, \
@@ -43,9 +44,6 @@ from .association import measureNumberNewDiaObjects, \
 def measureFromMetadata(metadata):
     """Compute all known metrics on Task metadata.
 
-    Metrics and measurement information are registered in the ``ap_verify``
-    configuration file under the ``measurements`` label.
-
     Parameters
     ----------
     metadata : `lsst.daf.base.PropertySet`
@@ -55,12 +53,6 @@ def measureFromMetadata(metadata):
     -------
     measurements : iterable of `lsst.verify.Measurement`
         all the measurements derived from ``metadata``. May be empty.
-
-    Raises
-    ------
-    RuntimeError
-        the ``ap_verify`` configuration file exists, but does not contain the
-        expected data under ``measurements``
     """
     result = []
 
@@ -79,11 +71,13 @@ def measureFromMetadata(metadata):
     return result
 
 
-def measureFromButlerRepo(butler, rawDataId):
+def measureFromButlerRepo(metricsConfig, butler, rawDataId):
     """Create measurements from a butler repository.
 
     Parameters
     ----------
+    metricsConfig : `str`
+        A file containing a `~lsst.verify.compatibility.MetricsControllerConfig`.
     butler : `lsst.daf.persistence.Butler`
         A butler opened to the repository to read.
     rawDataId : `lsst.daf.persistence.DataId` or `dict`
@@ -103,7 +97,7 @@ def measureFromButlerRepo(butler, rawDataId):
         del dataId["hdu"]
 
     timingConfig = MetricsControllerTask.ConfigClass()
-    timingConfig.jobFileTemplate = "ap_verify.metricTask{id}.{dataId}.verify.json"
+    timingConfig.load(metricsConfig)
     _runMetricTasks(timingConfig, butler, dataId)
 
     measurement = measureNumberSciSources(
