@@ -74,7 +74,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    **Input metrics config.**
 
-   A config file containing a `~lsst.verify.compatibility.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
+   A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
    If this argument is omitted, :file:`config/default_metrics.py` will be used.
 
 .. option:: --metrics-file <filename>

@@ -31,7 +31,7 @@ import lsst.utils.tests
 import lsst.afw.image as afwImage
 from lsst.ip.isr import FringeTask
 from lsst.verify import Measurement, Name, MetricComputationError
-from lsst.verify.compatibility.testUtils import MetricTaskTestCase
+from lsst.verify.gen2tasks.testUtils import MetricTaskTestCase
 
 from lsst.ap.verify.measurements.profiling import measureRuntime, TimingMetricTask
 

@@ -31,7 +31,7 @@ __all__ = ["measureFromButlerRepo"]
 
 import copy
 
-from lsst.verify.compatibility import MetricsControllerTask
+from lsst.verify.gen2tasks import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
 from .association import measureNumberNewDiaObjects, \
     measureNumberUnassociatedDiaObjects, \
@@ -77,7 +77,7 @@ def measureFromButlerRepo(metricsConfig, butler, rawDataId):
     Parameters
     ----------
     metricsConfig : `str`
-        A file containing a `~lsst.verify.compatibility.MetricsControllerConfig`.
+        A file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`.
     butler : `lsst.daf.persistence.Butler`
         A butler opened to the repository to read.
     rawDataId : `lsst.daf.persistence.DataId` or `dict`
@@ -123,8 +123,8 @@ def _runMetricTasks(config, butler, dataId):
 
     Parameters
     ----------
-    config : `lsst.verify.compatibility.MetricsControllerConfig`
-        The config for running `~lsst.verify.compatibility.MetricsControllerTask`.
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config for running `~lsst.verify.gen2tasks.MetricsControllerTask`.
     butler : `lsst.daf.persistence.Butler`
         A butler opened to ap_verify's output repository.
     dataId : `lsst.daf.persistence.DataId` or `dict`
