@@ -30,8 +30,10 @@ from astropy.tests.helper import assert_quantity_allclose
 import lsst.utils.tests
 import lsst.afw.image as afwImage
 from lsst.ip.isr import FringeTask
-from lsst.verify import Measurement, Name, MetricComputationError
+from lsst.verify import Measurement, Name
 from lsst.verify.gen2tasks.testUtils import MetricTaskTestCase
+from lsst.verify.tasks import MetricComputationError
+from lsst.verify.tasks.testUtils import MetadataMetricTestCase
 
 from lsst.ap.verify.measurements.profiling import TimingMetricTask
 
@@ -61,15 +63,12 @@ def _createFringe(width, height, filterName):
     return exp
 
 
-class TimingMetricTestSuite(MetricTaskTestCase):
+class TimingMetricTestSuite(MetadataMetricTestCase):
     _SCIENCE_TASK_NAME = "fringe"
 
-    @staticmethod
-    def _taskFactory():
-        """Implements MetricTaskTestCase.taskFactory.
-        """
-        return TimingMetricTask(config=TimingMetricTestSuite._standardConfig())
-    MetricTaskTestCase.taskFactory = _taskFactory
+    @classmethod
+    def makeTask(cls):
+        return TimingMetricTask(config=cls._standardConfig())
 
     @staticmethod
     def _standardConfig():
@@ -200,6 +199,11 @@ class TimingMetricTestSuite(MetricTaskTestCase):
 
     def testGetOutputMetricName(self):
         self.assertEqual(TimingMetricTask.getOutputMetricName(self.config), Name(self.config.metric))
+
+
+# Hack around unittest's hacky test setup system
+del MetricTaskTestCase
+del MetadataMetricTestCase
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
