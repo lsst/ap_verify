@@ -33,7 +33,7 @@ from lsst.ip.isr import FringeTask
 from lsst.verify import Measurement, Name, MetricComputationError
 from lsst.verify.gen2tasks.testUtils import MetricTaskTestCase
 
-from lsst.ap.verify.measurements.profiling import measureRuntime, TimingMetricTask
+from lsst.ap.verify.measurements.profiling import TimingMetricTask
 
 
 def _createFringe(width, height, filterName):
@@ -59,61 +59,6 @@ def _createFringe(width, height, filterName):
     exp = afwImage.makeExposure(afwImage.makeMaskedImage(image))
     exp.setFilter(afwImage.Filter(filterName))
     return exp
-
-
-class MeasureRuntimeTestSuite(lsst.utils.tests.TestCase):
-
-    def setUp(self):
-        """Run a dummy instance of `FringeTask` so that test cases can measure it.
-        """
-        # Create dummy filter and fringe so that `FringeTask` has short but
-        # significant run time.
-        # Code adapted from lsst.ip.isr.test_fringes
-        size = 128
-        dummyFilter = 'FILTER'
-        afwImage.utils.defineFilter(dummyFilter, lambdaEff=0)
-        exp = _createFringe(size, size, dummyFilter)
-
-        # Create and run `FringeTask` itself
-        config = FringeTask.ConfigClass()
-        config.filters = [dummyFilter]
-        config.num = 1000
-        config.small = 1
-        config.large = size // 4
-        config.pedestal = False
-        self.task = FringeTask(name="fringe", config=config)
-
-        # As an optimization, let test cases choose whether to run the dummy task
-        def runTask():
-            self.task.run(exp, exp)
-        self.runTask = runTask
-
-    def tearDown(self):
-        del self.task
-
-    def testValid(self):
-        """Verify that timing information can be recovered.
-        """
-        self.runTask()
-        meas = measureRuntime(self.task.getFullMetadata(), taskName='fringe', metricName='ip_isr.IsrTime')
-        self.assertIsInstance(meas, Measurement)
-        self.assertEqual(meas.metric_name, Name(metric='ip_isr.IsrTime'))
-        self.assertGreater(meas.quantity, 0.0 * u.second)
-        # Task normally takes 0.2 s, so this should be a safe margin of error
-        self.assertLess(meas.quantity, 10.0 * u.second)
-
-    def testNoMetric(self):
-        """Verify that trying to measure a nonexistent metric fails.
-        """
-        self.runTask()
-        with self.assertRaises(TypeError):
-            measureRuntime(self.task.getFullMetadata(), taskName='fringe', metricName='foo.bar.FooBarTime')
-
-    def testNotRun(self):
-        """Verify that trying to measure a real but inapplicable metric returns None.
-        """
-        meas = measureRuntime(self.task.getFullMetadata(), taskName='fringe', metricName='ip_isr.IsrTime')
-        self.assertIsNone(meas)
 
 
 class TimingMetricTestSuite(MetricTaskTestCase):
