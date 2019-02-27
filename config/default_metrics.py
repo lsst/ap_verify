@@ -1,8 +1,14 @@
 from lsst.ap.verify.measurements.profiling import TimingMetricConfig
+# Import these modules to ensure the metrics are registered
+import lsst.ip.diffim.metrics  # noqa: F401
+import lsst.ap.association.metrics  # noqa: F401
 
 config.jobFileTemplate = "ap_verify.metricTask{id}.{dataId}.verify.json"
 
-config.measurers = ["timing"]
+metadataConfigs = ["numNewDiaObjects",
+                   "numUnassociatedDiaObjects",
+                   "fracUpdatedDiaObjects"]
+config.measurers = ["timing", "numSciSources", "fracDiaSourcesToSciSources"] + metadataConfigs
 
 timingConfigs = {
     "apPipe.runDataRef": "ap_pipe.ApPipeTime",
@@ -25,3 +31,6 @@ for target, metric in timingConfigs.items():
     config.measurers["timing"].configs[target] = subConfig
 for subConfig in config.measurers["timing"].configs.values():
     subConfig.metadata.name = "apPipe_metadata"
+# List comprehension would be cleaner, but can't refer to config inside one
+for subConfig in metadataConfigs:
+    config.measurers[subConfig].metadata.name = "apPipe_metadata"

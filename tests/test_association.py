@@ -22,29 +22,20 @@
 #
 
 import unittest
-from unittest.mock import NonCallableMock
 
 import astropy.units as u
 import os
 
 import lsst.daf.base as dafBase
-import lsst.daf.persistence as dafPersist
 import lsst.dax.ppdb as daxPpdb
 import lsst.afw.geom as afwGeom
 import lsst.afw.table as afwTable
 from lsst.ap.association import \
     make_dia_source_schema, \
-    make_dia_object_schema, \
-    AssociationTask
-import lsst.pipe.base as pipeBase
+    make_dia_object_schema
 import lsst.utils.tests
 from lsst.verify import Measurement
 from lsst.ap.verify.measurements.association import \
-    measureNumberNewDiaObjects, \
-    measureNumberUnassociatedDiaObjects, \
-    measureFractionUpdatedDiaObjects, \
-    measureNumberSciSources, \
-    measureFractionDiaSourcesToSciSources, \
     measureTotalUnassociatedDiaObjects
 
 # Define the root of the tests relative to this file
@@ -102,34 +93,11 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
 
     def setUp(self):
 
-        # Create an unrun AssociationTask.
-        self.assocTask = AssociationTask()
-
-        # Create a empty butler repository and put data in it.
-        self.numTestSciSources = 10
-        self.numTestDiaSources = 5
-        testSources = createTestPoints(self.numTestSciSources)
-        testDiaSources = createTestPoints(self.numTestDiaSources)
-
         self.numTestDiaObjects = 5
         self.diaObjects = createTestPoints(
             5, schema=make_dia_object_schema())
         for diaObject in self.diaObjects:
             diaObject['nDiaSources'] = 1
-
-        # Fake Butler to avoid initialization and I/O overhead
-        def mockGet(datasetType, dataId=None):
-            """An emulator for `lsst.daf.persistence.Butler.get` that can only handle test data.
-            """
-            # Check whether dataIdDict is a subset of dataId
-            if dataIdDict.items() <= dataId.items():
-                if datasetType == 'src':
-                    return testSources
-                elif datasetType == 'deepDiff_diaSrc':
-                    return testDiaSources
-            raise dafPersist.NoResults("Dataset not found:", datasetType, dataId)
-
-        self.butler = NonCallableMock(spec=dafPersist.Butler, get=mockGet)
 
         self.ppdbCfg = daxPpdb.PpdbConfig()
         # Create DB in memory.
@@ -147,81 +115,7 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
         self.ppdb.storeDiaObjects(self.diaObjects, dateTime.toPython())
 
     def tearDown(self):
-        del self.assocTask
         del self.ppdb
-
-        if hasattr(self, "butler"):
-            del self.butler
-
-    def testValidFromMetadata(self):
-        """Verify that association information can be recovered from metadata.
-        """
-        # Insert data into the task metadata.
-        nUpdatedDiaObjects = 5
-        nNewDiaObjects = 6
-        nUnassociatedDiaObjects = 7
-        testAssocResult = pipeBase.Struct(
-            n_updated_dia_objects=nUpdatedDiaObjects,
-            n_new_dia_objects=nNewDiaObjects,
-            n_unassociated_dia_objects=nUnassociatedDiaObjects,)
-        self.assocTask._add_association_meta_data(testAssocResult)
-        metadata = self.assocTask.getFullMetadata()
-
-        meas = measureNumberNewDiaObjects(
-            metadata,
-            "association",
-            "association.numNewDIAObjects")
-        self.assertIsInstance(meas, Measurement)
-        self.assertEqual(
-            meas.metric_name,
-            lsst.verify.Name(metric="association.numNewDIAObjects"))
-        self.assertEqual(meas.quantity, nNewDiaObjects * u.count)
-
-        meas = measureNumberUnassociatedDiaObjects(
-            metadata,
-            'association',
-            'association.fracUpdatedDIAObjects')
-        self.assertIsInstance(meas, Measurement)
-        self.assertEqual(
-            meas.metric_name,
-            lsst.verify.Name(
-                metric='association.fracUpdatedDIAObjects'))
-        self.assertEqual(meas.quantity, nUnassociatedDiaObjects * u.count)
-
-        meas = measureFractionUpdatedDiaObjects(
-            metadata,
-            'association',
-            'association.fracUpdatedDIAObjects')
-        self.assertIsInstance(meas, Measurement)
-        self.assertEqual(
-            meas.metric_name,
-            lsst.verify.Name(metric='association.fracUpdatedDIAObjects'))
-        value = nUpdatedDiaObjects / (nUpdatedDiaObjects + nUnassociatedDiaObjects)
-        self.assertEqual(meas.quantity, value * u.dimensionless_unscaled)
-
-    def testValidFromButler(self):
-        """ Test the association measurements that require a butler.
-        """
-        meas = measureNumberSciSources(
-            self.butler,
-            dataIdDict=dataIdDict,
-            metricName='ip_diffim.numSciSrc')
-        self.assertIsInstance(meas, Measurement)
-        self.assertEqual(
-            meas.metric_name,
-            lsst.verify.Name(metric='ip_diffim.numSciSrc'))
-        self.assertEqual(meas.quantity, self.numTestSciSources * u.count)
-
-        meas = measureFractionDiaSourcesToSciSources(
-            self.butler,
-            dataIdDict=dataIdDict,
-            metricName='ip_diffim.fracDiaSrcToSciSrc')
-        self.assertIsInstance(meas, Measurement)
-        self.assertEqual(
-            meas.metric_name,
-            lsst.verify.Name(metric='ip_diffim.fracDiaSrcToSciSrc'))
-        self.assertEqual(meas.quantity,
-                         self.numTestDiaSources / self.numTestSciSources * u.dimensionless_unscaled)
 
     def testValidFromPpdb(self):
         # Need to have a valid ppdb object so that the internal sqlalchemy
@@ -236,75 +130,9 @@ class MeasureAssociationTestSuite(lsst.utils.tests.TestCase):
                 metric='association.numTotalUnassociatedDiaObjects'))
         self.assertEqual(meas.quantity, self.numTestDiaObjects * u.count)
 
-    def testNoButlerData(self):
-        """ Test attempting to create a measurement with data that the butler
-        does not contain.
-        """
-
-        with self.assertRaises(dafPersist.NoResults):
-            measureNumberSciSources(
-                self.butler,
-                dataIdDict={'visit': 1000, 'filter': 'r'},
-                metricName='ip_diffim.fracDiaSrcToSciSrc')
-
-        with self.assertRaises(dafPersist.NoResults):
-            measureFractionDiaSourcesToSciSources(
-                self.butler,
-                dataIdDict={'visit': 1000, 'filter': 'r'},
-                metricName='ip_diffim.fracDiaSrcToSciSrc')
-
-        with self.assertRaises(dafPersist.NoResults):
-            measureNumberSciSources(
-                self.butler,
-                dataIdDict={'visit': 1111, 'filter': 'g'},
-                metricName='ip_diffim.fracDiaSrcToSciSrc')
-
-        with self.assertRaises(dafPersist.NoResults):
-            measureFractionDiaSourcesToSciSources(
-                self.butler,
-                dataIdDict={'visit': 1111, 'filter': 'g'},
-                metricName='ip_diffim.fracDiaSrcToSciSrc')
-
-    def testMetadataNotCreated(self):
-        """ Test for the correct failure when measuring from non-existent
-        metadata.
-        """
-        metadata = self.assocTask.getFullMetadata()
-
-        meas = measureNumberNewDiaObjects(
-            metadata,
-            "association",
-            "association.numNewDIAObjects")
-        self.assertIsNone(meas)
-
     def testNoMetric(self):
         """Verify that trying to measure a nonexistent metric fails.
         """
-        testAssocResult = pipeBase.Struct(
-            n_updated_dia_objects=5,
-            n_new_dia_objects=6,
-            n_unassociated_dia_objects=7,)
-        self.assocTask._add_association_meta_data(testAssocResult)
-        metadata = self.assocTask.getFullMetadata()
-        with self.assertRaises(TypeError):
-            measureNumberNewDiaObjects(
-                metadata, "association", "foo.bar.FooBar")
-        with self.assertRaises(TypeError):
-            measureNumberUnassociatedDiaObjects(
-                metadata, "association", "foo.bar.FooBar")
-        with self.assertRaises(TypeError):
-            measureFractionUpdatedDiaObjects(
-                metadata, "association", "foo.bar.FooBar")
-
-        with self.assertRaises(TypeError):
-            measureNumberSciSources(
-                self.butler, dataId=dataIdDict,
-                metricName='foo.bar.FooBar')
-        with self.assertRaises(TypeError):
-            measureFractionDiaSourcesToSciSources(
-                self.butler, dataId=dataIdDict,
-                metricName='foo.bar.FooBar')
-
         with self.assertRaises(TypeError):
             measureTotalUnassociatedDiaObjects(
                 self.ppdb, metricName='foo.bar.FooBar')

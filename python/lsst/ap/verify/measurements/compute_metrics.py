@@ -33,42 +33,7 @@ import copy
 
 from lsst.verify.gen2tasks import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
-from .association import measureNumberNewDiaObjects, \
-    measureNumberUnassociatedDiaObjects, \
-    measureFractionUpdatedDiaObjects, \
-    measureNumberSciSources, \
-    measureFractionDiaSourcesToSciSources, \
-    measureTotalUnassociatedDiaObjects
-
-
-def measureFromMetadata(metadata):
-    """Compute all known metrics on Task metadata.
-
-    Parameters
-    ----------
-    metadata : `lsst.daf.base.PropertySet`
-        The metadata to search for measurements.
-
-    Returns
-    -------
-    measurements : iterable of `lsst.verify.Measurement`
-        all the measurements derived from ``metadata``. May be empty.
-    """
-    result = []
-
-    measurement = measureNumberNewDiaObjects(
-        metadata, 'apPipe:associator', 'ap_association.numNewDiaObjects')
-    if measurement is not None:
-        result.append(measurement)
-    measurement = measureFractionUpdatedDiaObjects(
-        metadata, 'apPipe:associator', 'ap_association.fracUpdatedDiaObjects')
-    if measurement is not None:
-        result.append(measurement)
-    measurement = measureNumberUnassociatedDiaObjects(
-        metadata, 'apPipe:associator', 'ap_association.numUnassociatedDiaObjects')
-    if measurement is not None:
-        result.append(measurement)
-    return result
+from .association import measureTotalUnassociatedDiaObjects
 
 
 def measureFromButlerRepo(metricsConfig, butler, rawDataId):
@@ -100,21 +65,9 @@ def measureFromButlerRepo(metricsConfig, butler, rawDataId):
     timingConfig.load(metricsConfig)
     _runMetricTasks(timingConfig, butler, dataId)
 
-    measurement = measureNumberSciSources(
-        butler, dataId, "ip_diffim.numSciSources")
-    if measurement is not None:
-        result.append(measurement)
-
-    measurement = measureFractionDiaSourcesToSciSources(
-        butler, dataId, "ip_diffim.fracDiaSourcesToSciSources")
-    if measurement is not None:
-        result.append(measurement)
-
     config = butler.get(ApPipeTask._DefaultName + '_config')
     result.extend(measureFromPpdb(config.ppdb))
 
-    metadata = butler.get(ApPipeTask._DefaultName + '_metadata', dataId=dataId)
-    result.extend(measureFromMetadata(metadata))
     return result
 
 
