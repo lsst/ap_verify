@@ -31,18 +31,15 @@ __all__ = ["measureFromButlerRepo"]
 
 import copy
 
-from lsst.verify.gen2tasks import MetricsControllerTask
 from lsst.ap.pipe import ApPipeTask
 from .association import measureTotalUnassociatedDiaObjects
 
 
-def measureFromButlerRepo(metricsConfig, butler, rawDataId):
+def measureFromButlerRepo(butler, rawDataId):
     """Create measurements from a butler repository.
 
     Parameters
     ----------
-    metricsConfig : `str`
-        A file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`.
     butler : `lsst.daf.persistence.Butler`
         A butler opened to the repository to read.
     rawDataId : `lsst.daf.persistence.DataId` or `dict`
@@ -61,34 +58,10 @@ def measureFromButlerRepo(metricsConfig, butler, rawDataId):
     if "hdu" in dataId:
         del dataId["hdu"]
 
-    timingConfig = MetricsControllerTask.ConfigClass()
-    timingConfig.load(metricsConfig)
-    _runMetricTasks(timingConfig, butler, dataId)
-
     config = butler.get(ApPipeTask._DefaultName + '_config')
     result.extend(measureFromPpdb(config.ppdb))
 
     return result
-
-
-def _runMetricTasks(config, butler, dataId):
-    """Run MetricControllerTask on a single dataset.
-
-    Parameters
-    ----------
-    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
-        The config for running `~lsst.verify.gen2tasks.MetricsControllerTask`.
-    butler : `lsst.daf.persistence.Butler`
-        A butler opened to ap_verify's output repository.
-    dataId : `lsst.daf.persistence.DataId` or `dict`
-        The data ID for this run of ``ap_verify``.
-    """
-    allMetricTasks = MetricsControllerTask(config)
-
-    # Don't particularly want calexps, but they tend to have compatible
-    # data IDs with other processed data types
-    processedDatarefs = butler.subset('calexp', dataId=dataId)
-    allMetricTasks.runDataRefs(processedDatarefs)
 
 
 def measureFromPpdb(configurable):

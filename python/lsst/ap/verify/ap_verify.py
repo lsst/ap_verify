@@ -30,11 +30,14 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
+import copy
 import os
 import re
 
 import lsst.log
 import lsst.utils
+from lsst.verify.gen2tasks import MetricsControllerTask
+
 from .dataset import Dataset
 from .ingestion import ingestDataset
 from .metrics import MetricsParser, checkSquashReady, AutoJob
@@ -57,9 +60,9 @@ class _InputOutputParser(argparse.ArgumentParser):
                           required=True, help='The source of data to pass through the pipeline.')
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
-        self.add_argument('--metrics-config',
+        self.add_argument('--image-metrics-config',
                           help='The config file specifying the metrics to measure. '
-                               'Defaults to config/default_metrics.py.')
+                               'Defaults to config/default_image_metrics.py.')
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -147,17 +150,75 @@ def _measureFinalProperties(workspace, dataIds, args):
     args : `argparse.Namespace`
         Command-line arguments, including arguments controlling output.
     """
-    if args.metrics_config is not None:
-        metricFile = args.metrics_config
-    else:
-        metricFile = os.path.join(lsst.utils.getPackageDir("ap_verify"),
-                                  "config", "default_metrics.py")
+    imageConfig = _getMetricsConfig(args.image_metrics_config, "default_image_metrics.py")
+    _runMetricTasks(imageConfig, dataIds.refList)
 
     for dataRef in dataIds.refList:
         with AutoJob(workspace.workButler, dataRef.dataId, args) as metricsJob:
-            measurements = measureFromButlerRepo(metricFile, workspace.analysisButler, dataRef.dataId)
+            measurements = measureFromButlerRepo(workspace.analysisButler, dataRef.dataId)
             for measurement in measurements:
                 metricsJob.measurements.insert(measurement)
+
+
+def _getMetricsConfig(userFile, defaultFile):
+    """Load a metrics config based on program settings.
+
+    Parameters
+    ----------
+    userFile : `str` or `None`
+        The path provided by the user for this config file.
+    defaultFile : `str`
+        The filename (not a path) of the default config file.
+
+    Returns
+    -------
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config from ``userFile`` if the user provided one, otherwise the
+        default config.
+    """
+    timingConfig = MetricsControllerTask.ConfigClass()
+
+    if userFile is not None:
+        timingConfig.load(userFile)
+    else:
+        timingConfig.load(os.path.join(lsst.utils.getPackageDir("ap_verify"), "config", defaultFile))
+    return timingConfig
+
+
+def _runMetricTasks(config, dataRefs):
+    """Run MetricControllerTask on a single dataset.
+
+    Parameters
+    ----------
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config for running `~lsst.verify.gen2tasks.MetricsControllerTask`.
+    dataRefs : `list` [`lsst.daf.persistence.ButlerDataRef`]
+        The data references over which to compute metrics. The granularity
+        determines the metric granularity; see
+        `MetricsControllerTask.runDataRef` for more details.
+    """
+    allMetricTasks = MetricsControllerTask(config)
+    allMetricTasks.runDataRefs([_sanitizeRef(ref) for ref in dataRefs])
+
+
+def _sanitizeRef(dataRef):
+    """Remove data ID tags that can cause problems when loading arbitrary
+    dataset types.
+
+    Parameters
+    ----------
+    dataRef : `lsst.daf.persistence.ButlerDataRef`
+        The dataref to sanitize.
+
+    Returns
+    -------
+    clean : `lsst.daf.persistence.ButlerDataRef`
+        A dataref that is safe to use.
+    """
+    newDataRef = copy.deepcopy(dataRef)
+    if "hdu" in newDataRef.dataId:
+        del newDataRef.dataId["hdu"]
+    return newDataRef
 
 
 def runApVerify(cmdLine=None):
