@@ -31,7 +31,7 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=412518 filter=g" --output workspaces/hits/ --silent
+   ap_verify.py --dataset HiTS2015 --id "visit=412518 filter=g" --output workspaces/hits/
 
 Here the inputs are:
 
@@ -41,8 +41,6 @@ Here the inputs are:
 while the output is:
 
 * :command:`workspaces/hits/` is the location where the pipeline will create any :ref:`Butler repositories<command-line-task-data-repo-using-uris>` necessary,
-
-* :command:`--silent` disables SQuaSH metrics reporting.
 
 This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 412518 through the entire AP pipeline.
 
@@ -79,10 +77,7 @@ After ``ap_verify`` has run, it will produce files named, by default, :file:`ap_
 The file name may be customized using the :option:`--metrics-file <ap_verify.py --metrics-file>` command-line argument.
 These files contain metric measurements in ``lsst.verify`` format, and can be loaded and read as described in the :doc:`lsst.verify documentation</modules/lsst.verify/index>` or in `SQR-019 <https://sqr-019.lsst.io>`_.
 
-Unless the :option:`--silent <ap_verify.py --silent>` argument is provided, ``ap_verify`` will also upload measurements to the `SQuaSH service <https://squash.lsst.codes/>`_ on completion.
-See the SQuaSH documentation for details.
-
-If the pipeline is interrupted by a fatal error, completed measurements will be saved to metrics files for debugging purposes, but nothing will get sent to SQuaSH.
+If the pipeline is interrupted by a fatal error, completed measurements will be saved to metrics files for debugging purposes.
 See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for details.
 
 Further reading

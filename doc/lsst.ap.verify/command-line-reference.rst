@@ -109,31 +109,5 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    **Do not report measurements to SQuaSH.**
 
-   Disables upload of measurements, so that ``ap_verify`` can be run for testing purposes by developers.
-
-   .. note::
-
-      Ingestion of :doc:`lsst.verify</modules/lsst.verify/index>` metrics is not yet supported by SQuaSH, so this flag should always be provided for now.
-
-
-.. _ap-verify-cmd-envvar:
-
-Environment variables
-=====================
-
-The :envvar:`SQUASH_USER`, :envvar:`SQUASH_PASSWORD`, and :envvar:`SQUASH_URL` environment variables are used by :doc:`the verify framework</modules/lsst.verify/index>` to configure SQuaSH upload.
-:envvar:`SQUASH_USER` and :envvar:`SQUASH_PASSWORD` must be defined in any environment where :command:`ap_verify.py` is run unless the :option:`--silent` flag is used.
-
-.. TODO: remove this once `lsst.verify` documents them, and update the link (DM-12849)
-
-.. envvar:: SQUASH_USER
-
-   User name to use for SQuaSH submissions.
-
-.. envvar:: SQUASH_PASSWORD
-
-   Unencrypted password for :envvar:`SQUASH_USER`.
-
-.. envvar:: SQUASH_URL
-
-   The location for a SQuaSH REST API. Defaults to the SQuaSH server at ``lsst.codes``.
+   This flag previously disabled upload of measurements to SQuaSH.
+   SQuaSH support has been removed from ap_verify, so this flag has no effect and is deprecated.

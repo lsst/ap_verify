@@ -85,5 +85,4 @@ ap_verify.py --dataset "${DATASET}" \
     --output "${WORKSPACE}" \
     --processes "${NUMPROC}" \
     --metrics-file "${WORKSPACE}/ap_verify.{dataId}.verify.json" \
-    --silent \
     &>> "${WORKSPACE}"/apVerify.log

@@ -28,42 +28,10 @@ processing of individual measurements. Measurements are handled in the
 ``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
-# TODO: module deprecated by lsst.verify.gen2tasks.MetricsControllerTask, remove after DM-16536
-__all__ = ["AutoJob", "MetricsParser", "checkSquashReady"]
+__all__ = ["MetricsParser"]
 
 import argparse
-import os
-
-import lsst.log
-import lsst.verify
-
-# Standard environment variables for interoperating with lsst.verify.dispatch_verify.py
-_ENV_USER = 'SQUASH_USER'
-_ENV_PASSWORD = 'SQUASH_PASSWORD'
-_ENV_URL = 'SQUASH_URL'
-_SQUASH_DEFAULT_URL = 'https://squash.lsst.codes/dashboard/api'
-
-
-def checkSquashReady(parsedCmdLine):
-    """Test whether the program has everything it needs for the SQuaSH API.
-
-    As a special case, this function never raises if `parsedCmdLine.submitMetrics` is unset.
-
-    Parameters
-    ----------
-    parsedCmdLine : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `MetricsParser`.
-
-    Raises
-    ------
-    RuntimeError
-        Raised if a configuration problem would prevent SQuaSH features from being used.
-    """
-    if parsedCmdLine.submitMetrics:
-        for var in (_ENV_USER, _ENV_PASSWORD):
-            if var not in os.environ:
-                raise RuntimeError('Need to define environment variable "%s" to use SQuaSH; '
-                                   'pass --silent to skip.' % var)
+import warnings
 
 
 class MetricsParser(argparse.ArgumentParser):
@@ -81,111 +49,32 @@ class MetricsParser(argparse.ArgumentParser):
             help="The file template to which to output metrics in lsst.verify "
                  "format; {dataId} will be replaced with the job\'s data ID. "
                  "Defaults to ap_verify.{dataId}.verify.json.")
-        self.add_argument('--silent', dest='submitMetrics', action='store_false',
-                          help='Do NOT submit metrics to SQuaSH (not yet implemented).')
-        # Config info we don't want on the command line
-        self.set_defaults(user=os.getenv(_ENV_USER), password=os.getenv(_ENV_PASSWORD),
-                          squashUrl=os.getenv(_ENV_URL, _SQUASH_DEFAULT_URL))
+        # TODO: remove --silent in DM-18120
+        self.add_argument('--silent', dest='submitMetrics', nargs=0,
+                          action=DeprecatedAction,
+                          deprecationReason="SQuaSH upload is no longer supported",
+                          help='Do NOT submit metrics to SQuaSH.')
 
 
-# borrowed from validate_drp
-def _extract_instrument_from_butler(butler):
-    """Extract the last part of the mapper name from a Butler repo.
-    'lsst.obs.lsstSim.lsstSimMapper.LsstSimMapper' -> 'LSSTSIM'
-    'lsst.obs.cfht.megacamMapper.MegacamMapper' -> 'CFHT'
-    'lsst.obs.decam.decamMapper.DecamMapper' -> 'DECAM'
-    'lsst.obs.hsc.hscMapper.HscMapper' -> 'HSC'
-    """
-    camera = butler.get('camera')
-    instrument = camera.getName()
-    return instrument.upper()
-
-
-class AutoJob:
-    """A wrapper for an `lsst.verify.Job` that automatically handles
-    initialization and shutdown.
-
-    When used in a `with... as...` statement, the wrapper assigns the
-    underlying job to the `as` target.
-
-    This object shall always attempt to dump metrics to disk, but shall only
-    submit to SQuaSH if the program ran without errors.
+class DeprecatedAction(argparse.Action):
+    """An `argparse.Action` that stores nothing and issues a `FutureWarning`.
 
     Parameters
     ----------
-    butler : `lsst.daf.persistence.Butler`
-        The repository associated with this ``Job``.
-    dataId : `lsst.daf.persistence.DataId` or `dict`
-        The data ID associated with this job. Must be complete, and represent
-        the finest granularity of any measurement that may be stored in
-        this job.
-    args : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `MetricsParser`.
+    args
+        Positional arguments to `argparse.Action`.
+    deprecationReason : `str`
+        A mandatory keyword argument to `argparse.ArgumentParser.add_argument`
+        that describes why the argument was deprecated. The explanation will be
+        printed if the argument is used.
+    kwargs
+        Keyword arguments to `argparse.Action`.
     """
+    def __init__(self, *args, deprecationReason, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.reason = deprecationReason
 
-    def __init__(self, butler, dataId, args):
-        self._job = lsst.verify.Job.load_metrics_package()
-
-        #  Insert job metadata including dataId
-        self._job.meta.update({'instrument': _extract_instrument_from_butler(butler)})
-        self._job.meta.update(dataId)
-
-        # Construct an OS-friendly string (i.e., no quotes, {}, or spaces)
-        idString = "_".join("%s%s" % (key, dataId[key]) for key in dataId)
-        self._outputFile = args.metrics_file.format(dataId=idString)
-
-        self._submitMetrics = args.submitMetrics
-        self._squashUser = args.user
-        self._squashPassword = args.password
-        self._squashUrl = args.squashUrl
-
-    def _saveMeasurements(self, fileName):
-        """Save a set of measurements for later use.
-
-        Parameters
-        ----------
-        fileName : `str`
-            The file to which the measurements will be saved.
-        """
-        self.job.write(fileName)
-
-    def _sendToSquash(self):
-        """Submit a set of measurements to the SQuaSH system.
-        """
-        self.job.dispatch(api_user=self._squashUser, api_password=self._squashPassword,
-                          api_url=self._squashUrl)
-
-    @property
-    def job(self):
-        """The Job contained by this object.
-        """
-        return self._job
-
-    def __enter__(self):
-        """Allow the underlying Job to be used in with statements.
-        """
-        return self.job
-
-    def __exit__(self, excType, excValue, traceback):
-        """Package all metric measurements performed during this run.
-
-        The measurements shall be exported to :file:`ap_verify.verify.json`,
-        and the metrics framework shall be shut down. If the context was
-        exited normally and the appropriate flag was passed to this object's
-        constructor, the measurements shall be sent to SQuaSH.
-        """
-        log = lsst.log.Log.getLogger('ap.verify.metrics.AutoJob.__exit__')
-
-        try:
-            self._saveMeasurements(self._outputFile)
-            log.debug('Wrote measurements to %s', self._outputFile)
-        except IOError:
-            if excType is None:
-                raise
-            else:
-                return False  # don't suppress `excValue`
-
-        if excType is None and self._submitMetrics:
-            self._sendToSquash()
-            log.info('Submitted measurements to SQuaSH')
-        return False
+    def __call__(self, _parser, _namespace, _values, option_string=None):
+        message = "%s has been deprecated, because %s. It will be removed in a future version." \
+            % (option_string, self.reason)
+        warnings.warn(message, category=FutureWarning)

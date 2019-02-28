@@ -29,7 +29,6 @@ Recovering Metrics From Partial Runs
 ``ap_verify`` produces some measurements even if the pipeline cannot run to completion.
 Specifically, if a task fails, any previously completed tasks that store measurements to disk will have done so.
 In addition, if a metric cannot be computed, ``ap_verify`` may attempt to store the values of the remaining metrics.
-Measurements from failed runs will never be submitted to SQuaSH.
 
 If the pipeline fails, ``ap_verify`` may not preserve measurements computed from the dataset.
 Once the framework for handling metrics is finalized, ``ap_verify`` may be able to offer a broader guarantee that does not depend on how or where any individual metric is implemented.

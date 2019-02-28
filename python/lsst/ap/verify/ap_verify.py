@@ -40,7 +40,7 @@ from lsst.verify.gen2tasks import MetricsControllerTask
 
 from .dataset import Dataset
 from .ingestion import ingestDataset
-from .metrics import MetricsParser, checkSquashReady
+from .metrics import MetricsParser
 from .pipeline_driver import ApPipeParser, runApPipe
 from .workspace import Workspace
 
@@ -237,7 +237,6 @@ def runApVerify(cmdLine=None):
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _ApVerifyParser().parse_args(args=cmdLine)
-    checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 
     workspace = Workspace(args.output)
