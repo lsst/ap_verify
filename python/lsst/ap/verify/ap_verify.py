@@ -30,17 +30,13 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
-import copy
-import os
 import re
 
 import lsst.log
-import lsst.utils
-from lsst.verify.gen2tasks import MetricsControllerTask
 
 from .dataset import Dataset
 from .ingestion import ingestDataset
-from .metrics import MetricsParser
+from .metrics import MetricsParser, computeMetrics
 from .pipeline_driver import ApPipeParser, runApPipe
 from .workspace import Workspace
 
@@ -59,12 +55,6 @@ class _InputOutputParser(argparse.ArgumentParser):
                           required=True, help='The source of data to pass through the pipeline.')
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
-        self.add_argument('--dataset-metrics-config',
-                          help='The config file specifying the dataset-level metrics to measure. '
-                               'Defaults to config/default_dataset_metrics.py.')
-        self.add_argument('--image-metrics-config',
-                          help='The config file specifying the image-level metrics to measure. '
-                               'Defaults to config/default_image_metrics.py.')
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -139,87 +129,6 @@ class _DatasetAction(argparse.Action):
         setattr(namespace, self.dest, Dataset(values))
 
 
-def _measureFinalProperties(workspace, dataIds, args):
-    """Measure any metrics that apply to the final result of the AP pipeline,
-    rather than to a particular processing stage.
-
-    Parameters
-    ----------
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location containing input and output repositories.
-    dataIds : `lsst.pipe.base.DataIdContainer`
-        The data IDs ap_pipe was run on. Each data ID must be complete.
-    args : `argparse.Namespace`
-        Command-line arguments, including arguments controlling output.
-    """
-    imageConfig = _getMetricsConfig(args.image_metrics_config, "default_image_metrics.py")
-    _runMetricTasks(imageConfig, dataIds.refList)
-
-    datasetConfig = _getMetricsConfig(args.dataset_metrics_config, "default_dataset_metrics.py")
-    _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")])
-
-
-def _getMetricsConfig(userFile, defaultFile):
-    """Load a metrics config based on program settings.
-
-    Parameters
-    ----------
-    userFile : `str` or `None`
-        The path provided by the user for this config file.
-    defaultFile : `str`
-        The filename (not a path) of the default config file.
-
-    Returns
-    -------
-    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
-        The config from ``userFile`` if the user provided one, otherwise the
-        default config.
-    """
-    timingConfig = MetricsControllerTask.ConfigClass()
-
-    if userFile is not None:
-        timingConfig.load(userFile)
-    else:
-        timingConfig.load(os.path.join(lsst.utils.getPackageDir("ap_verify"), "config", defaultFile))
-    return timingConfig
-
-
-def _runMetricTasks(config, dataRefs):
-    """Run MetricControllerTask on a single dataset.
-
-    Parameters
-    ----------
-    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
-        The config for running `~lsst.verify.gen2tasks.MetricsControllerTask`.
-    dataRefs : `list` [`lsst.daf.persistence.ButlerDataRef`]
-        The data references over which to compute metrics. The granularity
-        determines the metric granularity; see
-        `MetricsControllerTask.runDataRef` for more details.
-    """
-    allMetricTasks = MetricsControllerTask(config)
-    allMetricTasks.runDataRefs([_sanitizeRef(ref) for ref in dataRefs])
-
-
-def _sanitizeRef(dataRef):
-    """Remove data ID tags that can cause problems when loading arbitrary
-    dataset types.
-
-    Parameters
-    ----------
-    dataRef : `lsst.daf.persistence.ButlerDataRef`
-        The dataref to sanitize.
-
-    Returns
-    -------
-    clean : `lsst.daf.persistence.ButlerDataRef`
-        A dataref that is safe to use.
-    """
-    newDataRef = copy.deepcopy(dataRef)
-    if "hdu" in newDataRef.dataId:
-        del newDataRef.dataId["hdu"]
-    return newDataRef
-
-
 def runApVerify(cmdLine=None):
     """Execute the AP pipeline while handling metrics.
 
@@ -244,7 +153,7 @@ def runApVerify(cmdLine=None):
 
     log.info('Running pipeline...')
     expandedDataIds = runApPipe(workspace, args)
-    _measureFinalProperties(workspace, expandedDataIds, args)
+    computeMetrics(workspace, expandedDataIds, args)
 
 
 def runIngestion(cmdLine=None):

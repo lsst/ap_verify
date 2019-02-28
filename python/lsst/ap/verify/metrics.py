@@ -28,10 +28,15 @@ processing of individual measurements. Measurements are handled in the
 ``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
-__all__ = ["MetricsParser"]
+__all__ = ["MetricsParser", "computeMetrics"]
 
 import argparse
+import copy
+import os
 import warnings
+
+import lsst.utils
+from lsst.verify.gen2tasks import MetricsControllerTask
 
 
 class MetricsParser(argparse.ArgumentParser):
@@ -54,6 +59,12 @@ class MetricsParser(argparse.ArgumentParser):
                           action=DeprecatedAction,
                           deprecationReason="SQuaSH upload is no longer supported",
                           help='Do NOT submit metrics to SQuaSH.')
+        self.add_argument('--dataset-metrics-config',
+                          help='The config file specifying the dataset-level metrics to measure. '
+                               'Defaults to config/default_dataset_metrics.py.')
+        self.add_argument('--image-metrics-config',
+                          help='The config file specifying the image-level metrics to measure. '
+                               'Defaults to config/default_image_metrics.py.')
 
 
 class DeprecatedAction(argparse.Action):
@@ -78,3 +89,93 @@ class DeprecatedAction(argparse.Action):
         message = "%s has been deprecated, because %s. It will be removed in a future version." \
             % (option_string, self.reason)
         warnings.warn(message, category=FutureWarning)
+
+
+def computeMetrics(workspace, dataIds, args):
+    """Measure any metrics that apply to the final result of the AP pipeline,
+    rather than to a particular processing stage.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing input and output repositories.
+    dataIds : `lsst.pipe.base.DataIdContainer`
+        The data IDs ap_pipe was run on. Each data ID must be complete.
+    args : `argparse.Namespace`
+        Command-line arguments, including arguments controlling output.
+    """
+    imageConfig = _getMetricsConfig(args.image_metrics_config,
+                                    "default_image_metrics.py",
+                                    args.metrics_file)
+    _runMetricTasks(imageConfig, dataIds.refList)
+
+    datasetConfig = _getMetricsConfig(args.dataset_metrics_config,
+                                      "default_dataset_metrics.py",
+                                      args.metrics_file)
+    _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")])
+
+
+def _getMetricsConfig(userFile, defaultFile, metricsOutputTemplate=None):
+    """Load a metrics config based on program settings.
+
+    Parameters
+    ----------
+    userFile : `str` or `None`
+        The path provided by the user for this config file.
+    defaultFile : `str`
+        The filename (not a path) of the default config file.
+    metricsOutputTemplate : `str` or `None`
+        The files to which to write metrics. If not `None`, this argument
+        overrides any output files set by either config file.
+
+    Returns
+    -------
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config from ``userFile`` if the user provided one, otherwise the
+        default config.
+    """
+    timingConfig = MetricsControllerTask.ConfigClass()
+
+    if userFile is not None:
+        timingConfig.load(userFile)
+    else:
+        timingConfig.load(os.path.join(lsst.utils.getPackageDir("ap_verify"), "config", defaultFile))
+    if metricsOutputTemplate:
+        timingConfig.jobFileTemplate = metricsOutputTemplate
+    return timingConfig
+
+
+def _runMetricTasks(config, dataRefs):
+    """Run MetricControllerTask on a single dataset.
+
+    Parameters
+    ----------
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config for running `~lsst.verify.gen2tasks.MetricsControllerTask`.
+    dataRefs : `list` [`lsst.daf.persistence.ButlerDataRef`]
+        The data references over which to compute metrics. The granularity
+        determines the metric granularity; see
+        `MetricsControllerTask.runDataRef` for more details.
+    """
+    allMetricTasks = MetricsControllerTask(config)
+    allMetricTasks.runDataRefs([_sanitizeRef(ref) for ref in dataRefs])
+
+
+def _sanitizeRef(dataRef):
+    """Remove data ID tags that can cause problems when loading arbitrary
+    dataset types.
+
+    Parameters
+    ----------
+    dataRef : `lsst.daf.persistence.ButlerDataRef`
+        The dataref to sanitize.
+
+    Returns
+    -------
+    clean : `lsst.daf.persistence.ButlerDataRef`
+        A dataref that is safe to use.
+    """
+    newDataRef = copy.deepcopy(dataRef)
+    if "hdu" in newDataRef.dataId:
+        del newDataRef.dataId["hdu"]
+    return newDataRef

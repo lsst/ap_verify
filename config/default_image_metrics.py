@@ -3,8 +3,6 @@ from lsst.ap.verify.measurements.profiling import TimingMetricConfig
 import lsst.ip.diffim.metrics  # noqa: F401
 import lsst.ap.association.metrics  # noqa: F401
 
-config.jobFileTemplate = "ap_verify.metricTask{id}.{dataId}.verify.json"
-
 metadataConfigs = ["numNewDiaObjects",
                    "numUnassociatedDiaObjects",
                    "fracUpdatedDiaObjects"]
