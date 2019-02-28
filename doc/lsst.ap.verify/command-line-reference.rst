@@ -58,6 +58,15 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    Allowed names can be queried using the :option:`--help` argument.
 
+.. option:: --dataset-metrics-config <filename>
+
+   **Input dataset-level metrics config.**
+
+   A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
+   If this argument is omitted, :file:`config/default_dataset_metrics.py` will be used.
+
+   Use :option:`--image-metrics-config` to configure image-level metrics instead.
+
 .. option:: -h, --help
 
    **Print help.**
@@ -76,6 +85,8 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
    If this argument is omitted, :file:`config/default_image_metrics.py` will be used.
+
+   Use :option:`--dataset-metrics-config` to configure dataset-level metrics instead.
 
 .. option:: --metrics-file <filename>
 

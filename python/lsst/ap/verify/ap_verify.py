@@ -40,9 +40,8 @@ from lsst.verify.gen2tasks import MetricsControllerTask
 
 from .dataset import Dataset
 from .ingestion import ingestDataset
-from .metrics import MetricsParser, checkSquashReady, AutoJob
+from .metrics import MetricsParser, checkSquashReady
 from .pipeline_driver import ApPipeParser, runApPipe
-from .measurements import measureFromButlerRepo
 from .workspace import Workspace
 
 
@@ -60,8 +59,11 @@ class _InputOutputParser(argparse.ArgumentParser):
                           required=True, help='The source of data to pass through the pipeline.')
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
+        self.add_argument('--dataset-metrics-config',
+                          help='The config file specifying the dataset-level metrics to measure. '
+                               'Defaults to config/default_dataset_metrics.py.')
         self.add_argument('--image-metrics-config',
-                          help='The config file specifying the metrics to measure. '
+                          help='The config file specifying the image-level metrics to measure. '
                                'Defaults to config/default_image_metrics.py.')
 
 
@@ -153,11 +155,8 @@ def _measureFinalProperties(workspace, dataIds, args):
     imageConfig = _getMetricsConfig(args.image_metrics_config, "default_image_metrics.py")
     _runMetricTasks(imageConfig, dataIds.refList)
 
-    for dataRef in dataIds.refList:
-        with AutoJob(workspace.workButler, dataRef.dataId, args) as metricsJob:
-            measurements = measureFromButlerRepo(workspace.analysisButler, dataRef.dataId)
-            for measurement in measurements:
-                metricsJob.measurements.insert(measurement)
+    datasetConfig = _getMetricsConfig(args.dataset_metrics_config, "default_dataset_metrics.py")
+    _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")])
 
 
 def _getMetricsConfig(userFile, defaultFile):
