@@ -1,4 +1,4 @@
-from lsst.ap.verify.measurements.profiling import TimingMetricConfig
+from lsst.verify.tasks.commonMetrics import TimingMetricConfig
 # Import these modules to ensure the metrics are registered
 import lsst.ip.diffim.metrics  # noqa: F401
 import lsst.ap.association.metrics  # noqa: F401
