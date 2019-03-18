@@ -7,7 +7,7 @@ lsst.ap.verify
 ##############
 
 The ``lsst.ap.verify`` package provides an executable python program for pipeline verification.
-It runs the alert production pipeline (encapsulated in the :doc:`lsst.ap.pipe </modules/lsst.ap.pipe/index>` package), computes :doc:`lsst.verify </modules/lsst.verify/index>` metrics on both the pipeline's state and its output, and works with the `SQuaSH <https://squash.lsst.codes/>`_ system to allow their monitoring and analysis.
+It runs the alert production pipeline (encapsulated in the :doc:`lsst.ap.pipe </modules/lsst.ap.pipe/index>` package) and computes :doc:`lsst.verify </modules/lsst.verify/index>` metrics on both the pipeline's state and its output.
 
 ``ap_verify`` is designed to work with small, standardized :doc:`datasets<datasets>` that can be interchanged to test the Stack's performance under different conditions.
 To ensure consistent results, it :doc:`runs the entire AP pipeline<running>` as a single unit, from data ingestion to source association.
@@ -39,6 +39,35 @@ You can find Jira issues for this module under the `ap_verify <https://jira.lsst
    :maxdepth: 1
 
    new-metrics
+
+Task reference
+==============
+
+.. _lsst.ap.verify-command-line-tasks:
+
+Command-line tasks
+------------------
+
+.. lsst-cmdlinetasks::
+   :root: lsst.ap.verify
+
+.. _lsst.ap.verify-tasks:
+
+Tasks
+-----
+
+.. lsst-tasks::
+   :root: lsst.ap.verify
+   :toctree: tasks
+
+.. _lsst.ap.verify-configs:
+
+Configurations
+--------------
+
+.. lsst-configs::
+   :root: lsst.ap.verify
+   :toctree: configs
 
 .. _lsst.ap.verify-pyapi:
 

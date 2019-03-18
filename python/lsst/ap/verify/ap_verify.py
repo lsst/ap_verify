@@ -30,16 +30,14 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
-import os
 import re
 
 import lsst.log
-import lsst.utils
+
 from .dataset import Dataset
 from .ingestion import ingestDataset
-from .metrics import MetricsParser, checkSquashReady, AutoJob
+from .metrics import MetricsParser, computeMetrics
 from .pipeline_driver import ApPipeParser, runApPipe
-from .measurements import measureFromButlerRepo
 from .workspace import Workspace
 
 
@@ -57,9 +55,6 @@ class _InputOutputParser(argparse.ArgumentParser):
                           required=True, help='The source of data to pass through the pipeline.')
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
-        self.add_argument('--metrics-config',
-                          help='The config file specifying the metrics to measure. '
-                               'Defaults to config/default_metrics.py.')
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -134,32 +129,6 @@ class _DatasetAction(argparse.Action):
         setattr(namespace, self.dest, Dataset(values))
 
 
-def _measureFinalProperties(workspace, dataIds, args):
-    """Measure any metrics that apply to the final result of the AP pipeline,
-    rather than to a particular processing stage.
-
-    Parameters
-    ----------
-    workspace : `lsst.ap.verify.workspace.Workspace`
-        The abstract location containing input and output repositories.
-    dataIds : `lsst.pipe.base.DataIdContainer`
-        The data IDs ap_pipe was run on. Each data ID must be complete.
-    args : `argparse.Namespace`
-        Command-line arguments, including arguments controlling output.
-    """
-    if args.metrics_config is not None:
-        metricFile = args.metrics_config
-    else:
-        metricFile = os.path.join(lsst.utils.getPackageDir("ap_verify"),
-                                  "config", "default_metrics.py")
-
-    for dataRef in dataIds.refList:
-        with AutoJob(workspace.workButler, dataRef.dataId, args) as metricsJob:
-            measurements = measureFromButlerRepo(metricFile, workspace.analysisButler, dataRef.dataId)
-            for measurement in measurements:
-                metricsJob.measurements.insert(measurement)
-
-
 def runApVerify(cmdLine=None):
     """Execute the AP pipeline while handling metrics.
 
@@ -177,7 +146,6 @@ def runApVerify(cmdLine=None):
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _ApVerifyParser().parse_args(args=cmdLine)
-    checkSquashReady(args)
     log.debug('Command-line arguments: %s', args)
 
     workspace = Workspace(args.output)
@@ -185,7 +153,7 @@ def runApVerify(cmdLine=None):
 
     log.info('Running pipeline...')
     expandedDataIds = runApPipe(workspace, args)
-    _measureFinalProperties(workspace, expandedDataIds, args)
+    computeMetrics(workspace, expandedDataIds, args)
 
 
 def runIngestion(cmdLine=None):

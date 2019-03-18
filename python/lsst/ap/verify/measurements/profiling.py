@@ -26,79 +26,31 @@
 All measurements assume the necessary information is present in a task's metadata.
 """
 
-__all__ = ["measureRuntime", "TimingMetricConfig", "TimingMetricTask"]
+__all__ = ["TimingMetricConfig", "TimingMetricTask"]
 
 import astropy.units as u
 
 import lsst.pex.config as pexConfig
-from lsst.pipe.base import Struct, InputDatasetField
-from lsst.verify import Measurement, Name, MetricComputationError
-from lsst.verify.gen2tasks import registerMultiple, MetricTask
+from lsst.verify import Measurement, Name
+from lsst.verify.gen2tasks import registerMultiple
+from lsst.verify.tasks import MetricComputationError, MetadataMetricTask
 
 
-def measureRuntime(metadata, taskName, metricName):
-    """Compute a wall-clock measurement from metadata provided
-    by @`lsst.pipe.base.timeMethod`.
-
-    Parameters
-    ----------
-    metadata : `lsst.daf.base.PropertySet`
-        The metadata to search for timing information.
-    taskName : `str`
-        The name of the task, e.g., "processCcd". Subtask names must be the
-        ones assigned by the parent task and may be disambiguated using the
-        parent task name, as in "processCcd:calibrate".
-        If `taskName` matches multiple runs of a subtask in different
-        contexts, the information for only one run will be provided.
-    metricName : `str`
-        The fully qualified name of the metric being measured, e.g.,
-        "pipe_tasks.ProcessCcdTime"
-
-    Returns
-    -------
-    measurement : `lsst.verify.Measurement`
-        the value of `metricName`, or `None` if the timing information for
-        `taskName` is not present in `metadata`
-    """
-    # Some tasks have only run, others only runDataRef
-    # If both are present, run takes precedence
-    for methodName in ("run", "runDataRef"):
-        endKey = "%s.%sEndCpuTime" % (taskName, methodName)
-
-        keys = metadata.paramNames(topLevelOnly=False)
-        timedMethods = [(key.replace("EndCpuTime", "StartCpuTime"), key)
-                        for key in keys if key.endswith(endKey)]
-        if timedMethods:
-            start, end = (metadata.getAsDouble(key) for key in timedMethods[0])
-            meas = Measurement(metricName, (end - start) * u.second)
-            meas.notes['estimator'] = 'pipe.base.timeMethod'
-            return meas
-
-    return None
-
-
-class TimingMetricConfig(MetricTask.ConfigClass):
+class TimingMetricConfig(MetadataMetricTask.ConfigClass):
     """Information that distinguishes one timing metric from another.
     """
-    metadata = InputDatasetField(
-        doc="The timed top-level task's metadata. The name must be set to the "
-            "metadata's butler type, such as 'processCcd_metadata'.",
-        storageClass="PropertySet",
-        dimensions=["Instrument", "Exposure", "Detector"],
-    )
     target = pexConfig.Field(
         dtype=str,
         doc="The method to time, optionally prefixed by one or more tasks "
-            "in the format of `lsst.pipe.base.Task.getFullMetadata()`. "
-            "The times of all matching methods/tasks are added together.")
+            "in the format of `lsst.pipe.base.Task.getFullMetadata()`.")
     metric = pexConfig.Field(
         dtype=str,
         doc="The fully qualified name of the metric to store the timing information.")
 
 
 @registerMultiple("timing")
-class TimingMetricTask(MetricTask):
-    """A Task that measures a timing metric using metadata produced by the
+class TimingMetricTask(MetadataMetricTask):
+    """A Task that computes a wall-clock time using metadata produced by the
     `lsst.pipe.base.timeMethod` decorator.
 
     Parameters
@@ -113,12 +65,8 @@ class TimingMetricTask(MetricTask):
     _DefaultName = "timingMetric"
 
     @classmethod
-    def _getInputMetadataKeyRoot(cls, config):
-        """Get a search string for the metadata.
-
-        The string contains the name of the target method, optionally
-        prefixed by one or more tasks in the format of
-        `lsst.pipe.base.Task.getFullMetadata()`.
+    def getInputMetadataKeys(cls, config):
+        """Get search strings for the metadata.
 
         Parameters
         ----------
@@ -127,50 +75,39 @@ class TimingMetricTask(MetricTask):
 
         Returns
         -------
-        keyRoot : `str`
-            A string identifying the class(es) and method(s) for this task.
+        keys : `dict`
+            A dictionary of keys, optionally prefixed by one or more tasks in
+            the format of `lsst.pipe.base.Task.getFullMetadata()`.
+
+             ``"StartTime"``
+                 The key for when the target method started (`str`).
+             ``"EndTime"``
+                 The key for when the target method ended (`str`).
         """
-        return config.target
+        keyBase = config.target
+        return {"StartTime": keyBase + "StartCpuTime",
+                "EndTime": keyBase + "EndCpuTime"}
 
-    @staticmethod
-    def _searchMetadataKeys(metadata, keyFragment):
-        """Search the metadata for all keys matching a substring.
-
-        Parameters
-        ----------
-        metadata : `lsst.daf.base.PropertySet`
-            A metadata object with task-qualified keys as returned by
-            `lsst.pipe.base.Task.getFullMetadata()`.
-        keyFragment : `str`
-            A substring for a full metadata key.
-
-        Returns
-        -------
-        keys : `set` of `str`
-            All keys in ``metadata`` that have ``keyFragment`` as a substring.
-        """
-        keys = metadata.paramNames(topLevelOnly=False)
-        return {key for key in keys if keyFragment in key}
-
-    def run(self, metadata):
+    def makeMeasurement(self, timings):
         """Compute a wall-clock measurement from metadata provided by
         `lsst.pipe.base.timeMethod`.
 
         Parameters
         ----------
-        metadata : iterable of `lsst.daf.base.PropertySet`
-            A collection of metadata objects, one for each unit of science
-            processing to be incorporated into this metric. Its elements
-            may be `None` to represent missing data.
+        timings : sequence [`dict` [`str`, any]]
+            A list where each element corresponds to a metadata object passed
+            to `run`. Each `dict` has the following keys:
+
+             ``"StartTime"``
+                 The time the target method started (`float` or `None`).
+             ``"EndTime"``
+                 The time the target method ended (`float` or `None`).
 
         Returns
         -------
-        result : `lsst.pipe.base.Struct`
-            A `~lsst.pipe.base.Struct` containing the following component:
-
-            - ``measurement``: the total running time of the target method
-              across all elements of ``metadata`` (`lsst.verify.Measurement`
-              or `None`)
+        measurement : `lsst.verify.Measurement` or `None`
+            The the total running time of the target method across all
+            elements of ``metadata``.
 
         Raises
         ------
@@ -179,40 +116,27 @@ class TimingMetricTask(MetricTask):
 
         Notes
         -----
-        This method does not return a measurement if any element of
-        ``metadata`` is ``None``. The reason for this policy is that if a
-        science processing run was aborted without writing metadata, then any
-        timing measurement cannot be compared to other results anyway. This
-        method also does not return a measurement if no timing information was
+        This method does not return a measurement if no timing information was
         provided by any of the metadata.
         """
-        keyBase = self._getInputMetadataKeyRoot(self.config)
-        endBase = keyBase + "EndCpuTime"
-
         timingFound = False  # some timings are indistinguishable from 0, so don't test totalTime > 0
         totalTime = 0.0
-        for singleMetadata in metadata:
-            if singleMetadata is not None:
-                matchingKeys = TimingMetricTask._searchMetadataKeys(singleMetadata, endBase)
-                for endKey in matchingKeys:
-                    startKey = endKey.replace("EndCpuTime", "StartCpuTime")
-                    try:
-                        start, end = (singleMetadata.getAsDouble(key) for key in (startKey, endKey))
-                    except (LookupError, TypeError) as e:
-                        raise MetricComputationError("Invalid metadata") from e
-                    totalTime += end - start
+        for singleRun in timings:
+            if singleRun["StartTime"] is not None or singleRun["EndTime"] is not None:
+                try:
+                    totalTime += singleRun["EndTime"] - singleRun["StartTime"]
                     timingFound = True
-            else:
-                self.log.warn("At least one task run did not write metadata; aborting.")
-                return Struct(measurement=None)
+                except TypeError:
+                    raise MetricComputationError("Invalid metadata")
+            # If both are None, assume the method was not run that time
 
         if timingFound:
             meas = Measurement(self.getOutputMetricName(self.config), totalTime * u.second)
             meas.notes['estimator'] = 'pipe.base.timeMethod'
+            return meas
         else:
-            self.log.info("Nothing to do: no timing information for %s found.", keyBase)
-            meas = None
-        return Struct(measurement=meas)
+            self.log.info("Nothing to do: no timing information for %s found.", self.config.target)
+            return None
 
     @classmethod
     def getOutputMetricName(cls, config):

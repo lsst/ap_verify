@@ -28,42 +28,15 @@ processing of individual measurements. Measurements are handled in the
 ``ap_verify`` module or in the appropriate pipeline step, as appropriate.
 """
 
-# TODO: module deprecated by lsst.verify.gen2tasks.MetricsControllerTask, remove after DM-16536
-__all__ = ["AutoJob", "MetricsParser", "checkSquashReady"]
+__all__ = ["MetricsParser", "computeMetrics"]
 
 import argparse
+import copy
 import os
+import warnings
 
-import lsst.log
-import lsst.verify
-
-# Standard environment variables for interoperating with lsst.verify.dispatch_verify.py
-_ENV_USER = 'SQUASH_USER'
-_ENV_PASSWORD = 'SQUASH_PASSWORD'
-_ENV_URL = 'SQUASH_URL'
-_SQUASH_DEFAULT_URL = 'https://squash.lsst.codes/dashboard/api'
-
-
-def checkSquashReady(parsedCmdLine):
-    """Test whether the program has everything it needs for the SQuaSH API.
-
-    As a special case, this function never raises if `parsedCmdLine.submitMetrics` is unset.
-
-    Parameters
-    ----------
-    parsedCmdLine : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `MetricsParser`.
-
-    Raises
-    ------
-    RuntimeError
-        Raised if a configuration problem would prevent SQuaSH features from being used.
-    """
-    if parsedCmdLine.submitMetrics:
-        for var in (_ENV_USER, _ENV_PASSWORD):
-            if var not in os.environ:
-                raise RuntimeError('Need to define environment variable "%s" to use SQuaSH; '
-                                   'pass --silent to skip.' % var)
+import lsst.utils
+from lsst.verify.gen2tasks import MetricsControllerTask
 
 
 class MetricsParser(argparse.ArgumentParser):
@@ -81,111 +54,128 @@ class MetricsParser(argparse.ArgumentParser):
             help="The file template to which to output metrics in lsst.verify "
                  "format; {dataId} will be replaced with the job\'s data ID. "
                  "Defaults to ap_verify.{dataId}.verify.json.")
-        self.add_argument('--silent', dest='submitMetrics', action='store_false',
-                          help='Do NOT submit metrics to SQuaSH (not yet implemented).')
-        # Config info we don't want on the command line
-        self.set_defaults(user=os.getenv(_ENV_USER), password=os.getenv(_ENV_PASSWORD),
-                          squashUrl=os.getenv(_ENV_URL, _SQUASH_DEFAULT_URL))
+        # TODO: remove --silent in DM-18120
+        self.add_argument('--silent', dest='submitMetrics', nargs=0,
+                          action=DeprecatedAction,
+                          deprecationReason="SQuaSH upload is no longer supported",
+                          help='Do NOT submit metrics to SQuaSH.')
+        self.add_argument('--dataset-metrics-config',
+                          help='The config file specifying the dataset-level metrics to measure. '
+                               'Defaults to config/default_dataset_metrics.py.')
+        self.add_argument('--image-metrics-config',
+                          help='The config file specifying the image-level metrics to measure. '
+                               'Defaults to config/default_image_metrics.py.')
 
 
-# borrowed from validate_drp
-def _extract_instrument_from_butler(butler):
-    """Extract the last part of the mapper name from a Butler repo.
-    'lsst.obs.lsstSim.lsstSimMapper.LsstSimMapper' -> 'LSSTSIM'
-    'lsst.obs.cfht.megacamMapper.MegacamMapper' -> 'CFHT'
-    'lsst.obs.decam.decamMapper.DecamMapper' -> 'DECAM'
-    'lsst.obs.hsc.hscMapper.HscMapper' -> 'HSC'
-    """
-    camera = butler.get('camera')
-    instrument = camera.getName()
-    return instrument.upper()
-
-
-class AutoJob:
-    """A wrapper for an `lsst.verify.Job` that automatically handles
-    initialization and shutdown.
-
-    When used in a `with... as...` statement, the wrapper assigns the
-    underlying job to the `as` target.
-
-    This object shall always attempt to dump metrics to disk, but shall only
-    submit to SQuaSH if the program ran without errors.
+class DeprecatedAction(argparse.Action):
+    """An `argparse.Action` that stores nothing and issues a `FutureWarning`.
 
     Parameters
     ----------
-    butler : `lsst.daf.persistence.Butler`
-        The repository associated with this ``Job``.
-    dataId : `lsst.daf.persistence.DataId` or `dict`
-        The data ID associated with this job. Must be complete, and represent
-        the finest granularity of any measurement that may be stored in
-        this job.
-    args : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `MetricsParser`.
+    args
+        Positional arguments to `argparse.Action`.
+    deprecationReason : `str`
+        A mandatory keyword argument to `argparse.ArgumentParser.add_argument`
+        that describes why the argument was deprecated. The explanation will be
+        printed if the argument is used.
+    kwargs
+        Keyword arguments to `argparse.Action`.
     """
+    def __init__(self, *args, deprecationReason, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.reason = deprecationReason
 
-    def __init__(self, butler, dataId, args):
-        self._job = lsst.verify.Job.load_metrics_package()
+    def __call__(self, _parser, _namespace, _values, option_string=None):
+        message = "%s has been deprecated, because %s. It will be removed in a future version." \
+            % (option_string, self.reason)
+        warnings.warn(message, category=FutureWarning)
 
-        #  Insert job metadata including dataId
-        self._job.meta.update({'instrument': _extract_instrument_from_butler(butler)})
-        self._job.meta.update(dataId)
 
-        # Construct an OS-friendly string (i.e., no quotes, {}, or spaces)
-        idString = "_".join("%s%s" % (key, dataId[key]) for key in dataId)
-        self._outputFile = args.metrics_file.format(dataId=idString)
+def computeMetrics(workspace, dataIds, args):
+    """Measure any metrics that apply to the final result of the AP pipeline,
+    rather than to a particular processing stage.
 
-        self._submitMetrics = args.submitMetrics
-        self._squashUser = args.user
-        self._squashPassword = args.password
-        self._squashUrl = args.squashUrl
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location containing input and output repositories.
+    dataIds : `lsst.pipe.base.DataIdContainer`
+        The data IDs ap_pipe was run on. Each data ID must be complete.
+    args : `argparse.Namespace`
+        Command-line arguments, including arguments controlling output.
+    """
+    imageConfig = _getMetricsConfig(args.image_metrics_config,
+                                    "default_image_metrics.py",
+                                    args.metrics_file)
+    _runMetricTasks(imageConfig, dataIds.refList)
 
-    def _saveMeasurements(self, fileName):
-        """Save a set of measurements for later use.
+    datasetConfig = _getMetricsConfig(args.dataset_metrics_config,
+                                      "default_dataset_metrics.py",
+                                      args.metrics_file)
+    _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")])
 
-        Parameters
-        ----------
-        fileName : `str`
-            The file to which the measurements will be saved.
-        """
-        self.job.write(fileName)
 
-    def _sendToSquash(self):
-        """Submit a set of measurements to the SQuaSH system.
-        """
-        self.job.dispatch(api_user=self._squashUser, api_password=self._squashPassword,
-                          api_url=self._squashUrl)
+def _getMetricsConfig(userFile, defaultFile, metricsOutputTemplate=None):
+    """Load a metrics config based on program settings.
 
-    @property
-    def job(self):
-        """The Job contained by this object.
-        """
-        return self._job
+    Parameters
+    ----------
+    userFile : `str` or `None`
+        The path provided by the user for this config file.
+    defaultFile : `str`
+        The filename (not a path) of the default config file.
+    metricsOutputTemplate : `str` or `None`
+        The files to which to write metrics. If not `None`, this argument
+        overrides any output files set by either config file.
 
-    def __enter__(self):
-        """Allow the underlying Job to be used in with statements.
-        """
-        return self.job
+    Returns
+    -------
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config from ``userFile`` if the user provided one, otherwise the
+        default config.
+    """
+    timingConfig = MetricsControllerTask.ConfigClass()
 
-    def __exit__(self, excType, excValue, traceback):
-        """Package all metric measurements performed during this run.
+    if userFile is not None:
+        timingConfig.load(userFile)
+    else:
+        timingConfig.load(os.path.join(lsst.utils.getPackageDir("ap_verify"), "config", defaultFile))
+    if metricsOutputTemplate:
+        timingConfig.jobFileTemplate = metricsOutputTemplate
+    return timingConfig
 
-        The measurements shall be exported to :file:`ap_verify.verify.json`,
-        and the metrics framework shall be shut down. If the context was
-        exited normally and the appropriate flag was passed to this object's
-        constructor, the measurements shall be sent to SQuaSH.
-        """
-        log = lsst.log.Log.getLogger('ap.verify.metrics.AutoJob.__exit__')
 
-        try:
-            self._saveMeasurements(self._outputFile)
-            log.debug('Wrote measurements to %s', self._outputFile)
-        except IOError:
-            if excType is None:
-                raise
-            else:
-                return False  # don't suppress `excValue`
+def _runMetricTasks(config, dataRefs):
+    """Run MetricControllerTask on a single dataset.
 
-        if excType is None and self._submitMetrics:
-            self._sendToSquash()
-            log.info('Submitted measurements to SQuaSH')
-        return False
+    Parameters
+    ----------
+    config : `lsst.verify.gen2tasks.MetricsControllerConfig`
+        The config for running `~lsst.verify.gen2tasks.MetricsControllerTask`.
+    dataRefs : `list` [`lsst.daf.persistence.ButlerDataRef`]
+        The data references over which to compute metrics. The granularity
+        determines the metric granularity; see
+        `MetricsControllerTask.runDataRef` for more details.
+    """
+    allMetricTasks = MetricsControllerTask(config)
+    allMetricTasks.runDataRefs([_sanitizeRef(ref) for ref in dataRefs])
+
+
+def _sanitizeRef(dataRef):
+    """Remove data ID tags that can cause problems when loading arbitrary
+    dataset types.
+
+    Parameters
+    ----------
+    dataRef : `lsst.daf.persistence.ButlerDataRef`
+        The dataref to sanitize.
+
+    Returns
+    -------
+    clean : `lsst.daf.persistence.ButlerDataRef`
+        A dataref that is safe to use.
+    """
+    newDataRef = copy.deepcopy(dataRef)
+    if "hdu" in newDataRef.dataId:
+        del newDataRef.dataId["hdu"]
+    return newDataRef
