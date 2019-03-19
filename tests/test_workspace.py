@@ -49,7 +49,7 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         self.assertEqual(ancestor, _canonDir)
 
     def _assertNotInDir(self, path, baseDir):
-        """Test that ``path`` is a subpath of ``baseDir``.
+        """Test that ``path`` is not a subpath of ``baseDir``.
         """
         _canonPath = os.path.abspath(os.path.realpath(path))
         _canonDir = os.path.abspath(os.path.realpath(baseDir))
