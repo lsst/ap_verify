@@ -31,6 +31,7 @@ processing of individual measurements. Measurements are handled in the
 __all__ = ["MetricsParser", "computeMetrics"]
 
 import argparse
+import collections
 import copy
 import os
 import warnings
@@ -50,10 +51,11 @@ class MetricsParser(argparse.ArgumentParser):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
         self.add_argument(
-            '--metrics-file', default='ap_verify.{dataId}.verify.json',
+            '--metrics-file', default='{output}/ap_verify.{dataId}.verify.json',
             help="The file template to which to output metrics in lsst.verify "
-                 "format; {dataId} will be replaced with the job\'s data ID. "
-                 "Defaults to ap_verify.{dataId}.verify.json.")
+                 "format. {output} will be replaced with the value of the "
+                 "--output argument, while {dataId} will be replaced with the "
+                 "job\'s data ID. Defaults to {output}/ap_verify.{dataId}.verify.json.")
         # TODO: remove --silent in DM-18120
         self.add_argument('--silent', dest='submitMetrics', nargs=0,
                           action=DeprecatedAction,
@@ -91,6 +93,19 @@ class DeprecatedAction(argparse.Action):
         warnings.warn(message, category=FutureWarning)
 
 
+class _OptionalFormatDict(collections.UserDict):
+    """A dictionary that, when used with a formatter, preserves unknown
+    replacement fields.
+
+    This lets clients perform partial string substitution without `str.format`
+    or `str.format_map` failing over missing keywords.
+    """
+    def __missing__(self, key):
+        """Re-create the replacement field if there is no replacement.
+        """
+        return "{%s}" % key
+
+
 def computeMetrics(workspace, dataIds, args):
     """Measure any metrics that apply to the final result of the AP pipeline,
     rather than to a particular processing stage.
@@ -104,14 +119,19 @@ def computeMetrics(workspace, dataIds, args):
     args : `argparse.Namespace`
         Command-line arguments, including arguments controlling output.
     """
+    # Substitute all fields that won't be filled in by MetricsControllerTask
+    # _OptionalFormatDict makes format_map preserve unspecified fields for later replacement
+    metricsFile = args.metrics_file.format_map(
+        _OptionalFormatDict(output=workspace.workDir))
+
     imageConfig = _getMetricsConfig(args.image_metrics_config,
                                     "default_image_metrics.py",
-                                    args.metrics_file)
+                                    metricsFile)
     _runMetricTasks(imageConfig, dataIds.refList)
 
     datasetConfig = _getMetricsConfig(args.dataset_metrics_config,
                                       "default_dataset_metrics.py",
-                                      args.metrics_file)
+                                      metricsFile)
     _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")])
 
 
