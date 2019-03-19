@@ -3,14 +3,17 @@ setupRequired(python)
 setupRequired(utils)
 setupRequired(afw)
 setupRequired(daf_persistence)
-setupRequired(ip_isr)
 setupRequired(pipe_tasks)
 setupRequired(verify)
 setupRequired(ap_pipe)
-setupRequired(ap_association)
 
+# For testing
 setupOptional(ap_verify_testdata)
 setupOptional(obs_test)
+
+# For default metric configs
+setupRequired(ip_diffim)
+setupRequired(ap_association)
 
 # Datasets other than ap_verify_testdata must be set up manually
 #     to avoid being inadvertently downloaded by lsstsw
