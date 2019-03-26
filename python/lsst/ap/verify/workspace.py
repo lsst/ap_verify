@@ -65,8 +65,15 @@ class Workspace:
         self._analysisButler = None
 
     @property
+    def workDir(self):
+        """The location of the workspace as a whole (`str`, read-only).
+        """
+        return self._location
+
+    @property
     def configDir(self):
-        """The location of a directory containing custom Task config files for use with the data.
+        """The location of a directory containing custom Task config files for
+        use with the data (`str`, read-only).
         """
         return os.path.join(self._location, 'config')
 
