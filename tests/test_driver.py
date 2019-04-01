@@ -53,11 +53,12 @@ def patchApPipe(method):
             parsedCmd=parsedCmd,
             taskRunner=None,
             resultList=[None])
-        patcher = unittest.mock.patch("lsst.ap.pipe.ApPipeTask",
-                                      **{"parseAndRun.return_value": parReturn},
-                                      _DefaultName=ApPipeTask._DefaultName,
-                                      ConfigClass=ApPipeTask.ConfigClass)
-        patchedMethod = patcher(method)
+        dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makePpdb")
+        pipePatcher = unittest.mock.patch("lsst.ap.pipe.ApPipeTask",
+                                          **{"parseAndRun.return_value": parReturn},
+                                          _DefaultName=ApPipeTask._DefaultName,
+                                          ConfigClass=ApPipeTask.ConfigClass)
+        patchedMethod = pipePatcher(dbPatcher(method))
         return patchedMethod(self, *args, **kwargs)
     return wrapper
 
@@ -110,15 +111,16 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
     # Mock up ApPipeTask to avoid doing any processing.
     @patchApPipe
-    def testRunApPipeSteps(self, mockClass):
+    def testRunApPipeSteps(self, mockDb, mockClass):
         """Test that runApPipe runs the entire pipeline.
         """
         pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
 
+        mockDb.assert_called_once()
         mockClass.parseAndRun.assert_called_once()
 
     @patchApPipe
-    def testRunApPipeDataIdReporting(self, mockClass):
+    def testRunApPipeDataIdReporting(self, _mockDb, _mockClass):
         """Test that runApPipe reports the data IDs that were processed.
         """
         ids = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
@@ -134,7 +136,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
             self.fail("No command-line args passed to parseAndRun!")
 
     @patchApPipe
-    def testRunApPipeCustomConfig(self, mockClass):
+    def testRunApPipeCustomConfig(self, _mockDb, mockClass):
         """Test that runApPipe can pass custom configs from a workspace to ApPipeTask.
         """
         mockParse = mockClass.parseAndRun
@@ -144,11 +146,16 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.assertIn(os.path.join(self.workspace.configDir, "apPipe.py"), cmdLineArgs)
 
     @patchApPipe
-    def testRunApPipeWorkspaceDb(self, mockClass):
+    def testRunApPipeWorkspaceDb(self, mockDb, mockClass):
         """Test that runApPipe places a database in the workspace location by default.
         """
         mockParse = mockClass.parseAndRun
         pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+
+        mockDb.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
+        self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+
         mockParse.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
         self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)

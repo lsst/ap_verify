@@ -34,6 +34,7 @@ import os
 
 import lsst.log
 import lsst.ap.pipe as apPipe
+from lsst.ap.pipe.make_ppdb import makePpdb
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -69,20 +70,23 @@ def runApPipe(workspace, parsedCmdLine):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
-    args = [workspace.dataRepo,
-            "--output", workspace.outputRepo,
-            "--calib", workspace.calibRepo,
-            "--template", workspace.templateRepo]
-    args.extend(_getConfigArguments(workspace))
+    configArgs = _getConfigArguments(workspace)
+    makePpdb(configArgs)
+
+    pipelineArgs = [workspace.dataRepo,
+                    "--output", workspace.outputRepo,
+                    "--calib", workspace.calibRepo,
+                    "--template", workspace.templateRepo]
+    pipelineArgs.extend(configArgs)
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
-            args.extend(["--id", *singleId.split(" ")])
+            pipelineArgs.extend(["--id", *singleId.split(" ")])
     else:
-        args.extend(["--id"])
-    args.extend(["--processes", str(parsedCmdLine.processes)])
-    args.extend(["--noExit"])
+        pipelineArgs.extend(["--id"])
+    pipelineArgs.extend(["--processes", str(parsedCmdLine.processes)])
+    pipelineArgs.extend(["--noExit"])
 
-    results = apPipe.ApPipeTask.parseAndRun(args)
+    results = apPipe.ApPipeTask.parseAndRun(pipelineArgs)
     log.info('Pipeline complete')
 
     return results.parsedCmd.id
