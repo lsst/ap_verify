@@ -40,35 +40,6 @@ You can find Jira issues for this module under the `ap_verify <https://jira.lsst
 
    new-metrics
 
-Task reference
-==============
-
-.. _lsst.ap.verify-command-line-tasks:
-
-Command-line tasks
-------------------
-
-.. lsst-cmdlinetasks::
-   :root: lsst.ap.verify
-
-.. _lsst.ap.verify-tasks:
-
-Tasks
------
-
-.. lsst-tasks::
-   :root: lsst.ap.verify
-   :toctree: tasks
-
-.. _lsst.ap.verify-configs:
-
-Configurations
---------------
-
-.. lsst-configs::
-   :root: lsst.ap.verify
-   :toctree: configs
-
 .. _lsst.ap.verify-pyapi:
 
 Python API reference
