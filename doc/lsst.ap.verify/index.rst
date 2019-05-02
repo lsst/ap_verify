@@ -48,6 +48,3 @@ Python API reference
 .. automodapi:: lsst.ap.verify
    :no-main-docstr:
    :no-inheritance-diagram:
-.. automodapi:: lsst.ap.verify.measurements
-   :no-main-docstr:
-   :no-inheritance-diagram:
