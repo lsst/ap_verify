@@ -23,7 +23,6 @@
 
 import os
 import shutil
-import tarfile
 import tempfile
 import unittest.mock
 
@@ -32,9 +31,30 @@ import lsst.utils.tests
 import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
 import lsst.obs.test
+from lsst.obs.base.read_defects import read_all_defects
 from lsst.ap.verify import ingestion
 from lsst.ap.verify.dataset import Dataset
 from lsst.ap.verify.workspace import Workspace
+
+
+class MockDetector(object):
+    def getName(self):
+        return '0'
+
+    def getId(self):
+        return 0
+
+
+class MockCamera(object):
+    def __init__(self, detector):
+        self.det_list = [detector, ]
+        self.det_dict = {'0': detector}
+
+    def __getitem__(self, item):
+        if type(item) is int:
+            return self.det_list[item]
+        else:
+            return self.det_dict[item]
 
 
 class IngestionTestSuite(lsst.utils.tests.TestCase):
@@ -47,6 +67,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             message = "obs_test not setup. Skipping."
             raise unittest.SkipTest(message)
 
+        cls.mockCamera = MockCamera(MockDetector())
         cls.config = cls.makeTestConfig()
         cls.config.freeze()
 
@@ -69,10 +90,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         config = ingestion.DatasetIngestConfig()
         config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
         config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        config.defectIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        # The real obs_test can't ingest defects because they're hardcoded
-        config.defectIngester.register.tables.append('defect')
-        config.defectTarball = "defects.tar.gz"
+        config.defectIngester.load(os.path.join(obsDir, 'ingestDefects.py'))
         return config
 
     def setUp(self):
@@ -96,6 +114,10 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                 matchingFiles = [datum['file'] for datum in IngestionTestSuite.calibData
                                  if datum['type'] == 'flat' and datum['filter'] == dataId['filter']]
                 return [os.path.join(self._repo, file) for file in matchingFiles]
+            elif "defects_filename" in datasetType:
+                return [os.path.join(self._repo, 'defects', 'defects.fits'), ]
+            elif "camera" in datasetType:
+                return IngestionTestSuite.mockCamera
             else:
                 return None
 
@@ -109,7 +131,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self._dataset = unittest.mock.NonCallableMock(
             spec=Dataset,
             rawLocation=os.path.join(IngestionTestSuite.testData, 'raw'),
-            defectLocation=IngestionTestSuite.testApVerifyData
+            defectLocation=os.path.join(getPackageDir('obs_test_data'), 'test', 'defects')
         )
         self._workspace = unittest.mock.NonCallableMock(
             spec=Workspace,
@@ -148,22 +170,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
                                                      new_callable=unittest.mock.NonCallableMagicMock)
         self._registerTask = patcherRegister.start()
         self._registerTask.config = self._task.config.calibIngester.register
-        self.addCleanup(patcherRegister.stop)
-
-    def setUpDefectRegistry(self):
-        """Mock up the RegisterTask used for ingesting defect data.
-
-        This method initializes ``self._registerTask``. It should be
-        called at the start of any test case that attempts defect ingestion.
-
-        Behavior is undefined if more than one of `setUpRawRegistry`, `setUpCalibRegistry`,
-        or `setupDefectRegistry` is called.
-        """
-        patcherRegister = unittest.mock.patch.object(self._task.defectIngester, "register",
-                                                     spec=pipeTasks.ingestCalibs.CalibsRegisterTask,
-                                                     new_callable=unittest.mock.NonCallableMagicMock)
-        self._registerTask = patcherRegister.start()
-        self._registerTask.config = self._task.config.defectIngester.register
         self.addCleanup(patcherRegister.stop)
 
     def assertRawRegistryCalls(self, registryMock, expectedData):
@@ -271,38 +277,32 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testDefectIngest(self):
         """Test that ingesting defects starting from a concrete file adds them to a repository.
         """
-        defectFilename = os.path.join(self._dataset.defectLocation, IngestionTestSuite.config.defectTarball)
-        self.setUpDefectRegistry()
-        with tarfile.open(defectFilename) as tarContents:
-            numDefects = len(tarContents.getnames())
+        self.setUpCalibRegistry()
 
-        self._task._doIngestDefects(self._repo, self._calibRepo, defectFilename)
+        defects = read_all_defects(self._dataset.defectLocation, IngestionTestSuite.mockCamera)
+        numDefects = 0
+        # These are keyes on sensor and validity date
+        for s in defects:
+            for d in defects[s]:
+                numDefects += len(defects[s][d])
+        self._task._doIngestDefects(self._repo, self._calibRepo, self._dataset.defectLocation)
 
-        # obs_test defect ingestion does not have a data ID or other way to check
-        # what got ingested, so don't bother checking call arguments
-        self.assertEqual(self._registerTask.addRow.call_count, numDefects)
-
-    def testDefectIngestEmpty(self):
-        """Test that ingesting defects raises an exception if the defect archive is empty.
-        """
-        defectFilename = os.path.join(self._dataset.defectLocation, 'empty.tar.gz')
-
-        with self.assertRaises(RuntimeError):
-            self._task._doIngestDefects(self._repo, self._calibRepo, defectFilename)
+        self.assertEqual(504, numDefects)  # Update if the number of defects in obs_test_data changes
 
     def testDefectIngestDriver(self):
         """Test that ingesting defects starting from an abstract dataset adds them to a repository.
         """
-        defectFilename = os.path.join(self._dataset.defectLocation, IngestionTestSuite.config.defectTarball)
-        self.setUpDefectRegistry()
-        with tarfile.open(defectFilename) as tarContents:
-            numDefects = len(tarContents.getnames())
+        self.setUpCalibRegistry()
+        defects = read_all_defects(self._dataset.defectLocation, IngestionTestSuite.mockCamera)
+        numDefects = 0
+        # These are keyes on sensor and validity date
+        for s in defects:
+            for d in defects[s]:
+                numDefects += len(defects[s][d])
 
         self._task._ingestDefects(self._dataset, self._workspace)
 
-        # obs_test defect ingestion does not have a data ID or other way to check
-        # what got ingested, so don't bother checking call arguments
-        self.assertEqual(self._registerTask.addRow.call_count, numDefects)
+        self.assertEqual(504, numDefects)  # Update if the number of defects in obs_test_data changes
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
