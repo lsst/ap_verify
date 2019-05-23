@@ -142,7 +142,7 @@ class Dataset:
     def defectLocation(self):
         """The directory containing defect files (`str`, read-only).
         """
-        return self.calibLocation
+        return os.path.join(getPackageDir('obs_decam_data'), 'decam', 'defects')
 
     @property
     def refcatsLocation(self):

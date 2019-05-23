@@ -32,7 +32,6 @@ __all__ = ["DatasetIngestConfig", "ingestDataset"]
 import fnmatch
 import os
 import shutil
-import pathlib
 import tarfile
 from contextlib import contextmanager
 from glob import glob
@@ -45,6 +44,7 @@ import lsst.pipe.base as pipeBase
 
 from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
+from lsst.pipe.tasks.ingestDefects import IngestDefectsTask
 
 
 class DatasetIngestConfig(pexConfig.Config):
@@ -95,19 +95,9 @@ class DatasetIngestConfig(pexConfig.Config):
         doc="Calibration validity period (days). Assumed equal for all calib types.")
 
     defectIngester = pexConfig.ConfigurableField(
-        target=IngestCalibsTask,
+        target=IngestDefectsTask,
         doc="Task used to ingest defects.",
     )
-    defectTarball = pexConfig.Field(
-        dtype=str,
-        default=None,
-        doc="Name of tar.gz file containing defects. May be empty. Defect files may be in any format and "
-            "directory layout supported by the obs package.",
-    )
-    defectValidity = pexConfig.Field(
-        dtype=int,
-        default=9999,
-        doc="Defect validity period (days).")
 
     refcats = pexConfig.DictField(
         keytype=str,
@@ -303,15 +293,11 @@ class DatasetIngestTask(pipeBase.Task):
         if os.path.exists(os.path.join(workspace.calibRepo, "defects")):
             self.log.info("Defects were previously ingested, skipping...")
         else:
-            if self.config.defectTarball:
-                self.log.info("Ingesting defects...")
-                defectFile = os.path.join(dataset.defectLocation, self.config.defectTarball)
-                self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, defectFile)
-                self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
-            else:
-                self.log.info("No defects to ingest, skipping...")
+            self.log.info("Ingesting defects...")
+            self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, dataset.defectLocation)
+            self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
 
-    def _doIngestDefects(self, repo, calibRepo, defectTarball):
+    def _doIngestDefects(self, repo, calibRepo, defectPath):
         """Ingest defect images.
 
         Parameters
@@ -321,38 +307,20 @@ class DatasetIngestTask(pipeBase.Task):
         calibRepo : `str`
             The output repository location on disk for calibration files. Must
             exist.
-        defectTarball : `str`
-            The name of a .tar.gz file that contains all the compressed
-            defect images.
+        defectPath : `str`
+            Path to the defects in standard text form.  This is probably a path in ``obs_decam_data``.
 
         Raises
         ------
         RuntimeError
             Raised if ``defectTarball`` exists but is empty.
         """
-        # TODO: clean up implementation after DM-5467 resolved
-        defectDir = os.path.join(calibRepo, "defects")
-        with tarfile.open(defectTarball, "r") as opened:
-            if opened.getnames():
-                pathlib.Path(defectDir).mkdir(parents=True, exist_ok=True)
-                opened.extractall(defectDir)
-            else:
-                raise RuntimeError("Defect archive %s is empty." % defectTarball)
 
-        # Note: workaround for DecamCalibsIngestTask assuming defect paths are *already* relative to the repo
-        # Should not harm other cameras that require defect ingestion...?
-        with _tempChDir(calibRepo):
-            defectFiles = _findMatchingFiles(os.path.relpath(defectDir, calibRepo), ["*.*"])
-
-            # TODO: --output is workaround for DM-11668
-            defectargs = [os.path.relpath(repo, calibRepo), "--calib", ".", "--output", "dummy",
-                          "--calibType", "defect",
-                          "--mode", "skip", "--validity", str(self.config.defectValidity)]
-            defectargs.extend(defectFiles)
-            try:
-                _runIngestTask(self.defectIngester, defectargs)
-            except sqlite3.IntegrityError as detail:
-                raise RuntimeError("Not all defect files are unique") from detail
+        defectargs = [repo, defectPath, "--calib", calibRepo]
+        try:
+            _runIngestTask(self.defectIngester, defectargs)
+        except sqlite3.IntegrityError as detail:
+            raise RuntimeError("Not all defect files are unique") from detail
 
     def _ingestRefcats(self, dataset, workspace):
         """Ingest the refcats for use by LSST.
