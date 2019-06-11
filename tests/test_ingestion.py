@@ -88,6 +88,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def makeTestConfig():
         obsDir = os.path.join(getPackageDir('obs_test'), 'config')
         config = ingestion.DatasetIngestConfig()
+        config.textDefectPath = os.path.join(getPackageDir('obs_test_data'), 'test', 'defects')
         config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
         config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
         config.defectIngester.load(os.path.join(obsDir, 'ingestDefects.py'))
@@ -131,7 +132,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self._dataset = unittest.mock.NonCallableMock(
             spec=Dataset,
             rawLocation=os.path.join(IngestionTestSuite.testData, 'raw'),
-            defectLocation=os.path.join(getPackageDir('obs_test_data'), 'test', 'defects')
         )
         self._workspace = unittest.mock.NonCallableMock(
             spec=Workspace,
@@ -279,13 +279,13 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         self.setUpCalibRegistry()
 
-        defects = read_all_defects(self._dataset.defectLocation, IngestionTestSuite.mockCamera)
+        defects = read_all_defects(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)
         numDefects = 0
         # These are keyes on sensor and validity date
         for s in defects:
             for d in defects[s]:
                 numDefects += len(defects[s][d])
-        self._task._doIngestDefects(self._repo, self._calibRepo, self._dataset.defectLocation)
+        self._task._doIngestDefects(self._repo, self._calibRepo, self._task.config.textDefectPath)
 
         self.assertEqual(504, numDefects)  # Update if the number of defects in obs_test_data changes
 
@@ -293,7 +293,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """Test that ingesting defects starting from an abstract dataset adds them to a repository.
         """
         self.setUpCalibRegistry()
-        defects = read_all_defects(self._dataset.defectLocation, IngestionTestSuite.mockCamera)
+        defects = read_all_defects(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)
         numDefects = 0
         # These are keyes on sensor and validity date
         for s in defects:

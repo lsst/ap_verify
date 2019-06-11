@@ -139,12 +139,6 @@ class Dataset:
         return os.path.join(self.datasetRoot, 'calib')
 
     @property
-    def defectLocation(self):
-        """The directory containing defect files (`str`, read-only).
-        """
-        return os.path.join(getPackageDir('obs_decam_data'), 'decam', 'defects')
-
-    @property
     def refcatsLocation(self):
         """The directory containing external astrometric and photometric
         reference catalogs (`str`, read-only).
@@ -200,8 +194,6 @@ class Dataset:
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing data directory')
         if not os.path.exists(self.calibLocation):
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing calibration directory')
-        if not os.path.exists(self.defectLocation):
-            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing defect directory')
         # Template and refcat directories might not be subdirectories of self.datasetRoot
         if not os.path.exists(self.templateLocation):
             raise RuntimeError('Dataset is missing template directory at ' + self.templateLocation)

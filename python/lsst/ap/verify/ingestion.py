@@ -94,6 +94,11 @@ class DatasetIngestConfig(pexConfig.Config):
         default=9999,
         doc="Calibration validity period (days). Assumed equal for all calib types.")
 
+    textDefectPath = pexConfig.Field(
+        dtype=str,
+        default='',
+        doc="Path to top level of the defect tree.  This is a directory with a directory per sensor."
+    )
     defectIngester = pexConfig.ConfigurableField(
         target=IngestDefectsTask,
         doc="Task used to ingest defects.",
@@ -294,7 +299,7 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Defects were previously ingested, skipping...")
         else:
             self.log.info("Ingesting defects...")
-            self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, dataset.defectLocation)
+            self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, self.config.textDefectPath)
             self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
 
     def _doIngestDefects(self, repo, calibRepo, defectPath):
