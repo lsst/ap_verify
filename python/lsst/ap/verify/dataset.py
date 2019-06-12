@@ -204,7 +204,7 @@ class Dataset:
         if not _isRepo(self._stubInputRepo):
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
-    def makeCompatibleRepo(self, repoDir):
+    def makeCompatibleRepo(self, repoDir, calibRepoDir):
         """Set up a directory as a repository compatible with this dataset.
 
         If the directory already exists, any files required by the dataset will
@@ -214,14 +214,17 @@ class Dataset:
         ----------
         repoDir : `str`
             The directory where the output repository will be created.
+        calibRepoDir : `str`
+            The directory where the output calibration repository will be created.
         """
+        mapperArgs = {'mapperArgs': {'calibRoot': calibRepoDir}}
         if _isRepo(self.templateLocation):
             # Stub repo is not a parent because can't mix v1 and v2 repositories in parents list
             Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw"}])
+                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
         else:
             Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw"}])
+                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
 
 
 def _isRepo(repoDir):

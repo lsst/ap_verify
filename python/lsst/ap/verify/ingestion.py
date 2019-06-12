@@ -141,7 +141,8 @@ class DatasetIngestTask(pipeBase.Task):
             If the repositories already exist, they must support the same
             ``obs`` package as this task's subtasks.
         """
-        dataset.makeCompatibleRepo(workspace.dataRepo)
+        # We're assuming ingest tasks always give absolute path to butler
+        dataset.makeCompatibleRepo(workspace.dataRepo, os.path.abspath(workspace.calibRepo))
         self._ingestRaws(dataset, workspace)
         self._ingestCalibs(dataset, workspace)
         self._ingestDefects(dataset, workspace)
@@ -173,12 +174,13 @@ class DatasetIngestTask(pipeBase.Task):
             self.log.info("Ingesting raw images...")
             dataFiles = _findMatchingFiles(dataset.rawLocation, self.config.dataFiles)
             if dataFiles:
-                self._doIngestRaws(workspace.dataRepo, dataFiles, self.config.dataBadFiles)
+                self._doIngestRaws(workspace.dataRepo, workspace.calibRepo,
+                                   dataFiles, self.config.dataBadFiles)
                 self.log.info("Images are now ingested in {0}".format(workspace.dataRepo))
             else:
                 raise RuntimeError("No raw files found at %s." % dataset.rawLocation)
 
-    def _doIngestRaws(self, repo, dataFiles, badFiles):
+    def _doIngestRaws(self, repo, calibRepo, dataFiles, badFiles):
         """Ingest raw images into a repository.
 
         ``repo`` shall be populated with *links* to ``dataFiles``.
@@ -187,6 +189,8 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         repo : `str`
             The output repository location on disk for raw images. Must exist.
+        calibRepo : `str`
+            The output calibration repository location on disk.
         dataFiles : `list` of `str`
             A list of filenames to ingest. May contain wildcards.
         badFiles : `list` of `str`
@@ -201,7 +205,7 @@ class DatasetIngestTask(pipeBase.Task):
         if not dataFiles:
             raise RuntimeError("No raw files to ingest (expected list of filenames, got %r)." % dataFiles)
 
-        args = [repo, "--mode", "link"]
+        args = [repo, "--calib", calibRepo, "--mode", "link"]
         args.extend(dataFiles)
         if badFiles:
             args.append('--badFile')

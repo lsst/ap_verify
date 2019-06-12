@@ -239,7 +239,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self.setUpRawRegistry()
         files = [os.path.join(self._dataset.rawLocation, datum['file'])
                  for datum in IngestionTestSuite.rawData]
-        self._task._doIngestRaws(self._repo, files, [])
+        self._task._doIngestRaws(self._repo, self._calibRepo, files, [])
 
         self.assertRawRegistryCalls(self._registerTask, IngestionTestSuite.rawData)
 
@@ -311,7 +311,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         self.setUpRawRegistry()
 
         with self.assertRaises(RuntimeError):
-            self._task._doIngestRaws(self._repo, files, [])
+            self._task._doIngestRaws(self._repo, self._calibRepo, files, [])
         with self.assertRaises(RuntimeError):
             self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
@@ -336,7 +336,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         files = [os.path.join(self._dataset.rawLocation, datum['file'])
                  for datum in IngestionTestSuite.rawData]
-        self._task._doIngestRaws(self._repo, files, badFiles)
+        self._task._doIngestRaws(self._repo, self._calibRepo, files, badFiles)
 
         filteredData = [datum for datum in IngestionTestSuite.rawData if datum['file'] not in badFiles]
         self.assertRawRegistryCalls(self._registerTask, filteredData)

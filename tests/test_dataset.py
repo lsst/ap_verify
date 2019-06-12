@@ -75,9 +75,10 @@ class DatasetTestSuite(DataTestCase):
         """
         testDir = tempfile.mkdtemp()
         outputDir = os.path.join(testDir, 'goodOut')
+        calibRepoDir = outputDir
 
         try:
-            self._testbed.makeCompatibleRepo(outputDir)
+            self._testbed.makeCompatibleRepo(outputDir, calibRepoDir)
             self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
             self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
             self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')) or
@@ -93,6 +94,7 @@ class DatasetTestSuite(DataTestCase):
         """
         testDir = tempfile.mkdtemp()
         outputDir = os.path.join(testDir, 'badOut')
+        calibRepoDir = outputDir
 
         try:
             os.makedirs(outputDir)
@@ -100,7 +102,7 @@ class DatasetTestSuite(DataTestCase):
             with open(output, 'w') as dummy:
                 dummy.write('This is a test!')
 
-            self._testbed.makeCompatibleRepo(outputDir)
+            self._testbed.makeCompatibleRepo(outputDir, calibRepoDir)
             self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
             self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
             self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')) or
