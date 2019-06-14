@@ -31,7 +31,7 @@ import lsst.utils.tests
 import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
 import lsst.obs.test
-from lsst.obs.base.read_defects import read_all_defects
+from lsst.pipe.tasks.read_defects import read_all_defects
 from lsst.ap.verify import ingestion
 from lsst.ap.verify.dataset import Dataset
 from lsst.ap.verify.workspace import Workspace
