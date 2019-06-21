@@ -139,12 +139,6 @@ class Dataset:
         return os.path.join(self.datasetRoot, 'calib')
 
     @property
-    def defectLocation(self):
-        """The directory containing defect files (`str`, read-only).
-        """
-        return self.calibLocation
-
-    @property
     def refcatsLocation(self):
         """The directory containing external astrometric and photometric
         reference catalogs (`str`, read-only).
@@ -200,8 +194,6 @@ class Dataset:
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing data directory')
         if not os.path.exists(self.calibLocation):
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing calibration directory')
-        if not os.path.exists(self.defectLocation):
-            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing defect directory')
         # Template and refcat directories might not be subdirectories of self.datasetRoot
         if not os.path.exists(self.templateLocation):
             raise RuntimeError('Dataset is missing template directory at ' + self.templateLocation)
@@ -212,7 +204,7 @@ class Dataset:
         if not _isRepo(self._stubInputRepo):
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
-    def makeCompatibleRepo(self, repoDir):
+    def makeCompatibleRepo(self, repoDir, calibRepoDir):
         """Set up a directory as a repository compatible with this dataset.
 
         If the directory already exists, any files required by the dataset will
@@ -222,14 +214,17 @@ class Dataset:
         ----------
         repoDir : `str`
             The directory where the output repository will be created.
+        calibRepoDir : `str`
+            The directory where the output calibration repository will be created.
         """
+        mapperArgs = {'mapperArgs': {'calibRoot': calibRepoDir}}
         if _isRepo(self.templateLocation):
             # Stub repo is not a parent because can't mix v1 and v2 repositories in parents list
             Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw"}])
+                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
         else:
             Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw"}])
+                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
 
 
 def _isRepo(repoDir):
