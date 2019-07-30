@@ -52,7 +52,7 @@ def patchApPipe(method):
             argumentParser=None,
             parsedCmd=parsedCmd,
             taskRunner=None,
-            resultList=[None])
+            resultList=[Struct(exitStatus=0)])
         dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makePpdb")
         pipePatcher = unittest.mock.patch("lsst.ap.pipe.ApPipeTask",
                                           **{"parseAndRun.return_value": parReturn},
