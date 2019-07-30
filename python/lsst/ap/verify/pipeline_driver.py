@@ -65,8 +65,9 @@ def runApPipe(workspace, parsedCmdLine):
 
     Returns
     -------
-    dataIds : `lsst.pipe.base.DataIdContainer`
-        The set of complete data IDs fed into ``ap_pipe``.
+    apPipeReturn : `Struct`
+        The `Struct` returned from `~lsst.ap.pipe.ApPipeTask.parseAndRun` with
+        ``doReturnResults=False``.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
@@ -89,7 +90,7 @@ def runApPipe(workspace, parsedCmdLine):
     results = apPipe.ApPipeTask.parseAndRun(pipelineArgs)
     log.info('Pipeline complete')
 
-    return results.parsedCmd.id
+    return results
 
 
 def _getConfigArguments(workspace):

@@ -152,8 +152,8 @@ def runApVerify(cmdLine=None):
     ingestDataset(args.dataset, workspace)
 
     log.info('Running pipeline...')
-    expandedDataIds = runApPipe(workspace, args)
-    computeMetrics(workspace, expandedDataIds, args)
+    apPipeResults = runApPipe(workspace, args)
+    computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
 
 
 def runIngestion(cmdLine=None):

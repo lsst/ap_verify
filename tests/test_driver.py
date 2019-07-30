@@ -123,7 +123,8 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def testRunApPipeDataIdReporting(self, _mockDb, _mockClass):
         """Test that runApPipe reports the data IDs that were processed.
         """
-        ids = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        results = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        ids = results.parsedCmd.id
 
         self.assertEqual(ids.idList, _getDataIds())
 
