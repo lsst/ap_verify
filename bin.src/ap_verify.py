@@ -22,7 +22,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sys
 from lsst.ap.verify import runApVerify
 
 if __name__ == "__main__":
-    runApVerify()
+    result = runApVerify()
+    sys.exit(result)

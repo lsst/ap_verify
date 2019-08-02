@@ -28,8 +28,8 @@ These two arguments are mandatory, all others are optional.
 Status code
 ===========
 
-:command:`ap_verify.py` returns a status code of ``0`` if the pipeline ran to completion.
-If the pipeline fails, the status code will be an interpreter-dependent nonzero value.
+Like :ref:`command-line tasks <command-line-task-argument-reference>`, :command:`ap_verify.py` returns the number of data IDs that could not be processed (i.e., 0 on a complete success).
+However, an uncaught exception causes :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead (also as for command-line tasks).
 
 .. _ap-verify-cmd-args:
 

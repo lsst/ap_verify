@@ -141,6 +141,12 @@ def runApVerify(cmdLine=None):
     cmdLine : `list` of `str`
         an optional command line used to execute `runApVerify` from other
         Python code. If `None`, `sys.argv` will be used.
+
+    Returns
+    -------
+    nFailed : `int`
+        The number of data IDs that were not successfully processed, up to 127,
+        or 127 if the task runner framework failed.
     """
     lsst.log.configure()
     log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
@@ -154,6 +160,32 @@ def runApVerify(cmdLine=None):
     log.info('Running pipeline...')
     apPipeResults = runApPipe(workspace, args)
     computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
+
+    return _getCmdLineExitStatus(apPipeResults.resultList)
+
+
+def _getCmdLineExitStatus(resultList):
+    """Return the exit status following the conventions of
+    :ref:`running a CmdLineTask from the command line
+    <command-line-task-argument-reference>`.
+
+    Parameters
+    ----------
+    resultList : `list` [`Struct`] or `None`
+        A list of `Struct`, as returned by `ApPipeTask.parseAndRun`. Each
+        element must contain at least an ``exitStatus`` member.
+
+    Returns
+    -------
+    exitStatus : `int`
+        The number of failed runs in ``resultList``, up to 127, or 127 if
+        ``resultList`` is `None`.
+    """
+    if resultList:
+        # ApPipeTaskRunner does not override default results handling, exitStatus always defined
+        return min(127, sum(((res.exitStatus != 0) for res in resultList)))
+    else:
+        return 127
 
 
 def runIngestion(cmdLine=None):
