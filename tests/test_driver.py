@@ -52,7 +52,7 @@ def patchApPipe(method):
             argumentParser=None,
             parsedCmd=parsedCmd,
             taskRunner=None,
-            resultList=[None])
+            resultList=[Struct(exitStatus=0)])
         dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makePpdb")
         pipePatcher = unittest.mock.patch("lsst.ap.pipe.ApPipeTask",
                                           **{"parseAndRun.return_value": parReturn},
@@ -123,7 +123,8 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
     def testRunApPipeDataIdReporting(self, _mockDb, _mockClass):
         """Test that runApPipe reports the data IDs that were processed.
         """
-        ids = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        results = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        ids = results.parsedCmd.id
 
         self.assertEqual(ids.idList, _getDataIds())
 
