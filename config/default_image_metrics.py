@@ -1,4 +1,5 @@
-from lsst.verify.tasks.commonMetrics import TimingMetricConfig
+from itertools import chain
+from lsst.verify.tasks.commonMetrics import TimingMetricConfig, MemoryMetricConfig
 # Import these modules to ensure the metrics are registered
 import lsst.ip.diffim.metrics  # noqa: F401
 import lsst.ap.association.metrics  # noqa: F401
@@ -6,7 +7,9 @@ import lsst.ap.association.metrics  # noqa: F401
 metadataConfigs = ["numNewDiaObjects",
                    "numUnassociatedDiaObjects",
                    "fracUpdatedDiaObjects"]
-config.measurers = ["timing", "numSciSources", "fracDiaSourcesToSciSources"] + metadataConfigs
+config.measurers = ["timing", "memory",
+                    "numSciSources", "fracDiaSourcesToSciSources",
+                    ] + metadataConfigs
 
 timingConfigs = {
     "apPipe.runDataRef": "ap_pipe.ApPipeTime",
@@ -22,12 +25,22 @@ timingConfigs = {
     "apPipe:differencer:measurement.run": "ip_diffim.DipoleFitTime",
     "apPipe:associator.run": "ap_association.AssociationTime",
 }
+memoryConfigs = {
+    "apPipe.runDataRef": "ap_pipe.ApPipeMemory",
+}
 for target, metric in timingConfigs.items():
     subConfig = TimingMetricConfig()
     subConfig.target = target
     subConfig.metric = metric
     config.measurers["timing"].configs[target] = subConfig
-for subConfig in config.measurers["timing"].configs.values():
+for target, metric in memoryConfigs.items():
+    subConfig = MemoryMetricConfig()
+    subConfig.target = target
+    subConfig.metric = metric
+    config.measurers["memory"].configs[target] = subConfig
+for subConfig in chain(config.measurers["timing"].configs.values(),
+                       config.measurers["memory"].configs.values(),
+                       ):
     subConfig.metadata.name = "apPipe_metadata"
 # List comprehension would be cleaner, but can't refer to config inside one
 for subConfig in metadataConfigs:
