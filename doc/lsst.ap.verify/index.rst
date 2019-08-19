@@ -24,6 +24,7 @@ Using lsst.ap.verify
    running
    datasets
    failsafe
+   new-metrics
    command-line-reference
    configuration
 
@@ -34,11 +35,6 @@ Contributing
 
 ``lsst.ap.verify`` is developed at https://github.com/lsst/ap_verify.
 You can find Jira issues for this module under the `ap_verify <https://jira.lsstcorp.org/issues/?jql=project%20%3D%20DM%20AND%20component%20%3D%20ap_verify>`_ component.
-
-.. toctree::
-   :maxdepth: 1
-
-   new-metrics
 
 .. _lsst.ap.verify-pyapi:
 

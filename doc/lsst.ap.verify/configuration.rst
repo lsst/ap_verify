@@ -7,10 +7,11 @@ ap_verify configuration file reference
 ######################################
 
 This page describes the file-based configuration options used by ``ap_verify``.
-Most users should not need to adjust these settings, but they allow capabilities such as registering new :doc:`datasets<datasets>`.
+It does *not* describe the configuration of ``MetricTask``\ s for ``ap_verify``; see :doc:`new-metrics` instead.
 
 The ``ap_verify`` configuration file is located at :file:`config/dataset_config.yaml`.
 It consists of a list of dictionaries, each representing specific aspects of the program.
+Most users should not need to adjust these settings, but they allow capabilities such as registering new :doc:`datasets<datasets>`.
 
 .. _ap-verify-configuration-dataset:
 

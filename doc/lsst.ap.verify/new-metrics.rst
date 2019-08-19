@@ -4,9 +4,9 @@
 
 .. _ap-verify-new-metrics:
 
-##################################
-Registering metrics with ap_verify
-##################################
+#################################
+Configuring metrics for ap_verify
+#################################
 
 ``ap_verify`` handles metrics through the :lsst-task:`~lsst.verify.gen2tasks.metricTask.MetricTask` framework.
 Each metric has an associated :lsst-task:`~lsst.verify.gen2tasks.metricTask.MetricTask`, typically in the package associated with the metric.
