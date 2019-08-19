@@ -31,12 +31,12 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=412518 filter=g" --output workspaces/hits/
+   ap_verify.py --dataset HiTS2015 --id "visit=412518^412568 filter=g" --output workspaces/hits/
 
 Here the inputs are:
 
 * :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
-* :command:`visit=412518 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :command:`visit=412518^412568 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
 
@@ -44,10 +44,15 @@ while the output is:
 
 This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 412518 through the entire AP pipeline.
 
+It's also possible to run an entire dataset by omitting the :command:`--id` argument (as some datasets are very large, do this with caution):
+
+.. prompt:: bash
+
+   ap_verify.py --dataset CI-HiTS2015 --output workspaces/hits/
+
 .. note::
 
-   The command-line interface for :command:`ap_verify.py` is at present much more limited than those of command-line tasks.
-   In particular, only file-based repositories are supported, and compound dataIds cannot be provided.
+   The command-line interface for :command:`ap_verify.py` is at present more limited than those of command-line tasks.
    See the :doc:`command-line-reference` for details.
 
 .. _ap-verify-run-ingest:
