@@ -52,15 +52,15 @@ The dataset's package-level documentation should include:
 
 .. _ap-verify-datasets-creation-config:
 
-Configuring dataset ingestion
-=============================
+Configuring dataset ingestion and use
+=====================================
 
 Each dataset's :file:`config` directory should contain a :ref:`task config file<command-line-task-config-howto-configfile>` named :file:`datasetIngest.py`, which specifies a `DatasetIngestConfig`.
 The file typically contains filenames or file patterns specific to the dataset.
-In particular, reference catalogs are ignored by default and need to be explicitly named.
+In particular, the default config ignores reference catalogs, so the config file should provide a ``dict`` from catalog names to their tar files.
 
 Each :file:`config` directory may contain a task config file named :file:`apPipe.py`, specifying an `lsst.ap.pipe.ApPipeConfig`.
-The file contains pipeline flags specific to the dataset, such as the available reference catalogs or information about how its image differencing templates were generated.
+The file contains pipeline flags specific to the dataset, such as the available reference catalogs (both their names and configuration) or the type of template provided to `~lsst.pipe.tasks.imageDifference.ImageDifferenceTask`.
 
 Configuration settings specific to an instrument rather than a dataset should be handled with ordinary :ref:`configuration override files<command-line-task-config-howto-obs>`.
 
