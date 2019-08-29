@@ -19,3 +19,11 @@ Typically, a file configures each metric through ``config.measurers[<name>]``; s
 The ``ap_verify`` package provides two config files in the :file:`config/` directory, which define the image- and dataset-level configs that are run by default (for example, during CI).
 These files feature complex logic to minimize code duplication and minimize the work in adding new metrics.
 This complexity is not required by ``MetricsControllerTask``; a config that's just a list of assignments will also work.
+
+Further reading
+===============
+
+- :doc:`running`
+- :doc:`failsafe`
+- :lsst-task:`lsst.verify.gen2tasks.MetricTask`
+- :lsst-task:`lsst.verify.gen2tasks.MetricsControllerTask`

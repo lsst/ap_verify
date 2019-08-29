@@ -9,6 +9,7 @@ ap_verify command-line reference
 ################################
 
 This page describes the command-line arguments and environment variables used by :command:`ap_verify.py`.
+See :doc:`running` for an overview.
 
 .. _ap-verify-cmd-basic:
 
@@ -51,12 +52,12 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    **Input dataset designation.**
 
-   The input dataset is required for all ``ap_verify`` runs except when using :option:`--help`.
+   The :doc:`input dataset <datasets>` is required for all ``ap_verify`` runs except when using :option:`--help`.
 
    The argument is a unique name for the dataset, which can be associated with a repository in the :ref:`configuration file<ap-verify-configuration-dataset>`.
    See :ref:`ap-verify-dataset-name` for more information on dataset names.
 
-   Allowed names can be queried using the :option:`--help` argument.
+   :ref:`Allowed names <ap-verify-datasets-index>` can be queried using the :option:`--help` argument.
 
 .. option:: --dataset-metrics-config <filename>
 
@@ -66,6 +67,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    If this argument is omitted, :file:`config/default_dataset_metrics.py` will be used.
 
    Use :option:`--image-metrics-config` to configure image-level metrics instead.
+   See also :doc:`new-metrics`.
 
 .. option:: -h, --help
 
@@ -87,6 +89,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    If this argument is omitted, :file:`config/default_image_metrics.py` will be used.
 
    Use :option:`--dataset-metrics-config` to configure dataset-level metrics instead.
+   See also :doc:`new-metrics`.
 
 .. option:: --metrics-file <filename>
 

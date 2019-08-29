@@ -8,7 +8,7 @@ Running ap_verify from the command line
 
 :command:`ap_verify.py` is a Python script designed to be run on both developer machines and verification servers.
 While :command:`ap_verify.py` is not a :doc:`command-line task</modules/lsst.pipe.base/index>`, the command-line interface is designed to resemble that of command-line tasks where practical.
-This page describes the minimum options needed to run ``ap_verify``.
+This page describes the most common options used to run ``ap_verify``.
 For more details, see the :doc:`command-line-reference` or run :option:`ap_verify.py -h`.
 
 .. _ap-verify-dataset-name:
@@ -18,7 +18,7 @@ Datasets as input arguments
 
 Since ``ap_verify`` begins with an uningested :doc:`dataset<datasets>`, the input argument is a dataset name rather than a repository.
 
-Datasets are identified by a name that gets mapped to an :doc:`eups-registered directory <datasets-install>` containing the data.
+Datasets are identified by a name that gets mapped to an :doc:`installed eups-registered package <datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
 The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
 
@@ -60,7 +60,7 @@ It's also possible to run an entire dataset by omitting the :command:`--id` argu
 How to run ingestion by itself
 ==============================
 
-``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that ingests datasets but does not run the pipeline on them.
+``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that :doc:`ingests datasets into repositories <datasets-butler>` but does not run the pipeline on them.
 This is useful if the data need special processing or as a precursor to massive processing runs.
 Running :command:`ap_verify.py` with the same arguments as a previous run of :command:`ingest_dataset.py` will automatically skip ingestion.
 
@@ -89,4 +89,6 @@ Further reading
 ===============
 
 - :doc:`datasets-install`
+- :doc:`new-metrics`
+- :doc:`failsafe`
 - :doc:`command-line-reference`

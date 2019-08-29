@@ -1,5 +1,7 @@
 .. py:currentmodule:: lsst.ap.verify
 
+.. program:: ap_verify.py
+
 .. _ap-verify-configuration:
 
 ######################################
@@ -18,6 +20,11 @@ Most users should not need to adjust these settings, but they allow capabilities
 datasets
 ========
 
-The ``datasets`` dictionary maps dataset names (which must be provided on the :command:`ap_verify.py` command line) to GitHub repository names.
+The ``datasets`` dictionary maps dataset names (which must be provided through :option:`ap_verify.py --dataset`) to GitHub repository names.
 Adding a dataset to the config is necessary for ``ap_verify`` to recognize it; in practice, the entry will be made once by the dataset author and then committed.
 A dataset must still be :doc:`installed<datasets-install>` on the machine before it can be used.
+
+Further reading
+===============
+
+- :doc:`datasets`
