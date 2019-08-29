@@ -37,8 +37,10 @@ In depth
 Existing datasets
 =================
 
-* `HiTS2015 <https://github.com/lsst/ap_verify_hits2015/>`_
-* `HiTS2015 CI Subset <https://github.com/lsst/ap_verify_ci_hits2015/>`_
+These datasets are also listed when running :option:`ap_verify.py -h`.
+
+* `HiTS2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_hits2015/>`_
+* `CI-HiTS2015 (HiTS 2015 CI Subset) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
 
 ..
    TODO: switch to toctree once these docs included in pipelines.lsst.io

@@ -6,7 +6,7 @@
 Error-handling in ap_verify and failed runs
 ###########################################
 
-The Alert Production pipeline may fail for reasons ranging from corrupted data to improperly configured datasets to bugs in the code.
+The Alert Production pipeline may fail for reasons ranging from corrupted data to :ref:`improperly configured datasets <ap-verify-datasets-creation-config>` to bugs in the code.
 The ``ap_verify`` framework tries to handle failures gracefully to minimize wasted server time and maximize debugging potential.
 
 .. _ap-verify-failsafe-catch:
@@ -23,7 +23,7 @@ In particular, where possible it will :ref:`preserve metrics<ap-verify-failsafe-
 
 .. _ap-verify-failsafe-partialmetric:
 
-Recovering Metrics From Partial Runs
+Recovering metrics from partial runs
 ====================================
 
 ``ap_verify`` produces some measurements even if the pipeline cannot run to completion.
@@ -32,3 +32,8 @@ In addition, if a metric cannot be computed, ``ap_verify`` may attempt to store 
 
 If the pipeline fails, ``ap_verify`` may not preserve measurements computed from the dataset.
 Once the framework for handling metrics is finalized, ``ap_verify`` may be able to offer a broader guarantee that does not depend on how or where any individual metric is implemented.
+
+Further reading
+===============
+
+- :doc:`running`

@@ -8,7 +8,7 @@ Running ap_verify from the command line
 
 :command:`ap_verify.py` is a Python script designed to be run on both developer machines and verification servers.
 While :command:`ap_verify.py` is not a :doc:`command-line task</modules/lsst.pipe.base/index>`, the command-line interface is designed to resemble that of command-line tasks where practical.
-This page describes the minimum options needed to run ``ap_verify``.
+This page describes the most common options used to run ``ap_verify``.
 For more details, see the :doc:`command-line-reference` or run :option:`ap_verify.py -h`.
 
 .. _ap-verify-dataset-name:
@@ -18,7 +18,7 @@ Datasets as input arguments
 
 Since ``ap_verify`` begins with an uningested :doc:`dataset<datasets>`, the input argument is a dataset name rather than a repository.
 
-Datasets are identified by a name that gets mapped to an :doc:`eups-registered directory <datasets-install>` containing the data.
+Datasets are identified by a name that gets mapped to an :doc:`installed eups-registered package <datasets-install>` containing the data.
 The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
 The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
 
@@ -31,12 +31,12 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=412518 filter=g" --output workspaces/hits/
+   ap_verify.py --dataset HiTS2015 --id "visit=412518^412568 filter=g" --output workspaces/hits/
 
 Here the inputs are:
 
 * :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
-* :command:`visit=412518 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :command:`visit=412518^412568 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
 
@@ -44,10 +44,15 @@ while the output is:
 
 This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 412518 through the entire AP pipeline.
 
+It's also possible to run an entire dataset by omitting the :command:`--id` argument (as some datasets are very large, do this with caution):
+
+.. prompt:: bash
+
+   ap_verify.py --dataset CI-HiTS2015 --output workspaces/hits/
+
 .. note::
 
-   The command-line interface for :command:`ap_verify.py` is at present much more limited than those of command-line tasks.
-   In particular, only file-based repositories are supported, and compound dataIds cannot be provided.
+   The command-line interface for :command:`ap_verify.py` is at present more limited than those of command-line tasks.
    See the :doc:`command-line-reference` for details.
 
 .. _ap-verify-run-ingest:
@@ -55,7 +60,7 @@ This call will create a new directory at :file:`workspaces/hits`, ingest the HiT
 How to run ingestion by itself
 ==============================
 
-``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that ingests datasets but does not run the pipeline on them.
+``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that :doc:`ingests datasets into repositories <datasets-butler>` but does not run the pipeline on them.
 This is useful if the data need special processing or as a precursor to massive processing runs.
 Running :command:`ap_verify.py` with the same arguments as a previous run of :command:`ingest_dataset.py` will automatically skip ingestion.
 
@@ -84,4 +89,6 @@ Further reading
 ===============
 
 - :doc:`datasets-install`
+- :doc:`new-metrics`
+- :doc:`failsafe`
 - :doc:`command-line-reference`

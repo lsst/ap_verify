@@ -1,5 +1,7 @@
 .. py:currentmodule:: lsst.ap.verify
 
+.. program:: ap_verify.py
+
 .. _ap-verify-datasets-install:
 
 ###################
@@ -34,4 +36,9 @@ For example, to install the `HiTS 2015 <https://github.com/lsst/ap_verify_hits20
 
    rebuild -u ap_verify_hits2015
 
-Once this is done, ``ap_verify`` will be able to find the HiTS data upon request.
+Once this is done, ``ap_verify`` will be able to find the HiTS data when requested through :option:`--dataset`.
+
+Further reading
+===============
+
+- :doc:`running`
