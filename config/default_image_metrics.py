@@ -41,7 +41,7 @@ for target, metric in memoryConfigs.items():
 for subConfig in chain(config.measurers["timing"].configs.values(),
                        config.measurers["memory"].configs.values(),
                        ):
-    subConfig.metadata.name = "apPipe_metadata"
+    subConfig.connections.taskName = "apPipe"
 # List comprehension would be cleaner, but can't refer to config inside one
 for subConfig in metadataConfigs:
-    config.measurers[subConfig].metadata.name = "apPipe_metadata"
+    config.measurers[subConfig].connections.taskName = "apPipe"
