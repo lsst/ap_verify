@@ -62,7 +62,7 @@ def processImage(visit, ccd):
     """
     try:
         dataId = 'visit=%d ccdnum=%d filter=g' % (visit, ccd)
-        args = '--dataset HiTS2015 --output temp/ --dataIdString "%s" --silent' % dataId
+        args = '--dataset HiTS2015 --output temp/ --dataIdString "%s"' % dataId
         runApVerify(shlex.split(args))
     finally:
         jobFile = 'ap_verify.verify.json'

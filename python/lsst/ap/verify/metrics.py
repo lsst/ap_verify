@@ -56,11 +56,6 @@ class MetricsParser(argparse.ArgumentParser):
                  "format. {output} will be replaced with the value of the "
                  "--output argument, while {dataId} will be replaced with the "
                  "job\'s data ID. Defaults to {output}/ap_verify.{dataId}.verify.json.")
-        # TODO: remove --silent in DM-18120
-        self.add_argument('--silent', dest='submitMetrics', nargs=0,
-                          action=DeprecatedAction,
-                          deprecationReason="SQuaSH upload is no longer supported",
-                          help='Do NOT submit metrics to SQuaSH.')
         self.add_argument('--dataset-metrics-config',
                           help='The config file specifying the dataset-level metrics to measure. '
                                'Defaults to config/default_dataset_metrics.py.')
