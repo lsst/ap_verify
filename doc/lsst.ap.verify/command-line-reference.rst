@@ -107,10 +107,3 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
    The path may be absolute or relative to the current working directory.
-
-.. option:: --silent
-
-   **Do not report measurements to SQuaSH.**
-
-   This flag previously disabled upload of measurements to SQuaSH.
-   SQuaSH support has been removed from ap_verify, so this flag has no effect and is deprecated.

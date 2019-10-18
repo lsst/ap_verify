@@ -34,7 +34,6 @@ import argparse
 import collections
 import copy
 import os
-import warnings
 
 import lsst.utils
 from lsst.verify.gen2tasks import MetricsControllerTask
@@ -56,41 +55,12 @@ class MetricsParser(argparse.ArgumentParser):
                  "format. {output} will be replaced with the value of the "
                  "--output argument, while {dataId} will be replaced with the "
                  "job\'s data ID. Defaults to {output}/ap_verify.{dataId}.verify.json.")
-        # TODO: remove --silent in DM-18120
-        self.add_argument('--silent', dest='submitMetrics', nargs=0,
-                          action=DeprecatedAction,
-                          deprecationReason="SQuaSH upload is no longer supported",
-                          help='Do NOT submit metrics to SQuaSH.')
         self.add_argument('--dataset-metrics-config',
                           help='The config file specifying the dataset-level metrics to measure. '
                                'Defaults to config/default_dataset_metrics.py.')
         self.add_argument('--image-metrics-config',
                           help='The config file specifying the image-level metrics to measure. '
                                'Defaults to config/default_image_metrics.py.')
-
-
-class DeprecatedAction(argparse.Action):
-    """An `argparse.Action` that stores nothing and issues a `FutureWarning`.
-
-    Parameters
-    ----------
-    args
-        Positional arguments to `argparse.Action`.
-    deprecationReason : `str`
-        A mandatory keyword argument to `argparse.ArgumentParser.add_argument`
-        that describes why the argument was deprecated. The explanation will be
-        printed if the argument is used.
-    kwargs
-        Keyword arguments to `argparse.Action`.
-    """
-    def __init__(self, *args, deprecationReason, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.reason = deprecationReason
-
-    def __call__(self, _parser, _namespace, _values, option_string=None):
-        message = "%s has been deprecated, because %s. It will be removed in a future version." \
-            % (option_string, self.reason)
-        warnings.warn(message, category=FutureWarning)
 
 
 class _OptionalFormatDict(collections.UserDict):
