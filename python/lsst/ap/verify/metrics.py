@@ -105,7 +105,7 @@ def computeMetrics(workspace, dataIds, args):
     datasetConfig = _getMetricsConfig(args.dataset_metrics_config,
                                       "default_dataset_metrics.py",
                                       metricsFile)
-    _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")],
+    _runMetricTasks(datasetConfig, [workspace.analysisButler.dataRef("apPipe_config")],
                     skipExisting=args.skip_existing_metrics)
 
 
