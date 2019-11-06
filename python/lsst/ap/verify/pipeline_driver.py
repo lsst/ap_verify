@@ -33,6 +33,7 @@ import argparse
 import os
 
 import lsst.log
+import lsst.pipe.base as pipeBase
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_ppdb import makePpdb
 
@@ -51,6 +52,9 @@ class ApPipeParser(argparse.ArgumentParser):
                           help='An identifier for the data to process.')
         self.add_argument("-j", "--processes", default=1, type=int,
                           help="Number of processes to use.")
+        self.add_argument("--skip-pipeline", action="store_true",
+                          help="Do not run the AP pipeline itself. This argument is useful "
+                               "for testing metrics on a fixed data set.")
 
 
 def runApPipe(workspace, parsedCmdLine):
@@ -67,7 +71,8 @@ def runApPipe(workspace, parsedCmdLine):
     -------
     apPipeReturn : `Struct`
         The `Struct` returned from `~lsst.ap.pipe.ApPipeTask.parseAndRun` with
-        ``doReturnResults=False``.
+        ``doReturnResults=False``. This object is valid even if
+        `~lsst.ap.pipe.ApPipeTask` was never run.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
@@ -87,8 +92,19 @@ def runApPipe(workspace, parsedCmdLine):
     pipelineArgs.extend(["--processes", str(parsedCmdLine.processes)])
     pipelineArgs.extend(["--noExit"])
 
-    results = apPipe.ApPipeTask.parseAndRun(pipelineArgs)
-    log.info('Pipeline complete')
+    if not parsedCmdLine.skip_pipeline:
+        results = apPipe.ApPipeTask.parseAndRun(pipelineArgs)
+        log.info('Pipeline complete')
+    else:
+        log.info('Skipping AP pipeline entirely.')
+        apPipeParser = apPipe.ApPipeTask._makeArgumentParser()
+        apPipeParsed = apPipeParser.parse_args(config=apPipe.ApPipeTask.ConfigClass(), args=pipelineArgs)
+        results = pipeBase.Struct(
+            argumentParser=apPipeParser,
+            parsedCmd=apPipeParsed,
+            taskRunner=apPipe.ApPipeTask.RunnerClass(TaskClass=apPipe.ApPipeTask, parsedCmd=apPipeParsed),
+            resultList=[],
+        )
 
     return results
 
