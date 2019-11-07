@@ -161,6 +161,16 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
         self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
+    @patchApPipe
+    def testRunApPipeReuse(self, _mockDb, mockClass):
+        """Test that runApPipe does not run the pipeline at all (not even with
+        --reuse-outputs-from) if --skip-pipeline is provided.
+        """
+        mockParse = mockClass.parseAndRun
+        skipArgs = pipeline_driver.ApPipeParser().parse_args(["--skip-pipeline"])
+        pipeline_driver.runApPipe(self.workspace, skipArgs)
+        mockParse.assert_not_called()
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass

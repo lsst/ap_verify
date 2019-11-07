@@ -49,6 +49,9 @@ class MetricsParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
+        self.add_argument('--skip-existing-metrics', action='store_true',
+                          help='Calculate metrics for only those data IDs that don\'t yet '
+                          'have a Job file on disk.')
         self.add_argument(
             '--metrics-file', default='{output}/ap_verify.{dataId}.verify.json',
             help="The file template to which to output metrics in lsst.verify "
@@ -97,12 +100,13 @@ def computeMetrics(workspace, dataIds, args):
     imageConfig = _getMetricsConfig(args.image_metrics_config,
                                     "default_image_metrics.py",
                                     metricsFile)
-    _runMetricTasks(imageConfig, dataIds.refList)
+    _runMetricTasks(imageConfig, dataIds.refList, skipExisting=args.skip_existing_metrics)
 
     datasetConfig = _getMetricsConfig(args.dataset_metrics_config,
                                       "default_dataset_metrics.py",
                                       metricsFile)
-    _runMetricTasks(datasetConfig, [workspace.workButler.dataRef("apPipe_config")])
+    _runMetricTasks(datasetConfig, [workspace.analysisButler.dataRef("apPipe_config")],
+                    skipExisting=args.skip_existing_metrics)
 
 
 def _getMetricsConfig(userFile, defaultFile, metricsOutputTemplate=None):
@@ -135,7 +139,7 @@ def _getMetricsConfig(userFile, defaultFile, metricsOutputTemplate=None):
     return timingConfig
 
 
-def _runMetricTasks(config, dataRefs):
+def _runMetricTasks(config, dataRefs, skipExisting=False):
     """Run MetricControllerTask on a single dataset.
 
     Parameters
@@ -146,9 +150,11 @@ def _runMetricTasks(config, dataRefs):
         The data references over which to compute metrics. The granularity
         determines the metric granularity; see
         `MetricsControllerTask.runDataRef` for more details.
+    skipExisting : `bool`, optional
+        If set, avoid recalculating metrics that are already on disk.
     """
     allMetricTasks = MetricsControllerTask(config)
-    allMetricTasks.runDataRefs([_sanitizeRef(ref) for ref in dataRefs])
+    allMetricTasks.runDataRefs([_sanitizeRef(ref) for ref in dataRefs], skipExisting=skipExisting)
 
 
 def _sanitizeRef(dataRef):
@@ -163,9 +169,13 @@ def _sanitizeRef(dataRef):
     Returns
     -------
     clean : `lsst.daf.persistence.ButlerDataRef`
-        A dataref that is safe to use.
+        A dataref that is safe to use. May be ``dataRef`` if it was already safe.
     """
-    newDataRef = copy.deepcopy(dataRef)
-    if "hdu" in newDataRef.dataId:
-        del newDataRef.dataId["hdu"]
-    return newDataRef
+    if "hdu" in dataRef.dataId:
+        # To avoid copying Butler (slow!), make shallow copy then overwrite data ID
+        newDataRef = copy.copy(dataRef)
+        id = copy.copy(newDataRef.dataId)
+        del id["hdu"]
+        newDataRef.dataId = id
+        return newDataRef
+    return dataRef
