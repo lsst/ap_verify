@@ -169,9 +169,13 @@ def _sanitizeRef(dataRef):
     Returns
     -------
     clean : `lsst.daf.persistence.ButlerDataRef`
-        A dataref that is safe to use.
+        A dataref that is safe to use. May be ``dataRef`` if it was already safe.
     """
-    newDataRef = copy.deepcopy(dataRef)
-    if "hdu" in newDataRef.dataId:
-        del newDataRef.dataId["hdu"]
-    return newDataRef
+    if "hdu" in dataRef.dataId:
+        # To avoid copying Butler (slow!), make shallow copy then overwrite data ID
+        newDataRef = copy.copy(dataRef)
+        id = copy.copy(newDataRef.dataId)
+        del id["hdu"]
+        newDataRef.dataId = id
+        return newDataRef
+    return dataRef
