@@ -35,7 +35,7 @@ import os
 import lsst.log
 import lsst.pipe.base as pipeBase
 import lsst.ap.pipe as apPipe
-from lsst.ap.pipe.make_ppdb import makePpdb
+from lsst.ap.pipe.make_apdb import makeApdb
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -77,7 +77,7 @@ def runApPipe(workspace, parsedCmdLine):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
 
     configArgs = _getConfigArguments(workspace)
-    makePpdb(configArgs)
+    makeApdb(configArgs)
 
     pipelineArgs = [workspace.dataRepo,
                     "--output", workspace.outputRepo,
@@ -129,8 +129,8 @@ def _getConfigArguments(workspace):
     overridePath = os.path.join(workspace.configDir, overrideFile)
 
     args = ["--configfile", overridePath]
-    # ApVerify will use the sqlite hooks for the Ppdb.
-    args.extend(["--config", "ppdb.db_url=sqlite:///" + workspace.dbLocation])
-    args.extend(["--config", "ppdb.isolation_level=READ_UNCOMMITTED"])
+    # ApVerify will use the sqlite hooks for the Apdb.
+    args.extend(["--config", "apdb.db_url=sqlite:///" + workspace.dbLocation])
+    args.extend(["--config", "apdb.isolation_level=READ_UNCOMMITTED"])
 
     return args
