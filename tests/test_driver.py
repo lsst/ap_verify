@@ -53,7 +53,7 @@ def patchApPipe(method):
             parsedCmd=parsedCmd,
             taskRunner=None,
             resultList=[Struct(exitStatus=0)])
-        dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makePpdb")
+        dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makeApdb")
         pipePatcher = unittest.mock.patch("lsst.ap.pipe.ApPipeTask",
                                           **{"parseAndRun.return_value": parReturn},
                                           _DefaultName=ApPipeTask._DefaultName,
@@ -155,11 +155,11 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
-        self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        self.assertIn("apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
         mockParse.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-        self.assertIn("ppdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        self.assertIn("apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
     @patchApPipe
     def testRunApPipeReuse(self, _mockDb, mockClass):
