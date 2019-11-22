@@ -279,7 +279,8 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         self.setUpCalibRegistry()
 
-        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)
+        # Second return is calib type
+        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)[0]
         numDefects = 0
         # These are keyes on sensor and validity date
         for s in defects:
@@ -293,7 +294,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """Test that ingesting defects starting from an abstract dataset adds them to a repository.
         """
         self.setUpCalibRegistry()
-        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)
+
+        # second return is calib type
+        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)[0]
         numDefects = 0
         # These are keyes on sensor and validity date
         for s in defects:
