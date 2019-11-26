@@ -44,7 +44,7 @@ import lsst.pipe.base as pipeBase
 
 from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
-from lsst.pipe.tasks.ingestStdTextCalibs import IngestStdTextCalibsTask
+from lsst.pipe.tasks.ingestCuratedCalibs import IngestCuratedCalibsTask
 
 
 class DatasetIngestConfig(pexConfig.Config):
@@ -100,7 +100,7 @@ class DatasetIngestConfig(pexConfig.Config):
         doc="Path to top level of the defect tree.  This is a directory with a directory per sensor."
     )
     defectIngester = pexConfig.ConfigurableField(
-        target=IngestStdTextCalibsTask,
+        target=IngestCuratedCalibsTask,
         doc="Task used to ingest defects.",
     )
 
