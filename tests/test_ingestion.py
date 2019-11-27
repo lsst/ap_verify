@@ -31,7 +31,7 @@ import lsst.utils.tests
 import lsst.pipe.tasks as pipeTasks
 import lsst.pex.exceptions as pexExcept
 import lsst.obs.test
-from lsst.pipe.tasks.read_defects import read_all_defects
+from lsst.pipe.tasks.read_curated_calibs import read_all
 from lsst.ap.verify import ingestion
 from lsst.ap.verify.dataset import Dataset
 from lsst.ap.verify.workspace import Workspace
@@ -91,7 +91,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         config.textDefectPath = os.path.join(getPackageDir('obs_test_data'), 'test', 'defects')
         config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
         config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        config.defectIngester.load(os.path.join(obsDir, 'ingestDefects.py'))
+        config.defectIngester.load(os.path.join(obsDir, 'ingestCuratedCalibs.py'))
         return config
 
     def setUp(self):
@@ -279,7 +279,8 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """
         self.setUpCalibRegistry()
 
-        defects = read_all_defects(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)
+        # Second return is calib type
+        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)[0]
         numDefects = 0
         # These are keyes on sensor and validity date
         for s in defects:
@@ -293,7 +294,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """Test that ingesting defects starting from an abstract dataset adds them to a repository.
         """
         self.setUpCalibRegistry()
-        defects = read_all_defects(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)
+
+        # second return is calib type
+        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)[0]
         numDefects = 0
         # These are keyes on sensor and validity date
         for s in defects:
