@@ -31,12 +31,12 @@ memoryConfigs = {
 for target, metric in timingConfigs.items():
     subConfig = TimingMetricConfig()
     subConfig.target = target
-    subConfig.metric = metric
+    subConfig.connections.package, subConfig.connections.metric = metric.split(".")
     config.measurers["timing"].configs[target] = subConfig
 for target, metric in memoryConfigs.items():
     subConfig = MemoryMetricConfig()
     subConfig.target = target
-    subConfig.metric = metric
+    subConfig.connections.package, subConfig.connections.metric = metric.split(".")
     config.measurers["memory"].configs[target] = subConfig
 for subConfig in chain(config.measurers["timing"].configs.values(),
                        config.measurers["memory"].configs.values(),
