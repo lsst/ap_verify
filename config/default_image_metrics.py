@@ -23,7 +23,7 @@ timingConfigs = {
     "apPipe:differencer:subtract.subtractExposures": "ip_diffim.ImagePsfMatchTime",
     "apPipe:differencer:detection.run": "meas_algorithms.SourceDetectionTime",
     "apPipe:differencer:measurement.run": "ip_diffim.DipoleFitTime",
-    "apPipe:associator.run": "ap_association.AssociationTime",
+    "apPipe:diaPipe:associator.run": "ap_association.AssociationTime",
 }
 memoryConfigs = {
     "apPipe.runDataRef": "ap_pipe.ApPipeMemory",
