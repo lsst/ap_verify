@@ -155,11 +155,11 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
-        self.assertIn("apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        self.assertIn("diaPipe.apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
         mockParse.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-        self.assertIn("apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        self.assertIn("diaPipe.apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
     @patchApPipe
     def testRunApPipeReuse(self, _mockDb, mockClass):

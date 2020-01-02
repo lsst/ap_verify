@@ -130,7 +130,7 @@ def _getConfigArguments(workspace):
 
     args = ["--configfile", overridePath]
     # ApVerify will use the sqlite hooks for the Apdb.
-    args.extend(["--config", "apdb.db_url=sqlite:///" + workspace.dbLocation])
-    args.extend(["--config", "apdb.isolation_level=READ_UNCOMMITTED"])
+    args.extend(["--config", "diaPipe.apdb.db_url=sqlite:///" + workspace.dbLocation])
+    args.extend(["--config", "diaPipe.apdb.isolation_level=READ_UNCOMMITTED"])
 
     return args
