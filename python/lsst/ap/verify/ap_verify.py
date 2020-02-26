@@ -159,7 +159,8 @@ def runApVerify(cmdLine=None):
 
     log.info('Running pipeline...')
     apPipeResults = runApPipe(workspace, args)
-    computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
+    # Commented out so we don't waste time on metrics. Can be rerun later.
+    # computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
 
     return _getCmdLineExitStatus(apPipeResults.resultList)
 
