@@ -23,6 +23,8 @@
 #
 
 
+import argparse
+
 from astropy.table import Table
 from glob import glob
 import numpy as np
@@ -33,21 +35,41 @@ from lsst.utils import getPackageDir
 
 
 # Specify variables.
-nObjects = 180000
-subObjects = int(nObjects / 3)
-nJobs = 24
 
 # Configurables to make:
-#     number of objects.
-#     output directory
 #     number of jobs
-#     mag min and max
-
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--nFakes", default=180000, type=int,
+                        help="Number of fakes to produce over each tract. "
+                             "180k is roughly LSST DiaSource density.")
+    parser.add_argument("--output", type=str,
+                        help="Full or relative path directory to output "
+                             "injected fakes.")
+    parser.add_argument("--mag_min", type=float, default=19.0,
+                        help="Minimum magnitude for fakes. Distributed "
+                             "uniformly in magnitude.")
+    parser.add_argument("--mag_max", type=float, default=24.0,
+                        help="Minimum magnitude for fakes. Distributed "
+                             "uniformly in magnitude.")
+    parser.add_argument("--mag_scatter", type=float, default=0.02,
+                        help="Factional scatter to add to calexp injected "
+                             "fakes.")
+    parser.add_argument("--nJobs", default=24, type=int,
+                        help="Number of parallel processes to use.")
+    args = parser.parse_args()
+    nFakes = args.nFakes
+    output = args.output
+    nJobs = args.nJobs
+    mag_min = args.mag_min
+    mag_max = args.mag_max
+    mag_scatter = args.mag_scatter
+
+    subObjects = int(nFakes / 3)
     #Create initial ap_verify dataset
-    job = Popen("ap_verify.py --dataset HiTS2015 --id '--ccdnum=8 filter=g' --output " +
-                getPackageDir("ap_verify") + "/moreFakes8 -j%i" % nJobs,
+    job = Popen("ap_verify.py --dataset HiTS2015 --id filter=g "
+                "--output %s -j% i" % (output, nJobs),
                 shell=True)
     job.wait()
 
@@ -62,15 +84,15 @@ if __name__ == "__main__":
         decs = np.arcsin(np.random.uniform(
             np.sin(tractPoly.getBoundingBox().getLat().getA().asRadians()),
             np.sin(tractPoly.getBoundingBox().getLat().getB().asRadians()),
-            nObjects))
+            nFakes))
         ras = np.random.uniform(
             tractPoly.getBoundingBox().getLon().getA().asRadians(),
             tractPoly.getBoundingBox().getLon().getB().asRadians(),
-            nObjects)
+            nFakes)
 
         # Create Random magnitudes
         # Make min amd max configurable.
-        mags = np.random.uniform(19, 24, nObjects)
+        mags = np.random.uniform(mag_min, mag_max, nFakes)
 
         # We split the initial data into parts.
         # two thirds are in the calexp, two thirds are in the coadd. An
@@ -84,7 +106,9 @@ if __name__ == "__main__":
              "BulgeHalfLightRadius": np.ones(2 * subObjects, dtype="float"),
              "gmagVar":
                  (mags[:(2 * subObjects)]
-                  * (1 + np.random.uniform(-0.02, 0.02, 2 * subObjects))),
+                  * (1 + np.random.uniform(-mag_scatter,
+                                           mag_scatter,
+                                           2 * subObjects))),
              "disk_n": np.full(2 * subObjects, 1.0),
              "bulge_n": np.full(2 * subObjects, 1.0),
              "a_d": np.full(2 * subObjects, 1.0),
@@ -114,38 +138,37 @@ if __name__ == "__main__":
 
         # Write out the data.
         calExpTable.write(
-            getPackageDir("ap_verify") + "/moreFakes8/calexpFakesTract%i.csv" % tract,
+            "%s/calexpFakesTract%i.csv" % (output, tract),
             format="ascii.csv",
             overwrite=True)
         coaddTable.write(
-            getPackageDir("ap_verify") + "/moreFakes8/coaddFakesTract%i.csv" % tract,
+            "%s/coaddFakesTract%i.csv" % (output, tract),
             format="ascii.csv",
             overwrite=True)
 
         # Insert fakes into the cooads
         coaddJob = Popen(
-            "insertFakes.py %s/moreFakes8/output --rerun testFakes --id tract=%i filter=g "
-            "-c fakeType=%s/moreFakes8/coaddFakesTract%i.csv "
-            "--clobber-config --clobber-versions" % (getPackageDir("ap_verify"), tract,
-                                                     getPackageDir("ap_verify"), tract),
+            "insertFakes.py %s/output --rerun testFakes --id tract=%i filter=g "
+            "-c fakeType=%s/coaddFakesTract%i.csv "
+            "--clobber-config --clobber-versions" % (output, tract,
+                                                     output, tract),
             shell=True)
         # Insert Fakes into the calexps.
         procJobs = []
-        # for ccd in [1, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-        #             12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-        #             22, 23, 24, 25, 26, 27, 8, 29, 30, 31,
-        #             32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-        #             42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-        #             52, 53, 54, 55, 56, 57, 58, 59, 60, 62]:
-        for ccd in [8]:
+        for ccd in [1, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                    12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+                    22, 23, 24, 25, 26, 27, 8, 29, 30, 31,
+                    32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                    42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+                    52, 53, 54, 55, 56, 57, 58, 59, 60, 62]:
             procJobs.append(Popen(
-                "processCcdWithFakes.py %s/moreFakes8/output --rerun testFakes "
+                "processCcdWithFakes.py %s/output --rerun testFakes "
                 "--id ccdnum=%i tract=%i filter=g "
-                "-c insertFakes.fakeType=%s/moreFakes8/calexpFakesTract%i.csv "
-                "--clobber-config --clobber-versions" % (getPackageDir("ap_verify"),
+                "-c insertFakes.fakeType=%s/calexpFakesTract%i.csv "
+                "--clobber-config --clobber-versions" % (output,
                                                          ccd,
                                                          tract,
-                                                         getPackageDir("ap_verify"),
+                                                         output,
                                                          tract),
                 shell=True))
             if len(procJobs) >= nJobs:
@@ -158,9 +181,11 @@ if __name__ == "__main__":
         # Wait for coadds jobs to finish.
         coaddJob.wait()
 
-        coaddFiles = glob("%s/moreFakes8/output/rerun/testFakes/deepCoadd/g/%i/*.fits" % (getPackageDir("ap_verify"), tract))
+        coaddFiles = glob("%s/output/rerun/testFakes/deepCoadd/g/%i/*.fits" %
+                          (output, tract))
         for coaddFile in coaddFiles:
-            job = Popen("cp %s %s" % (coaddFile, coaddFile[:-11] + ".fits"), shell=True)
+            job = Popen("cp %s %s" % (coaddFile, coaddFile[:-11] + ".fits"),
+                        shell=True)
             job.wait()
 
     # Copy the DECam mapper file to use fakes instead of regular calexps.
@@ -170,39 +195,38 @@ if __name__ == "__main__":
     job.wait()
 
     # Create the output Apdb.
-    print("sqlite:///" + getPackageDir("ap_verify") +
-          "/moreFakes8/output/rerun/testFakes/fakesAssociation.db")
-    job = Popen("make_apdb.py -c diaPipe.apdb.isolation_level=READ_UNCOMMITTED "
-                "-c diaPipe.apdb.db_url=sqlite:///" + getPackageDir("ap_verify") +
-                "/moreFakes8/output/rerun/testFakes/fakesAssociation.db",
-                shell=True)
+    print("sqlite:///%s/output/rerun/testFakes/fakesAssociation.db")
+    job = Popen(
+        "make_apdb.py -c diaPipe.apdb.isolation_level=READ_UNCOMMITTED "
+        "-c diaPipe.apdb.db_url=sqlite:///%s/output/rerun/testFakes/fakesAssociation.db" %
+        output,
+        shell=True)
     job.wait()
 
     # Submit ap_pipe jobs.
     apJobs = []
-    # for ccdnum in [1, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-    #                12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-    #                22, 23, 24, 25, 26, 27, 8, 29, 30, 31,
-    #                32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-    #                42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
-    #                52, 53, 54, 55, 56, 57, 58, 59, 60, 62]:
-    for ccdnum in [8]:
-        apJobs.append(Popen("ap_pipe.py %s/moreFakes8/output --rerun testFakes --id ccdnum=%i filter=g "
+    for ccdnum in [1, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+                   12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+                   22, 23, 24, 25, 26, 27, 8, 29, 30, 31,
+                   32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                   42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+                   52, 53, 54, 55, 56, 57, 58, 59, 60, 62]:
+        apJobs.append(Popen("ap_pipe.py %s/output --rerun testFakes --id ccdnum=%i filter=g "
                             "--reuse-outputs-from 'ccdProcessor' "
-                            "--template %s/moreFakes8/output/rerun/testFakes "
+                            "--template %s/output/rerun/testFakes "
                             "-C %s/config/apPipe.py "
                             "-c diaPipe.apdb.db_url=sqlite:///%s"
-                            "/moreFakes8/output/rerun/testFakes/fakesAssociation.db "
+                            "/output/rerun/testFakes/fakesAssociation.db "
                             "-c diaPipe.apdb.isolation_level=READ_UNCOMMITTED "
                             "-c differencer.coaddName='deep' "
                             "-c differencer.getTemplate.coaddName='deep' "
                             "-c differencer.getTemplate.warpType='direct' "
                             "--clobber-config --clobber-versions" %
-                            (getPackageDir("ap_verify"),
+                            (output,
                              ccdnum,
-                             getPackageDir("ap_verify"),
+                             output,
                              getPackageDir("ap_verify_hits2015"),
-                             getPackageDir("ap_verify")),
+                             output),
                             shell=True))
         if len(apJobs) >= nJobs:
             for job in apJobs:
