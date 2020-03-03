@@ -67,7 +67,7 @@ if __name__ == "__main__":
     mag_scatter = args.mag_scatter
 
     subObjects = int(nFakes / 3)
-    #Create initial ap_verify dataset
+    # Create initial ap_verify dataset
     job = Popen("ap_verify.py --dataset HiTS2015 --id filter=g "
                 "--output %s -j% i" % (output, nJobs),
                 shell=True)
@@ -105,10 +105,10 @@ if __name__ == "__main__":
              "DiskHalfLightRadius": np.ones(2 * subObjects, dtype="float"),
              "BulgeHalfLightRadius": np.ones(2 * subObjects, dtype="float"),
              "gmagVar":
-                 (mags[:(2 * subObjects)]
-                  * (1 + np.random.uniform(-mag_scatter,
-                                           mag_scatter,
-                                           2 * subObjects))),
+                 (mags[:(2 * subObjects)] *
+                  (1 + np.random.uniform(-mag_scatter,
+                                         mag_scatter,
+                                         2 * subObjects))),
              "disk_n": np.full(2 * subObjects, 1.0),
              "bulge_n": np.full(2 * subObjects, 1.0),
              "a_d": np.full(2 * subObjects, 1.0),
