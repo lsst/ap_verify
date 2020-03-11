@@ -24,6 +24,7 @@
 
 
 import argparse
+from multiprocessing import Pool
 
 from astropy.table import Table
 import pandas as pd
@@ -33,35 +34,54 @@ from lsst.geom import SpherePoint, radians, Box2D
 from lsst.sphgeom import ConvexPolygon
 
 
+visits = [410915, 410971, 411021, 411055, 411255, 411305, 411355, 411406,
+          411456, 411657, 411707, 411758, 411808, 411858, 412060, 412250,
+          412307, 412504, 412554, 412604, 412654, 412704, 413635, 413680,
+          415314, 415364, 419791, 421590, 410929, 410985, 411035, 411069,
+          411269, 411319, 411369, 411420, 411470, 411671, 411721, 411772,
+          411822, 411872, 412074, 412264, 412321, 412518, 412568, 412618,
+          412668, 412718, 413649, 413694, 415328, 415378, 419802, 421604,
+          410931, 410987, 411037, 411071, 411271, 411321, 411371, 411422,
+          411472, 411673, 411724, 411774, 411824, 411874, 412076, 412266,
+          412324, 412520, 412570, 412620, 412670, 412720, 413651, 413696,
+          415330, 415380, 419804, 421606]
+
+
+ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+        21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+        38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+        55, 56, 57, 58, 59, 60, 62]
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=str,
                         help="Full or relative path directory repository "
                              "where fakes are.")
+    parser.add_argument("--nJobs", default=24, type=int,
+                        help="Number of parallel processes to use.")
     args = parser.parse_args()
 
-    visits = [410915, 410971, 411021, 411055, 411255, 411305, 411355, 411406,
-              411456, 411657, 411707, 411758, 411808, 411858, 412060, 412250,
-              412307, 412504, 412554, 412604, 412654, 412704, 413635, 413680,
-              415314, 415364, 419791, 421590, 410929, 410985, 411035, 411069,
-              411269, 411319, 411369, 411420, 411470, 411671, 411721, 411772,
-              411822, 411872, 412074, 412264, 412321, 412518, 412568, 412618,
-              412668, 412718, 413649, 413694, 415328, 415378, 419802, 421604,
-              410931, 410987, 411037, 411071, 411271, 411321, 411371, 411422,
-              411472, 411673, 411724, 411774, 411824, 411874, 412076, 412266,
-              412324, 412520, 412570, 412620, 412670, 412720, 413651, 413696,
-              415330, 415380, 419804, 421606]
-    ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-            21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-            38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-            55, 56, 57, 58, 59, 60, 62]
+    output = []
 
-    # visits = [411420, 419802]
-    # ccds = [5, 10]
+    pool = Pool(args.nJobs)
+    visit_results = pool.imap_unordered(
+        runVisit,
+        ({"visit": visit, "repo": repo} for visit in visits))
+    pool.close()
+    pool.join()
+    output.extend(visit_results)
 
-    b = Butler(args.repo + "/output")
-    calexpFakes = Table.read(args.repo + "/calexpFakesTract0.csv").to_pandas()
-    coaddFakes = Table.read(args.repo + "/coaddFakesTract0.csv").to_pandas()
+    df = pd.concat(output)
+    df.to_parquet(args.repo + "insertCounts.parquet", compression="gzip")
+
+
+def runVisit(data):
+    visit = data["visit"]
+    repo = data["repo"]
+    b = Butler(repo + "/output")
+    calexpFakes = Table.read(repo + "/calexpFakesTract0.csv").to_pandas()
+    coaddFakes = Table.read(repo + "/coaddFakesTract0.csv").to_pandas()
 
     calexpInserts = calexpFakes[:60000]
     bothInserts = calexpFakes[60000:]
@@ -69,29 +89,26 @@ if __name__ == "__main__":
 
     output = []
 
-    for idx, visit in enumerate(visits):
-        print(visit, 100 * (idx + 1) / len(visits))
-        for ccd in ccds:
-            try:
-                diffIm = b.get("deepDiff_differenceExp",
-                               visit=visit, ccdnum=ccd, filter="g")
-            except NoResults:
-                print(f"No data for dataId={visit}, {ccd}")
-                continue
-            wcs = diffIm.getWcs()
-            bbox = Box2D(diffIm.getBBox())
+    for ccd in ccds:
+        try:
+            diffIm = b.get("deepDiff_differenceExp",
+                           visit=visit, ccdnum=ccd, filter="g")
+        except NoResults:
+            print(f"No data for dataId={visit}, {ccd}")
+            continue
+        wcs = diffIm.getWcs()
+        bbox = Box2D(diffIm.getBBox())
 
-            skyCorners = wcs.pixelToSky(bbox.getCorners())
-            region = ConvexPolygon([s.getVector() for s in skyCorners])
+        skyCorners = wcs.pixelToSky(bbox.getCorners())
+        region = ConvexPolygon([s.getVector() for s in skyCorners])
 
-            def trim(row):
-                coord = SpherePoint(row["raJ2000"], row["decJ2000"], radians)
-                return region.contains(coord.getVector())
+        def trim(row):
+            coord = SpherePoint(row["raJ2000"], row["decJ2000"], radians)
+            return region.contains(coord.getVector())
 
-            output.append({"visit": visit,
-                           "ccd": ccd,
-                           "nCalexp": calexpInserts.apply(trim, axis=1).sum(),
-                           "nBoth": bothInserts.apply(trim, axis=1).sum(),
-                           "nCoadd": coaddInserts.apply(trim, axis=1).sum()})
-    df = pd.DataFrame(output)
-    df.to_parquet(args.repo + "insertCounts.parquet", compression="gzip")
+        output.append({"visit": visit,
+                       "ccd": ccd,
+                       "nCalexp": calexpInserts.apply(trim, axis=1).sum(),
+                       "nBoth": bothInserts.apply(trim, axis=1).sum(),
+                       "nCoadd": coaddInserts.apply(trim, axis=1).sum()})
+    return pd.DataFrame(output)
