@@ -28,7 +28,7 @@ import argparse
 from astropy.table import Table
 import pandas as pd
 
-from lsst.daf.persistence import Butler
+from lsst.daf.persistence import Butler, NoResults
 from lsst.geom import SpherePoint, radians, Box2D
 from lsst.sphgeom import ConvexPolygon
 
@@ -56,8 +56,8 @@ if __name__ == "__main__":
             38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
             55, 56, 57, 58, 59, 60, 62]
 
-    visits = [411420, 419802]
-    ccds = [5, 10]
+    # visits = [411420, 419802]
+    # ccds = [5, 10]
 
     b = Butler(args.repo + "/output")
     calexpFakes = Table.read(args.repo + "/calexpFakesTract0.csv").to_pandas()
@@ -69,12 +69,17 @@ if __name__ == "__main__":
 
     output = []
 
-    for visit in visits:
+    for idx, visit in enumerate(visits):
+        print(visit, 100 * (idx + 1) / len(visits))
         for ccd in ccds:
-            diffIm = b.get("deepDiff_differenceExp",
-                           visit=visit, ccdnum=ccd, filter="g")
+            try:
+                diffIm = b.get("deepDiff_differenceExp",
+                               visit=visit, ccdnum=ccd, filter="g")
+            except NoResults:
+                print(f"No data for dataId={visit}, {ccd}")
+                continue
             wcs = diffIm.getWcs()
-            bbox = Box2D(diffIm.getBoundingBox())
+            bbox = Box2D(diffIm.getBBox())
 
             skyCorners = wcs.pixelToSky(bbox.getCorners())
             region = ConvexPolygon([s.getVector() for s in skyCorners])
