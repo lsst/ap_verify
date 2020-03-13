@@ -46,6 +46,11 @@ visits = [410915, 410971, 411021, 411055, 411255, 411305, 411355, 411406,
           412324, 412520, 412570, 412620, 412670, 412720, 413651, 413696,
           415330, 415380, 419804, 421606]
 
+# CI:
+visits = [411420, 411420, 419802, 419802, 411371, 411371]
+
+
+
 
 ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
@@ -53,28 +58,8 @@ ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         55, 56, 57, 58, 59, 60, 62]
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--repo", type=str,
-                        help="Full or relative path directory repository "
-                             "where fakes are.")
-    parser.add_argument("--nJobs", default=24, type=int,
-                        help="Number of parallel processes to use.")
-    args = parser.parse_args()
-
-    output = []
-
-    pool = Pool(args.nJobs)
-    visit_results = pool.imap_unordered(
-        runVisit,
-        ({"visit": visit, "repo": repo} for visit in visits))
-    pool.close()
-    pool.join()
-    output.extend(visit_results)
-
-    df = pd.concat(output)
-    df.to_parquet(args.repo + "insertCounts.parquet", compression="gzip")
-
+# CI:
+ccds = [5, 10, 56, 60]
 
 def runVisit(data):
     visit = data["visit"]
@@ -106,9 +91,50 @@ def runVisit(data):
             coord = SpherePoint(row["raJ2000"], row["decJ2000"], radians)
             return region.contains(coord.getVector())
 
-        output.append({"visit": visit,
-                       "ccd": ccd,
-                       "nCalexp": calexpInserts.apply(trim, axis=1).sum(),
-                       "nBoth": bothInserts.apply(trim, axis=1).sum(),
-                       "nCoadd": coaddInserts.apply(trim, axis=1).sum()})
-    return pd.DataFrame(output)
+        wCalexp = calexpInserts.apply(trim, axis=1)
+        wBoth = bothInserts.apply(trim, axis=1)
+        wCoadd = coaddInserts.apply(trim, axis=1)
+
+        calexpInserts.loc[:,'inserted'] = False
+        calexpInserts.loc[wCalexp,'inserted'] = True
+        calexpInserts.loc[:,'where_inserted'] = 'calexp'
+        bothInserts.loc[:,'inserted'] = False
+        bothInserts.loc[wBoth,'inserted'] = True
+        bothInserts.loc[:,'where_inserted'] = 'both'
+        coaddInserts.loc[:,'inserted'] = False
+        coaddInserts.loc[wCoadd,'inserted'] = True
+        coaddInserts.loc[:,'where_inserted'] = 'coadd'
+
+        calexpInserts.loc[:,'visit'] = visit
+        calexpInserts.loc[:,'ccd'] = ccd
+        bothInserts.loc[:,'visit'] = visit
+        bothInserts.loc[:,'ccd'] = ccd
+        coaddInserts.loc[:,'visit'] = visit
+        coaddInserts.loc[:,'ccd'] = ccd
+
+        
+    return pd.concat([calexpInserts,bothInserts,coaddInserts])
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--repo", type=str,
+                        help="Full or relative path directory repository "
+                             "where fakes are.")
+    parser.add_argument("--nJobs", default=24, type=int,
+                        help="Number of parallel processes to use.")
+    args = parser.parse_args()
+
+    output = []
+
+    pool = Pool(args.nJobs)
+    visit_results = pool.imap_unordered(
+        runVisit,
+        ({"visit": visit, "repo": args.repo} for visit in visits))
+    pool.close()
+    pool.join()
+    output.extend(visit_results)
+
+    df = pd.concat(output)
+    df = df.loc[df.inserted,:]
+    df.drop('inserted',axis='columns')
+    df.to_parquet(args.repo + "insertCounts.parquet", compression="gzip")
