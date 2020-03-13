@@ -47,7 +47,7 @@ visits = [410915, 410971, 411021, 411055, 411255, 411305, 411355, 411406,
           415330, 415380, 419804, 421606]
 
 # CI:
-# visits = [411420, 411420, 419802, 419802, 411371, 411371]
+# visits = [411420, 419802, 411371]
 
 ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
@@ -78,7 +78,6 @@ def runVisit(data):
     coaddInserts.loc[:, 'visit'] = visit
 
     output = []
-
     for ccd in ccds:
         try:
             diffIm = b.get("deepDiff_differenceExp",
@@ -100,9 +99,9 @@ def runVisit(data):
         wBoth = bothInserts.apply(trim, axis=1)
         wCoadd = coaddInserts.apply(trim, axis=1)
 
-        subCalexpInserts = calexpInserts[wCalexp]
-        subBothInserts = bothInserts[wBoth]
-        subCoaddInserts = coaddInserts[wCoadd]
+        subCalexpInserts = calexpInserts.loc[wCalexp, :]
+        subBothInserts = bothInserts.loc[wBoth, :]
+        subCoaddInserts = coaddInserts.loc[wCoadd, :]
 
         subCalexpInserts.loc[:, 'ccd'] = ccd
         subBothInserts.loc[:, 'ccd'] = ccd
@@ -126,7 +125,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     output = []
-
+    # for visit in visits:
+    #     output.append(runVisit({"visit": visit, "repo": args.repo}))
+    
     pool = Pool(args.nJobs)
     visit_results = pool.imap_unordered(
         runVisit,
