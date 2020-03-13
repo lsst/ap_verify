@@ -47,7 +47,7 @@ visits = [410915, 410971, 411021, 411055, 411255, 411305, 411355, 411406,
           415330, 415380, 419804, 421606]
 
 # CI:
-#visits = [411420, 411420, 419802, 419802, 411371, 411371]
+# visits = [411420, 411420, 419802, 419802, 411371, 411371]
 
 ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
         21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
@@ -56,7 +56,7 @@ ccds = [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
 
 
 # CI:
-#ccds = [5, 10, 56, 60]
+# ccds = [5, 10, 56, 60]
 
 def runVisit(data):
     visit = data["visit"]
@@ -69,12 +69,12 @@ def runVisit(data):
     bothInserts = calexpFakes[60000:]
     coaddInserts = coaddFakes[60000:]
 
-    calexpInserts.loc[:,'where_inserted'] = 'calexp'
-    bothInserts.loc[:,'where_inserted'] = 'both'
-    coaddInserts.loc[:,'where_inserted'] = 'coadd'
-    calexpInserts.loc[:,'visit'] = visit
-    bothInserts.loc[:,'visit'] = visit
-    coaddInserts.loc[:,'visit'] = visit
+    calexpInserts.loc[:, 'where_inserted'] = 'calexp'
+    bothInserts.loc[:, 'where_inserted'] = 'both'
+    coaddInserts.loc[:, 'where_inserted'] = 'coadd'
+    calexpInserts.loc[:, 'visit'] = visit
+    bothInserts.loc[:, 'visit'] = visit
+    coaddInserts.loc[:, 'visit'] = visit
 
     output = []
 
@@ -135,6 +135,4 @@ if __name__ == "__main__":
     output.extend(visit_results)
 
     df = pd.concat(output)
-    df = df.loc[df.inserted,:]
-    df.drop('inserted',axis='columns')
     df.to_parquet(args.repo + "insertCounts.parquet", compression="gzip")
