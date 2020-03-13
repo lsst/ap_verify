@@ -71,6 +71,7 @@ def runVisit(data):
 
     calexpInserts.loc[:, 'where_inserted'] = 'calexp'
     bothInserts.loc[:, 'where_inserted'] = 'both'
+    bothInserts.loc[:, "coaddMag"] = coaddFakes[:60000].loc[:, "gmagVar"]
     coaddInserts.loc[:, 'where_inserted'] = 'coadd'
     calexpInserts.loc[:, 'visit'] = visit
     bothInserts.loc[:, 'visit'] = visit
