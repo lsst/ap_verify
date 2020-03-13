@@ -69,6 +69,13 @@ def runVisit(data):
     bothInserts = calexpFakes[60000:]
     coaddInserts = coaddFakes[60000:]
 
+    calexpInserts.loc[:,'where_inserted'] = 'calexp'
+    bothInserts.loc[:,'where_inserted'] = 'both'
+    coaddInserts.loc[:,'where_inserted'] = 'coadd'
+    calexpInserts.loc[:,'visit'] = visit
+    bothInserts.loc[:,'visit'] = visit
+    coaddInserts.loc[:,'visit'] = visit
+
     output = []
 
     for ccd in ccds:
@@ -92,25 +99,21 @@ def runVisit(data):
         wBoth = bothInserts.apply(trim, axis=1)
         wCoadd = coaddInserts.apply(trim, axis=1)
 
-        calexpInserts.loc[:,'inserted'] = False
-        calexpInserts.loc[wCalexp,'inserted'] = True
-        calexpInserts.loc[:,'where_inserted'] = 'calexp'
-        bothInserts.loc[:,'inserted'] = False
-        bothInserts.loc[wBoth,'inserted'] = True
-        bothInserts.loc[:,'where_inserted'] = 'both'
-        coaddInserts.loc[:,'inserted'] = False
-        coaddInserts.loc[wCoadd,'inserted'] = True
-        coaddInserts.loc[:,'where_inserted'] = 'coadd'
+        subCalexpInserts = calexpInserts[wCalexp]
+        subBothInserts = bothInserts[wBoth]
+        subCoaddInserts = coaddInserts[wCoadd]
 
-        calexpInserts.loc[:,'visit'] = visit
-        calexpInserts.loc[:,'ccd'] = ccd
-        bothInserts.loc[:,'visit'] = visit
-        bothInserts.loc[:,'ccd'] = ccd
-        coaddInserts.loc[:,'visit'] = visit
-        coaddInserts.loc[:,'ccd'] = ccd
+        subCalexpInserts.loc[:, 'ccd'] = ccd
+        subBothInserts.loc[:, 'ccd'] = ccd
+        subCoaddInserts.loc[:, 'ccd'] = ccd
 
-        
-    return pd.concat([calexpInserts,bothInserts,coaddInserts])
+        insertedDf = pd.concat([subCalexpInserts,
+                                subBothInserts,
+                                subCoaddInserts])
+        output.append(insertedDf)
+
+    return pd.concat(output)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
