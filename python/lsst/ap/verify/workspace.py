@@ -49,7 +49,8 @@ class Workspace:
     """
 
     def __init__(self, location):
-        self._location = location
+        # Properties must be `str` for backwards compatibility
+        self._location = str(pathlib.Path(location).resolve())
 
         mode = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH  # a+r, u+rwx
         kwargs = {"parents": True, "exist_ok": True, "mode": mode}
@@ -66,45 +67,50 @@ class Workspace:
 
     @property
     def workDir(self):
-        """The location of the workspace as a whole (`str`, read-only).
+        """The absolute location of the workspace as a whole
+        (`str`, read-only).
         """
         return self._location
 
     @property
     def configDir(self):
-        """The location of a directory containing custom Task config files for
-        use with the data (`str`, read-only).
+        """The absolute location of a directory containing custom Task config
+        files for use with the data (`str`, read-only).
         """
         return os.path.join(self._location, 'config')
 
     @property
     def dataRepo(self):
-        """The URI to a Butler repo for science data (`str`, read-only).
+        """The absolute path/URI to a Butler repo for science data
+        (`str`, read-only).
         """
         return os.path.join(self._location, 'ingested')
 
     @property
     def calibRepo(self):
-        """The URI to a Butler repo for calibration data (`str`, read-only).
+        """The absolute path/URI to a Butler repo for calibration data
+        (`str`, read-only).
         """
         return os.path.join(self._location, 'calibingested')
 
     @property
     def templateRepo(self):
-        """The URI to a Butler repo for precomputed templates (`str`, read-only).
+        """The absolute path/URI to a Butler repo for precomputed templates
+        (`str`, read-only).
         """
         return self.dataRepo
 
     @property
     def outputRepo(self):
-        """The URI to a Butler repo for AP pipeline products (`str`, read-only).
+        """The absolute path/URI to a Butler repo for AP pipeline products
+        (`str`, read-only).
         """
         return os.path.join(self._location, 'output')
 
     @property
     def dbLocation(self):
-        """The default location of the source association database to be
-        created or updated by the pipeline (`str`, read-only).
+        """The default absolute location of the source association database to
+        be created or updated by the pipeline (`str`, read-only).
 
         Shall be a filename to a database file suitable
         for the sqlite backend of `Apdb`.

@@ -83,7 +83,8 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
 
         The exact repository locations are not tested, as they are likely to change.
         """
-        root = self._testWorkspace
+        # Workspace should report all paths as absolute
+        root = os.path.abspath(os.path.realpath(self._testWorkspace))
         self.assertEqual(self._testbed.workDir, root)
         self._assertInDir(self._testbed.configDir, root)
         for repo in WorkspaceTestSuite._allRepos(self._testbed):
