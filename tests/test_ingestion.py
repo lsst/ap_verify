@@ -363,12 +363,17 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
              {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz', 'raw_v3_fr.fits.gz'}}
         )
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*fr*']),
+            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], exclude=['*fr*']),
             {os.path.join(testDir, 'raw', f) for f in {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz'}}
         )
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], ['*_v?_f?.fits.gz']),
+            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], exclude=['*_v?_f?.fits.gz']),
             set()
+        )
+        self.assertSetEqual(
+            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], exclude=['obs_test']),
+            {os.path.join(testDir, 'raw', f) for f in
+             {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz', 'raw_v3_fr.fits.gz'}}
         )
 
 
