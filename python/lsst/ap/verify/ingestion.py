@@ -33,7 +33,6 @@ import fnmatch
 import os
 import shutil
 import tarfile
-from contextlib import contextmanager
 from glob import glob
 import sqlite3
 
@@ -510,34 +509,3 @@ def _findMatchingFiles(basePath, include, exclude=None):
         excludedFiles = [f for f in allFiles if fnmatch.fnmatch(os.path.basename(f), pattern)]
         allFiles.difference_update(excludedFiles)
     return allFiles
-
-
-@contextmanager
-def _tempChDir(newDir):
-    """Change to a new directory, while avoiding side effects in external code.
-
-    Note that no side effects are guaranteed in the case of normal operation or
-    for exceptions raised by the body of a ``with`` statement, but not for
-    exceptions raised by ``_tempChDir`` itself (see below).
-
-    This context manager cannot be used with "with ... as" statements.
-
-    Parameters
-    ----------
-    newDir : `str`
-        The directory to change to for the duration of a ``with`` statement.
-
-    Raises
-    ------
-    OSError
-        Raised if either the program cannot change to ``newDir``, or if it
-        cannot undo the change. Failing to change to ``newDir`` is
-        exception-safe (no side effects), but failing to undo is
-        not recoverable.
-    """
-    startDir = os.path.abspath(os.getcwd())
-    os.chdir(newDir)
-    try:
-        yield
-    finally:
-        os.chdir(startDir)
