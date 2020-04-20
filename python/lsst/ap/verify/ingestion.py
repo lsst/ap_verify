@@ -507,7 +507,8 @@ def _findMatchingFiles(basePath, include, exclude=None):
         allFiles.update(glob(os.path.join(basePath, '**', pattern), recursive=True))
 
     for pattern in _exclude:
-        allFiles.difference_update(fnmatch.filter(allFiles, pattern))
+        excludedFiles = [f for f in allFiles if fnmatch.fnmatch(os.path.basename(f), pattern)]
+        allFiles.difference_update(excludedFiles)
     return allFiles
 
 
