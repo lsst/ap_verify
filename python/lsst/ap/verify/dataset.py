@@ -23,7 +23,7 @@
 
 import os
 
-from lsst.daf.persistence import Butler
+import lsst.daf.persistence as dafPersistence
 import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
@@ -162,13 +162,13 @@ class Dataset:
     def obsPackage(self):
         """The name of the obs package associated with this data (`str`, read-only).
         """
-        return Butler.getMapperClass(self._stubInputRepo).getPackageName()
+        return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getPackageName()
 
     @property
     def camera(self):
         """The name of the camera associated with this data (`str`, read-only).
         """
-        return Butler.getMapperClass(self._stubInputRepo).getCameraName()
+        return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getCameraName()
 
     @property
     def _stubInputRepo(self):
@@ -206,7 +206,7 @@ class Dataset:
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
     def makeCompatibleRepo(self, repoDir, calibRepoDir):
-        """Set up a directory as a repository compatible with this ap_verify dataset.
+        """Set up a directory as a Gen 2 repository compatible with this ap_verify dataset.
 
         If the directory already exists, any files required by the dataset will
         be added if absent; otherwise the directory will remain unchanged.
@@ -221,11 +221,11 @@ class Dataset:
         mapperArgs = {'mapperArgs': {'calibRoot': calibRepoDir}}
         if _isRepo(self.templateLocation):
             # Stub repo is not a parent because can't mix v1 and v2 repositories in parents list
-            Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
+            dafPersistence.Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
+                                  outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
         else:
-            Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
+            dafPersistence.Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
+                                  outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
 
 
 def _isRepo(repoDir):
