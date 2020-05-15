@@ -29,10 +29,8 @@ import unittest.mock
 from lsst.utils import getPackageDir
 import lsst.utils.tests
 import lsst.pipe.tasks as pipeTasks
-import lsst.pex.exceptions as pexExcept
-import lsst.obs.test
-from lsst.pipe.tasks.read_curated_calibs import read_all
 from lsst.ap.verify import ingestion
+from lsst.ap.verify.testUtils import DataTestCase
 from lsst.ap.verify.dataset import Dataset
 from lsst.ap.verify.workspace import Workspace
 
@@ -57,15 +55,11 @@ class MockCamera(object):
             return self.det_dict[item]
 
 
-class IngestionTestSuite(lsst.utils.tests.TestCase):
+class IngestionTestSuite(DataTestCase):
 
     @classmethod
     def setUpClass(cls):
-        try:
-            cls.testData = os.path.join(lsst.utils.getPackageDir("obs_test"), 'data', 'input')
-        except pexExcept.NotFoundError:
-            message = "obs_test not setup. Skipping."
-            raise unittest.SkipTest(message)
+        super().setUpClass()
 
         cls.mockCamera = MockCamera(MockDetector())
         cls.config = cls.makeTestConfig()
@@ -73,24 +67,22 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         cls.config.freeze()
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
-        cls.rawDataId = {'visit': 229388, 'ccdnum': 1}
 
-        cls.rawData = [{'file': 'raw_v1_fg.fits.gz', 'visit': 890104911, 'filter': 'g', 'exptime': 15.0},
-                       {'file': 'raw_v2_fg.fits.gz', 'visit': 890106021, 'filter': 'g', 'exptime': 15.0},
-                       {'file': 'raw_v3_fr.fits.gz', 'visit': 890880321, 'filter': 'r', 'exptime': 15.0},
+        cls.rawData = [{'file': 'lsst_a_204595_R11_S01_i.fits', 'expId': 204595, 'filter': 'i',
+                        'exptime': 30.0},
                        ]
-        cls.calibData = [{'type': 'bias', 'file': 'bias.fits.gz', 'filter': '_unknown_',
-                          'date': '1999-01-17'},
-                         {'type': 'flat', 'file': 'flat_fg.fits.gz', 'filter': 'g', 'date': '1999-01-17'},
-                         {'type': 'flat', 'file': 'flat_fr.fits.gz', 'filter': 'r', 'date': '1999-01-17'},
+        cls.calibData = [{'type': 'bias', 'file': 'bias-R11-S01-det037_2022-01-01.fits.gz',
+                          'filter': 'NONE', 'date': '2022-01-01'},
+                         {'type': 'flat', 'file': 'flat_i-R11-S01-det037_2022-08-06.fits.gz',
+                          'filter': 'i', 'date': '2022-08-06'},
                          ]
 
     @staticmethod
     def makeTestConfig():
-        obsDir = os.path.join(getPackageDir('obs_test'), 'config')
+        obsDir = os.path.join(getPackageDir('obs_lsst'), 'config')
         config = ingestion.DatasetIngestConfig()
-        config.textDefectPath = os.path.join(getPackageDir('obs_test_data'), 'test', 'defects')
         config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
+        config.dataIngester.load(os.path.join(obsDir, 'imsim', 'ingest.py'))
         config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
         config.defectIngester.load(os.path.join(obsDir, 'ingestCuratedCalibs.py'))
         return config
@@ -106,7 +98,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             """
             if "raw_filename" in datasetType:
                 matchingFiles = [datum['file'] for datum in IngestionTestSuite.rawData
-                                 if datum['visit'] == dataId['visit']]
+                                 if datum['expId'] == dataId['expId']]
                 return [os.path.join(self._repo, file) for file in matchingFiles]
             elif "bias_filename" in datasetType:
                 matchingFiles = [datum['file'] for datum in IngestionTestSuite.calibData
@@ -123,17 +115,14 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             else:
                 return None
 
-        butlerPatcher = unittest.mock.patch("lsst.daf.persistence.Butler", autospec=True)
+        butlerPatcher = unittest.mock.patch("lsst.daf.persistence.Butler")
         self._butler = butlerPatcher.start()
-        self._butler.getMapperClass.return_value = lsst.obs.test.TestMapper
+        self._butler.getMapperClass.return_value = lsst.obs.lsst.imsim.ImsimMapper
         self._butler.return_value.get = mockGet
         self.addCleanup(butlerPatcher.stop)
 
-        # Fake Dataset and Workspace because it's too hard to make real ones
-        self._dataset = unittest.mock.NonCallableMock(
-            spec=Dataset,
-            rawLocation=os.path.join(IngestionTestSuite.testData, 'raw'),
-        )
+        self._dataset = Dataset(self.datasetKey)
+        # Fake Workspace because it's too hard to make a real one with a fake Butler
         self._workspace = unittest.mock.NonCallableMock(
             spec=Workspace,
             dataRepo=self._repo,
@@ -186,20 +175,26 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             should have been ingested. Each dictionary must contain the
             following keys:
             - ``file``: file name to be ingested (`str`).
-            - ``filter``: the filter of the file, or "_unknown_" if not applicable (`str`).
-            - ``visit``: visit ID of the file (`int`).
+            - ``filter``: the filter of the file, or "NONE" if not applicable (`str`).
+            - ``expId``: exposure ID of the file (`int`).
             - ``exptime``: the exposure time of the file (`float`).
         calib : `bool`
             `True` if ``expectedData`` represents calibration data, `False` if
             it represents science data
         """
-        kwargs = {'create': False, 'dryrun': False}
         for datum in expectedData:
-            # TODO: find a way to avoid having to know exact data ID expansion
-            dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
-            # TODO: I don't think we actually care about the keywords -- especially since they're defaults
-            registryMock.addRow.assert_any_call(registryMock.openRegistry().__enter__(), dataId,
-                                                **kwargs)
+            found = False
+            dataId = {'expId': datum['expId'], 'expTime': datum['exptime'], 'filter': datum['filter']}
+            for call in registryMock.addRow.call_args_list:
+                args = call[0]
+                registeredId = args[1]
+                self.assertLessEqual(set(dataId.keys()), set(registeredId.keys()))  # subset
+
+                if registeredId['expId'] == datum['expId']:
+                    found = True
+                    for dimension in dataId:
+                        self.assertEqual(registeredId[dimension], dataId[dimension])
+            self.assertTrue(found, msg=f"No call with {dataId}.")
 
         self.assertEqual(registryMock.addRow.call_count, len(expectedData))
 
@@ -216,21 +211,26 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             should have been ingested. Each dictionary must contain the
             following keys:
             - ``file``: file name to be ingested (`str`).
-            - ``filter``: the filter of the file, or "_unknown_" if not applicable (`str`).
+            - ``filter``: the filter of the file, or "NONE" if not applicable (`str`).
             - ``type``: a valid calibration dataset type (`str`).
             - ``date``: the calibration date in YYY-MM-DD format (`str`).
         calib : `bool`
             `True` if ``expectedData`` represents calibration data, `False` if
             it represents science data
         """
-        kwargs = {'create': False, 'dryrun': False}
         for datum in expectedData:
-            # TODO: find a way to avoid having to know exact data ID expansion
+            found = False
             dataId = {'calibDate': datum['date'], 'filter': datum['filter']}
-            kwargs['table'] = datum['type']
-            # TODO: I don't think we actually care about the keywords -- especially since they're defaults
-            registryMock.addRow.assert_any_call(registryMock.openRegistry().__enter__(), dataId,
-                                                **kwargs)
+            for call in registryMock.addRow.call_args_list:
+                args = call[0]
+                kwargs = call[1]
+                registeredId = args[1]
+                self.assertLessEqual(set(dataId.keys()), set(registeredId.keys()))  # subset
+
+                if kwargs["table"] == datum["type"] and registeredId['filter'] == datum['filter'] \
+                        and registeredId['calibDate'] == datum['date']:
+                    found = True
+            self.assertTrue(found, msg=f"No call with {dataId}.")
 
         self.assertEqual(registryMock.addRow.call_count, len(expectedData))
 
@@ -255,7 +255,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testCalibIngest(self):
         """Test that ingesting calibrations given specific files adds them to a repository.
         """
-        files = [os.path.join(IngestionTestSuite.testData, datum['type'], datum['file'])
+        files = [os.path.join(self._dataset.calibLocation, datum['file'])
                  for datum in IngestionTestSuite.calibData]
         self.setUpCalibRegistry()
 
@@ -267,46 +267,9 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
         """Test that ingesting calibrations starting from an abstract dataset adds them to a repository.
         """
         self.setUpCalibRegistry()
-        # obs_test doesn't store calibs together; emulate normal behavior with two calls
-        self._dataset.calibLocation = os.path.join(IngestionTestSuite.testData, 'bias')
-        self._task._ingestCalibs(self._dataset, self._workspace)
-        self._dataset.calibLocation = os.path.join(IngestionTestSuite.testData, 'flat')
         self._task._ingestCalibs(self._dataset, self._workspace)
 
         self.assertCalibRegistryCalls(self._registerTask, IngestionTestSuite.calibData)
-
-    def testDefectIngest(self):
-        """Test that ingesting defects starting from a concrete file adds them to a repository.
-        """
-        self.setUpCalibRegistry()
-
-        # Second return is calib type
-        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)[0]
-        numDefects = 0
-        # These are keyes on sensor and validity date
-        for s in defects:
-            for d in defects[s]:
-                numDefects += len(defects[s][d])
-        self._task._doIngestDefects(self._repo, self._calibRepo, self._task.config.textDefectPath)
-
-        self.assertEqual(504, numDefects)  # Update if the number of defects in obs_test_data changes
-
-    def testDefectIngestDriver(self):
-        """Test that ingesting defects starting from an abstract dataset adds them to a repository.
-        """
-        self.setUpCalibRegistry()
-
-        # second return is calib type
-        defects = read_all(self._task.config.textDefectPath, IngestionTestSuite.mockCamera)[0]
-        numDefects = 0
-        # These are keyes on sensor and validity date
-        for s in defects:
-            for d in defects[s]:
-                numDefects += len(defects[s][d])
-
-        self._task._ingestDefects(self._dataset, self._workspace)
-
-        self.assertEqual(504, numDefects)  # Update if the number of defects in obs_test_data changes
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
@@ -320,17 +283,6 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
             self._task._doIngestCalibs(self._repo, self._calibRepo, files)
 
         self._registerTask.addRow.assert_not_called()
-
-    def testNoFileIngestDriver(self):
-        """Test that attempts to ingest nothing using high-level methods raise an exception.
-        """
-        emptyDir = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, emptyDir, ignore_errors=True)
-        self._dataset.rawLocation = self._dataset.calibLocation = emptyDir
-        with self.assertRaises(RuntimeError):
-            self._task._ingestRaws(self._dataset, self._workspace)
-        with self.assertRaises(RuntimeError):
-            self._task._ingestCalibs(self._dataset, self._workspace)
 
     def testBadFileIngest(self):
         """Test that ingestion of raw data ignores blacklisted files.
@@ -347,7 +299,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         for datum in IngestionTestSuite.rawData:
             if datum['file'] in badFiles:
-                dataId = {'visit': datum['visit'], 'expTime': datum['exptime'], 'filter': datum['filter']}
+                dataId = {'expId': datum['expId'], 'expTime': datum['exptime'], 'filter': datum['filter']}
                 # This call should never happen for badFiles
                 call = unittest.mock.call(self._registerTask.openRegistry().__enter__(), dataId,
                                           create=False, dryrun=False)
@@ -356,25 +308,28 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
         """
-        testDir = os.path.join(IngestionTestSuite.testData)
+        testDir = self._dataset.datasetRoot
+        allFiles = {os.path.join(testDir, 'calib', f) for f in
+                    {'bias-R11-S01-det037_2022-01-01.fits.gz',
+                     'flat_i-R11-S01-det037_2022-08-06.fits.gz',
+                     }}
 
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz']),
-            {os.path.join(testDir, 'raw', f) for f in
-             {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz', 'raw_v3_fr.fits.gz'}}
+            ingestion._findMatchingFiles(testDir, ['*.fits.gz']), allFiles
         )
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], exclude=['*fr*']),
-            {os.path.join(testDir, 'raw', f) for f in {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz'}}
+            ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['*_i-*']),
+            {os.path.join(testDir, 'calib', f) for f in
+             {'bias-R11-S01-det037_2022-01-01.fits.gz'}}
         )
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], exclude=['*_v?_f?.fits.gz']),
+            ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['*R11-S01*']),
             set()
         )
+        # Exclude filters should not match directories
         self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['raw_*.fits.gz'], exclude=['obs_test']),
-            {os.path.join(testDir, 'raw', f) for f in
-             {'raw_v1_fg.fits.gz', 'raw_v2_fg.fits.gz', 'raw_v3_fr.fits.gz'}}
+            ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['calib']),
+            allFiles
         )
 
 
