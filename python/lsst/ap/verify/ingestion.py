@@ -95,8 +95,10 @@ class DatasetIngestConfig(pexConfig.Config):
 
     textDefectPath = pexConfig.Field(
         dtype=str,
-        default='',
-        doc="Path to top level of the defect tree.  This is a directory with a directory per sensor."
+        default=None,
+        optional=True,
+        doc="Path to top level of the defect tree.  This is a directory with a directory per sensor. "
+            "Set to None to disable defect ingestion."
     )
     defectIngester = pexConfig.ConfigurableField(
         target=IngestCuratedCalibsTask,
@@ -300,7 +302,7 @@ class DatasetIngestTask(pipeBase.Task):
         """
         if os.path.exists(os.path.join(workspace.calibRepo, "defects")):
             self.log.info("Defects were previously ingested, skipping...")
-        else:
+        elif self.config.textDefectPath:
             self.log.info("Ingesting defects...")
             self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, self.config.textDefectPath)
             self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
@@ -316,7 +318,7 @@ class DatasetIngestTask(pipeBase.Task):
             The output repository location on disk for calibration files. Must
             exist.
         defectPath : `str`
-            Path to the defects in standard text form.  This is probably a path in ``obs_decam_data``.
+            Path to the defects in standard text form.  This is probably a path in ``obs_*_data``.
 
         Raises
         ------

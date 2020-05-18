@@ -69,6 +69,7 @@ class IngestionTestSuite(lsst.utils.tests.TestCase):
 
         cls.mockCamera = MockCamera(MockDetector())
         cls.config = cls.makeTestConfig()
+        cls.config.validate()
         cls.config.freeze()
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
