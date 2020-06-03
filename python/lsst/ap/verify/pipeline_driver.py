@@ -134,6 +134,6 @@ def _getConfigArguments(workspace):
     args.extend(["--config", "diaPipe.apdb.isolation_level=READ_UNCOMMITTED"])
     # Put output alerts into the workspace.
     args.extend(["--config", "diaPipe.alertPackager.alertWriteLocation=" + workspace.workDir + "/alerts"])
-    args.extend(["--config", "diaPipe.doSerializeAlerts=True"])
+    args.extend(["--config", "diaPipe.doPackageAlerts=True"])
 
     return args
