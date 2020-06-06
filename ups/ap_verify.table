@@ -8,7 +8,6 @@ setupRequired(ap_pipe)
 
 # For testing
 setupOptional(ap_verify_testdata)
-setupOptional(obs_test)
 
 # For default metric configs
 setupRequired(ip_diffim)

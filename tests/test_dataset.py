@@ -37,8 +37,8 @@ class DatasetTestSuite(DataTestCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.obsPackage = 'obs_test'
-        cls.camera = 'test'
+        cls.obsPackage = 'obs_lsst'
+        cls.camera = 'imsim'
 
     def setUp(self):
         self._testbed = Dataset(DatasetTestSuite.datasetKey)
