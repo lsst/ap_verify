@@ -93,12 +93,11 @@ class DatasetIngestConfig(pexConfig.Config):
         default=9999,
         doc="Calibration validity period (days). Assumed equal for all calib types.")
 
-    curatedCalibPaths = pexConfig.Field(
+    curatedCalibPaths = pexConfig.ListField(
         dtype=str,
-        default=None,
-        optional=True,
-        doc="Path to top level of the defect tree.  This is a directory with a directory per sensor. "
-            "Set to None to disable defect ingestion."
+        default=[],
+        doc="Paths to the top level of each curated calib's tree (e.g., defects, crosstalk). "
+            "Each path should be a directory which contains one subdirectory per sensor."
     )
     curatedCalibIngester = pexConfig.ConfigurableField(
         target=IngestCuratedCalibsTask,
@@ -295,10 +294,9 @@ class DatasetIngestTask(pipeBase.Task):
         workspace : `lsst.ap.verify.workspace.Workspace`
             The location containing all ingestion repositories.
         """
-        if self.config.curatedCalibPaths:
+        for curated in self.config.curatedCalibPaths:
             self.log.info("Ingesting curated calibs...")
-            self._doIngestCuratedCalibs(workspace.dataRepo, workspace.calibRepo,
-                                        self.config.curatedCalibPaths)
+            self._doIngestCuratedCalibs(workspace.dataRepo, workspace.calibRepo, curated)
             self.log.info("Curated calibs are now ingested in {0}".format(workspace.calibRepo))
 
     def _doIngestCuratedCalibs(self, repo, calibRepo, curatedPath):
