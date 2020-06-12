@@ -84,7 +84,7 @@ class IngestionTestSuite(DataTestCase):
         config.dataIngester.load(os.path.join(obsDir, 'ingest.py'))
         config.dataIngester.load(os.path.join(obsDir, 'imsim', 'ingest.py'))
         config.calibIngester.load(os.path.join(obsDir, 'ingestCalibs.py'))
-        config.defectIngester.load(os.path.join(obsDir, 'ingestCuratedCalibs.py'))
+        config.curatedCalibIngester.load(os.path.join(obsDir, 'ingestCuratedCalibs.py'))
         return config
 
     def setUp(self):

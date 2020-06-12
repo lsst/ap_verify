@@ -93,16 +93,16 @@ class DatasetIngestConfig(pexConfig.Config):
         default=9999,
         doc="Calibration validity period (days). Assumed equal for all calib types.")
 
-    textDefectPath = pexConfig.Field(
+    curatedCalibPaths = pexConfig.Field(
         dtype=str,
         default=None,
         optional=True,
         doc="Path to top level of the defect tree.  This is a directory with a directory per sensor. "
             "Set to None to disable defect ingestion."
     )
-    defectIngester = pexConfig.ConfigurableField(
+    curatedCalibIngester = pexConfig.ConfigurableField(
         target=IngestCuratedCalibsTask,
-        doc="Task used to ingest defects.",
+        doc="Task used to ingest curated calibs.",
     )
 
     refcats = pexConfig.DictField(
@@ -128,7 +128,7 @@ class DatasetIngestTask(pipeBase.Task):
         pipeBase.Task.__init__(self, *args, **kwargs)
         self.makeSubtask("dataIngester")
         self.makeSubtask("calibIngester")
-        self.makeSubtask("defectIngester")
+        self.makeSubtask("curatedCalibIngester")
 
     def run(self, dataset, workspace):
         """Ingest the contents of a dataset into a Butler repository.
@@ -146,7 +146,7 @@ class DatasetIngestTask(pipeBase.Task):
         dataset.makeCompatibleRepo(workspace.dataRepo, os.path.abspath(workspace.calibRepo))
         self._ingestRaws(dataset, workspace)
         self._ingestCalibs(dataset, workspace)
-        self._ingestDefects(dataset, workspace)
+        self._ingestCuratedCalibs(dataset, workspace)
         self._ingestRefcats(dataset, workspace)
         self._copyConfigs(dataset, workspace)
 
@@ -281,12 +281,12 @@ class DatasetIngestTask(pipeBase.Task):
         except sqlite3.IntegrityError as detail:
             raise RuntimeError("Not all calibration files are unique") from detail
 
-    def _ingestDefects(self, dataset, workspace):
-        """Ingest the defect files for use by LSST.
+    def _ingestCuratedCalibs(self, dataset, workspace):
+        """Ingest the curated calib files for use by LSST.
 
         After this method returns, the calibration repository in ``workspace``
-        shall contain all defects from ``dataset``. Butler operations on the
-        repository shall not be able to modify ``dataset``.
+        shall contain all curated calibs mentioned in curatedCalibPaths. Butler
+        operations on the repository shall not be able to modify ``dataset``.
 
         Parameters
         ----------
@@ -294,21 +294,15 @@ class DatasetIngestTask(pipeBase.Task):
             The dataset on which the pipeline will be run.
         workspace : `lsst.ap.verify.workspace.Workspace`
             The location containing all ingestion repositories.
-
-        Raises
-        ------
-        RuntimeError
-            Raised if defect ingestion requested but no defects found.
         """
-        if os.path.exists(os.path.join(workspace.calibRepo, "defects")):
-            self.log.info("Defects were previously ingested, skipping...")
-        elif self.config.textDefectPath:
-            self.log.info("Ingesting defects...")
-            self._doIngestDefects(workspace.dataRepo, workspace.calibRepo, self.config.textDefectPath)
-            self.log.info("Defects are now ingested in {0}".format(workspace.calibRepo))
+        if self.config.curatedCalibPaths:
+            self.log.info("Ingesting curated calibs...")
+            self._doIngestCuratedCalibs(workspace.dataRepo, workspace.calibRepo,
+                                        self.config.curatedCalibPaths)
+            self.log.info("Curated calibs are now ingested in {0}".format(workspace.calibRepo))
 
-    def _doIngestDefects(self, repo, calibRepo, defectPath):
-        """Ingest defect images.
+    def _doIngestCuratedCalibs(self, repo, calibRepo, curatedPath):
+        """Ingest curated calib data.
 
         Parameters
         ----------
@@ -317,20 +311,16 @@ class DatasetIngestTask(pipeBase.Task):
         calibRepo : `str`
             The output repository location on disk for calibration files. Must
             exist.
-        defectPath : `str`
-            Path to the defects in standard text form.  This is probably a path in ``obs_*_data``.
-
-        Raises
-        ------
-        RuntimeError
-            Raised if ``defectTarball`` exists but is empty.
+        curatedPath : `str`
+            Path to the curated calibs in standard text form.  This is probably
+            a path in ``obs_*_data``.
         """
 
-        defectargs = [repo, defectPath, "--calib", calibRepo]
+        curatedargs = [repo, curatedPath, "--calib", calibRepo]
         try:
-            _runIngestTask(self.defectIngester, defectargs)
+            _runIngestTask(self.curatedCalibIngester, curatedargs)
         except sqlite3.IntegrityError as detail:
-            raise RuntimeError("Not all defect files are unique") from detail
+            raise RuntimeError("Not all curated calib files are unique") from detail
 
     def _ingestRefcats(self, dataset, workspace):
         """Ingest the refcats for use by LSST.
