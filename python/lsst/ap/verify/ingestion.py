@@ -417,28 +417,32 @@ def ingestDataset(dataset, workspace):
     # TODO: generalize to support arbitrary URIs (DM-11482)
     log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
 
-    ingester = DatasetIngestTask(config=_getConfig(dataset))
+    ingester = DatasetIngestTask(config=_getConfig(DatasetIngestTask, dataset))
     ingester.run(dataset, workspace)
     log.info("Data ingested")
 
 
-def _getConfig(dataset):
+def _getConfig(task, dataset):
     """Return the ingestion config associated with a specific dataset.
 
     Parameters
     ----------
+    task : `lsst.pipe.base.Task`-type
+        The task whose config is needed
     dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset whose ingestion config is desired.
 
     Returns
     -------
-    config : `DatasetIngestConfig`
-        The config for running `DatasetIngestTask` on ``dataset``.
+    config : ``task.ConfigClass``
+        The config for running ``task`` on ``dataset``.
     """
-    overrideFile = DatasetIngestTask._DefaultName + ".py"
+    # Can't use dataset.instrument.applyConfigOverrides for this, because the
+    # dataset might not have Gen 3 support.
+    overrideFile = task._DefaultName + ".py"
     packageDir = lsst.utils.getPackageDir(dataset.obsPackage)
 
-    config = DatasetIngestTask.ConfigClass()
+    config = task.ConfigClass()
     for path in [
         os.path.join(packageDir, 'config'),
         os.path.join(packageDir, 'config', dataset.camera),
