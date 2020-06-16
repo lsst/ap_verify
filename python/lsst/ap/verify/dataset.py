@@ -24,6 +24,8 @@
 import os
 
 import lsst.daf.persistence as dafPersistence
+import lsst.daf.butler as dafButler
+import lsst.obs.base as obsBase
 import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
@@ -166,15 +168,38 @@ class Dataset:
 
     @property
     def camera(self):
-        """The name of the camera associated with this data (`str`, read-only).
+        """The name of the Gen 2 camera associated with this data (`str`, read-only).
         """
         return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getCameraName()
+
+    @property
+    def instrument(self):
+        """The Gen 3 instrument associated with this data (`lsst.obs.base.Instrument`, read-only).
+        """
+        butler = dafButler.Butler(self._preloadedRepo, writeable=False)
+        instruments = list(butler.registry.queryDimensions('instrument'))
+        if len(instruments) != 1:
+            raise RuntimeError(f"Dataset does not have exactly one instrument; got {instruments}.")
+        else:
+            return obsBase.Instrument.fromName(instruments[0]["instrument"], butler.registry)
 
     @property
     def _stubInputRepo(self):
         """The directory containing the data set's input stub (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'repo')
+
+    @property
+    def _preloadedRepo(self):
+        """The directory containing the pre-ingested Gen 3 repo (`str`, read-only).
+        """
+        return os.path.join(self.datasetRoot, 'preloaded')
+
+    @property
+    def _preloadedExport(self):
+        """The file containing an exported registry of `_preloadedRepo` (`str`, read-only).
+        """
+        return os.path.join(self.configLocation, 'export.yaml')
 
     def _validatePackage(self):
         """Confirm that the dataset directory satisfies all assumptions.
@@ -226,6 +251,22 @@ class Dataset:
         else:
             dafPersistence.Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
                                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
+
+    def makeCompatibleRepoGen3(self, repoDir):
+        """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.
+
+        If the directory already exists, any files required by the dataset will
+        be added if absent; otherwise the directory will remain unchanged.
+
+        Parameters
+        ----------
+        repoDir : `str`
+            The directory where the output repository will be created.
+        """
+        repoConfig = dafButler.Butler.makeRepo(repoDir, overwrite=True)
+        butler = dafButler.Butler(repoConfig, writeable=True)
+        butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport,
+                       transfer="auto")
 
 
 def _isRepo(repoDir):
