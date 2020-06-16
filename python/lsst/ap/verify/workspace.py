@@ -26,6 +26,7 @@ import pathlib
 import stat
 
 import lsst.daf.persistence as dafPersist
+import lsst.daf.butler as dafButler
 
 
 class Workspace:
@@ -61,9 +62,14 @@ class Workspace:
         pathlib.Path(self.templateRepo).mkdir(**kwargs)
         pathlib.Path(self.outputRepo).mkdir(**kwargs)
 
-        # Lazy evaluation to optimize workButler and analysisButler
+        # Gen 3 name of the output run
+        self.runName = "ap_verify-output"
+
+        # Lazy evaluation to optimize butlers
         self._workButler = None
         self._analysisButler = None
+        self._gen3WorkButler = None
+        self._gen3AnalysisButler = None
 
     @property
     def workDir(self):
@@ -104,6 +110,8 @@ class Workspace:
     def outputRepo(self):
         """The absolute path/URI to a Butler repo for AP pipeline products
         (`str`, read-only).
+
+        This location may contain either a Gen 2 or a Gen 3 repository.
         """
         return os.path.join(self._location, 'output')
 
@@ -157,3 +165,34 @@ class Workspace:
         if self._analysisButler is None:
             self._analysisButler = dafPersist.Butler(inputs={"root": self.outputRepo, "mode": "r"})
         return self._analysisButler
+
+    @property
+    def gen3WorkButler(self):
+        """A Butler that can read and write to a Gen 3 repository (`lsst.daf.butler.Butler`, read-only).
+
+        Notes
+        -----
+        Assumes `outputRepo` has been initialized.
+        """
+        if self._gen3WorkButler is None:
+            try:
+                self._gen3WorkButler = dafButler.Butler(self.outputRepo, run=self.runName)
+            except OSError as e:
+                raise RuntimeError(f"{self.outputRepo} is not a Gen 3 repository") from e
+        return self._gen3WorkButler
+
+    @property
+    def gen3AnalysisButler(self):
+        """A Butler that can read from a Gen 3 repository with outputs (`lsst.daf.butler.Butler`, read-only).
+
+        Notes
+        -----
+        Assumes `outputRepo` has been initialized.
+        """
+        if self._gen3AnalysisButler is None:
+            try:
+                self._gen3AnalysisButler = dafButler.Butler(self.outputRepo, collections=self.runName,
+                                                            writeable=False)
+            except OSError as e:
+                raise RuntimeError(f"{self.outputRepo} is not a Gen 3 repository") from e
+        return self._gen3AnalysisButler

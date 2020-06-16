@@ -101,6 +101,13 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
             # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
             self._assertNotInDir(self._testbed.dbLocation, url2pathname(repo))
 
+    def testButlerError(self):
+        """Verify that the Gen 3 Butler is not available if the repository is
+        not set up.
+        """
+        with self.assertRaises(RuntimeError):
+            self._testbed.gen3WorkButler
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
