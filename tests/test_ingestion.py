@@ -285,7 +285,7 @@ class IngestionTestSuite(DataTestCase):
         self._registerTask.addRow.assert_not_called()
 
     def testBadFileIngest(self):
-        """Test that ingestion of raw data ignores blacklisted files.
+        """Test that ingestion of raw data ignores forbidden files.
         """
         badFiles = ['raw_v2_fg.fits.gz']
         self.setUpRawRegistry()
