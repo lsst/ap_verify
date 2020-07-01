@@ -31,6 +31,7 @@ __all__ = ["DatasetIngestConfig", "Gen3DatasetIngestConfig", "ingestDataset"]
 
 import fnmatch
 import os
+import re
 import shutil
 import tarfile
 from glob import glob
@@ -41,6 +42,7 @@ import lsst.log
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
+import lsst.daf.butler
 import lsst.obs.base
 from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
@@ -458,7 +460,58 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     def run(self):
         """Ingest the contents of a dataset into a Butler repository.
         """
-        pass
+        self._ensureRaws()
+
+    def _ensureRaws(self):
+        """Ensure that the repository in ``workspace`` has raws ingested.
+
+        After this method returns, this task's repository contains all science
+        data from this task's ap_verify dataset. Butler operations on the
+        repository are not able to modify ``dataset`` in any way.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if there are no files to ingest.
+        """
+        # TODO: regex is workaround for DM-25945
+        rawCollectionFilter = re.compile(self.dataset.instrument.makeDefaultRawIngestRunName())
+        rawCollections = list(self.workspace.gen3WorkButler.registry.queryCollections(rawCollectionFilter))
+        if rawCollections:
+            self.log.info("Raw images for %s were previously ingested, skipping...",
+                          self.dataset.instrument.getName())
+        else:
+            self.log.info("Ingesting raw images...")
+            dataFiles = _findMatchingFiles(self.dataset.rawLocation, self.config.dataFiles,
+                                           exclude=self.config.dataBadFiles)
+            if dataFiles:
+                self._ingestRaws(dataFiles)
+                self.log.info("Images are now ingested in {0}".format(self.workspace.dataRepo))
+            else:
+                raise RuntimeError("No raw files found at %s." % self.dataset.rawLocation)
+
+    def _ingestRaws(self, dataFiles):
+        """Ingest raw images into a repository.
+
+        This task's repository is populated with *links* to ``dataFiles``.
+
+        Parameters
+        ----------
+        dataFiles : `list` of `str`
+            A list of filenames to ingest. May contain wildcards.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if ``dataFiles`` is empty or any file has already been ingested.
+        """
+        if not dataFiles:
+            raise RuntimeError("No raw files to ingest (expected list of filenames, got %r)." % dataFiles)
+
+        try:
+            self.ingester.run(dataFiles, run=None)  # expect ingester to name a new collection
+        except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
+            raise RuntimeError("Not all raw files are unique") from detail
 
 
 def ingestDataset(dataset, workspace):

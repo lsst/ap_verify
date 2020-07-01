@@ -373,7 +373,6 @@ class IngestionTestSuiteGen3(DataTestCase):
                                                                      dataId=dataId)]
             self.assertNotEqual(matches, [])
 
-    @unittest.skip("Not yet implemented")
     def testDataIngest(self):
         """Test that ingesting science images given specific files adds them to a repository.
         """
@@ -381,21 +380,26 @@ class IngestionTestSuiteGen3(DataTestCase):
         self.task._ingestRaws(files)
         self.assertIngestedDataFiles(self.rawData, self.dataset.instrument.makeDefaultRawIngestRunName())
 
-    @unittest.skip("Not yet implemented")
+    def testDataDoubleIngest(self):
+        """Test that re-ingesting science images raises RuntimeError.
+        """
+        files = [os.path.join(self.dataset.rawLocation, datum['file']) for datum in self.rawData]
+        self.task._ingestRaws(files)
+        with self.assertRaises(RuntimeError):
+            self.task._ingestRaws(files)
+
     def testDataIngestDriver(self):
         """Test that ingesting science images starting from an abstract dataset adds them to a repository.
         """
         self.task._ensureRaws()
         self.assertIngestedDataFiles(self.rawData, self.dataset.instrument.makeDefaultRawIngestRunName())
 
-    @unittest.skip("Not yet implemented")
     def testCalibIngestDriver(self):
         """Test that ingesting calibrations starting from an abstract dataset adds them to a repository.
         """
         self.task._ensureRaws()  # Should not affect calibs, but would be run
         self.assertIngestedDataFiles(self.calibData, self.dataset.instrument.makeCollectionName("calib"))
 
-    @unittest.skip("Not yet implemented")
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
         """
