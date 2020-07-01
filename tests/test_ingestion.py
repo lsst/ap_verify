@@ -406,6 +406,14 @@ class IngestionTestSuiteGen3(DataTestCase):
         with self.assertRaises(RuntimeError):
             self.task._ingestRaws([])
 
+    def testCopyConfigs(self):
+        """Test that "ingesting" configs stores them in the workspace for later reference.
+        """
+        self.task._copyConfigs()
+        self.assertTrue(os.path.exists(self.workspace.configDir))
+        # Only testdata file that *must* be supported in the future
+        self.assertTrue(os.path.exists(os.path.join(self.workspace.configDir, "datasetIngest.py")))
+
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
         """

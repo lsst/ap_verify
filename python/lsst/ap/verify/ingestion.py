@@ -461,6 +461,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         """Ingest the contents of a dataset into a Butler repository.
         """
         self._ensureRaws()
+        self._copyConfigs()
 
     def _ensureRaws(self):
         """Ensure that the repository in ``workspace`` has raws ingested.
@@ -512,6 +513,21 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             self.ingester.run(dataFiles, run=None)  # expect ingester to name a new collection
         except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
             raise RuntimeError("Not all raw files are unique") from detail
+
+    def _copyConfigs(self):
+        """Give a workspace a copy of all configs associated with the
+        ingested data.
+
+        After this method returns, the config directory in the workspace
+        contains all config files from the ap_verify dataset.
+        """
+        if os.listdir(self.workspace.configDir):
+            self.log.info("Configs already copied, skipping...")
+        else:
+            self.log.info("Storing data-specific configs...")
+            for configFile in _findMatchingFiles(self.dataset.configLocation, ['*.py']):
+                shutil.copy2(configFile, self.workspace.configDir)
+            self.log.info("Configs are now stored in {0}".format(self.workspace.configDir))
 
 
 def ingestDataset(dataset, workspace):
