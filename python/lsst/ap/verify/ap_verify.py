@@ -77,7 +77,7 @@ class _IngestOnlyParser(argparse.ArgumentParser):
     def __init__(self):
         argparse.ArgumentParser.__init__(
             self,
-            description='Ingests a dataset into a pair of Butler repositories.'
+            description='Ingests an ap_verify dataset into a pair of Butler repositories. '
             'The program will create a data repository in <OUTPUT>/ingested and a calib repository '
             'in <OUTPUT>/calibingested. '
             'These repositories may be used directly by ap_verify.py by '
