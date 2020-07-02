@@ -35,7 +35,7 @@ import re
 import lsst.log
 
 from .dataset import Dataset
-from .ingestion import ingestDataset
+from .ingestion import ingestDataset, ingestDatasetGen3
 from .metrics import MetricsParser, computeMetrics
 from .pipeline_driver import ApPipeParser, runApPipe
 from .workspace import Workspace
@@ -55,6 +55,14 @@ class _InputOutputParser(argparse.ArgumentParser):
                           required=True, help='The source of data to pass through the pipeline.')
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
+
+        gen23 = self.add_mutually_exclusive_group()
+        # Because store_true and store_false use the same dest, add explicit
+        # default to avoid ambiguity.
+        gen23.add_argument('--gen2', dest='useGen3', action='store_false', default=False,
+                           help='Handle the ap_verify dataset using the Gen 2 framework (default).')
+        gen23.add_argument('--gen3', dest='useGen3', action='store_true', default=False,
+                           help='Handle the ap_verify dataset using the Gen 3 framework.')
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -78,8 +86,8 @@ class _IngestOnlyParser(argparse.ArgumentParser):
         argparse.ArgumentParser.__init__(
             self,
             description='Ingests an ap_verify dataset into a pair of Butler repositories. '
-            'The program will create a data repository in <OUTPUT>/ingested and a calib repository '
-            'in <OUTPUT>/calibingested. '
+            'The program will create repository(ies) appropriate for --gen2 or --gen3 '
+            'in subdirectories of <OUTPUT>. '
             'These repositories may be used directly by ap_verify.py by '
             'passing the same --output argument, or by other programs that accept '
             'Butler repositories as input.',
@@ -207,4 +215,7 @@ def runIngestion(cmdLine=None):
     log.debug('Command-line arguments: %s', args)
 
     workspace = Workspace(args.output)
-    ingestDataset(args.dataset, workspace)
+    if args.useGen3:
+        ingestDatasetGen3(args.dataset, workspace)
+    else:
+        ingestDataset(args.dataset, workspace)

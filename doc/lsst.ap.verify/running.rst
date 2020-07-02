@@ -33,11 +33,12 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --id "visit=412518^412568 filter=g" --output workspaces/hits/
+   ap_verify.py --dataset HiTS2015 --gen2 --id "visit=412518^412568 filter=g" --output workspaces/hits/
 
 Here the inputs are:
 
-* :command:`HiTS2015` is the :ref:`dataset name <ap-verify-dataset-name>`,
+* :command:`HiTS2015` is the ``ap_verify`` :ref:`dataset name <ap-verify-dataset-name>`,
+* :option:`--gen2` specifies to process the dataset using the Gen 2 pipeline framework,
 * :command:`visit=412518^412568 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
@@ -50,7 +51,7 @@ It's also possible to run an entire dataset by omitting the :command:`--id` argu
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-HiTS2015 --output workspaces/hits/
+   ap_verify.py --dataset CI-HiTS2015 --gen2 --output workspaces/hits/
 
 .. note::
 
@@ -70,9 +71,9 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
 .. prompt:: bash
 
-   ingest_dataset.py --dataset HiTS2015 --output workspaces/hits/
+   ingest_dataset.py --dataset HiTS2015 --gen2 --output workspaces/hits/
 
-The :option:`--dataset` and :option:`--output` arguments behave the same way as for :command:`ap_verify.py`.
+The :option:`--dataset`, :option:`--output`, :option:`--gen2`, and :option:`--gen3` arguments behave the same way as for :command:`ap_verify.py`.
 Other options from :command:`ap_verify.py` are not available.
 
 .. _ap-verify-results:

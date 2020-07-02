@@ -22,7 +22,7 @@ The basic call signature of :command:`ap_verify.py` is:
 
    ap_verify.py --dataset DATASET --output WORKSPACE
 
-These two arguments are mandatory, all others are optional.
+These two arguments are mandatory, all others are optional (though use of either :option:`--gen2` or :option:`--gen3` is highly recommended).
 
 .. _ap-verify-cmd-return:
 
@@ -70,6 +70,20 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    Use :option:`--image-metrics-config` to configure image-level metrics instead.
    See also :doc:`new-metrics`.
+
+.. option:: --gen2
+.. option:: --gen3
+
+   **Choose Gen 2 or Gen 3 processing.**
+
+   These optional flags run either the Gen 2 pipeline (`~lsst.ap.pipe.ApPipeTask`), or the Gen 3 pipeline (:file:`apPipe.yaml`).
+   If neither flag is provided, the Gen 2 pipeline will be run.
+
+   .. note::
+
+      The current default is provided for backward-compatibility with old scripts that assumed Gen 2 processing.
+      The default will change to ``--gen3`` once Gen 3 processing is officially supported by the Science Pipelines, at which point Gen 2 support will be deprecated.
+      Until the default stabilizes, users should be explicit about which pipeline they wish to run.
 
 .. option:: -h, --help
 

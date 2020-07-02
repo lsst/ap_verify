@@ -27,7 +27,7 @@ This module handles ingestion of an ap_verify dataset into an appropriate reposi
 that pipeline code need not be aware of the dataset framework.
 """
 
-__all__ = ["DatasetIngestConfig", "Gen3DatasetIngestConfig", "ingestDataset"]
+__all__ = ["DatasetIngestConfig", "Gen3DatasetIngestConfig", "ingestDataset", "ingestDatasetGen3"]
 
 import fnmatch
 import os
@@ -447,7 +447,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     """
 
     ConfigClass = Gen3DatasetIngestConfig
-    _DefaultName = "datasetIngest"
+    _DefaultName = "gen3DatasetIngest"
 
     def __init__(self, dataset, workspace, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -531,14 +531,14 @@ class Gen3DatasetIngestTask(pipeBase.Task):
 
 
 def ingestDataset(dataset, workspace):
-    """Ingest the contents of a dataset into a Butler repository.
+    """Ingest the contents of an ap_veify dataset into a Butler repository.
 
     The original data directory shall not be modified.
 
     Parameters
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset to be ingested.
+        The ap_verify dataset to be ingested.
     workspace : `lsst.ap.verify.workspace.Workspace`
         The abstract location where ingestion repositories will be created.
         If the repositories already exist, they must be compatible with
@@ -550,6 +550,26 @@ def ingestDataset(dataset, workspace):
 
     ingester = DatasetIngestTask(config=_getConfig(DatasetIngestTask, dataset))
     ingester.run(dataset, workspace)
+    log.info("Data ingested")
+
+
+def ingestDatasetGen3(dataset, workspace):
+    """Ingest the contents of an ap_verify dataset into a Gen 3 Butler repository.
+
+    The original data directory is not modified.
+
+    Parameters
+    ----------
+    dataset : `lsst.ap.verify.dataset.Dataset`
+        The ap_verify dataset to be ingested.
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        The abstract location where the epository is be created, if it does
+        not already exist.
+    """
+    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
+
+    ingester = Gen3DatasetIngestTask(dataset, workspace, config=_getConfig(Gen3DatasetIngestTask, dataset))
+    ingester.run()
     log.info("Data ingested")
 
 

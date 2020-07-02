@@ -131,6 +131,25 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         with self.assertRaises(SystemExit):
             self._parseString(args, ap_verify._IngestOnlyParser())
 
+    def testGen23Selector(self):
+        """Verify that all combinations of --gen2 and --gen3 behave
+        as expected.
+        """
+        minArgs = f'--dataset {self.datasetKey} --output tests/output/foo '
+
+        # Default currently Gen 2, will become Gen 3 later
+        parsedDefault = self._parseString(minArgs)
+        self.assertFalse(parsedDefault.useGen3)
+
+        parsedGen2 = self._parseString(minArgs + '--gen2')
+        self.assertFalse(parsedGen2.useGen3)
+
+        parsedGen3 = self._parseString(minArgs + '--gen3')
+        self.assertTrue(parsedGen3.useGen3)
+
+        with self.assertRaises(SystemExit):
+            self._parseString(minArgs + '--gen2 --gen3')
+
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
     pass
