@@ -46,6 +46,8 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    Specify data ID to process using :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`.
    For example, ``--id "visit=12345 ccd=1..6 filter=g"``.
    Multiple copies of this argument are allowed.
+   For compatibility with the syntax used by command line tasks, ``--id`` with no argument processes all data IDs.
+
    If this argument is omitted, then all data IDs in the dataset will be processed.
    
 .. option:: --dataset <dataset_name>
