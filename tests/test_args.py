@@ -87,7 +87,8 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         self.assertEqual(parsed.output, "tests/output/foo")
 
     def testDataId(self):
-        """Verify that a command line consisting only of required arguments parses correctly.
+        """Verify that a command line consisting only of required arguments and
+        --id parses correctly.
         """
         args = '--dataset %s --output tests/output/foo --id "visit=54123" --id "filter=x"' \
             % CommandLineTestSuite.datasetKey
