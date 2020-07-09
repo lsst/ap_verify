@@ -28,14 +28,15 @@ import unittest
 from urllib.request import url2pathname
 
 import lsst.utils.tests
-from lsst.ap.verify.workspace import Workspace
+import lsst.daf.butler
+from lsst.ap.verify.workspace import WorkspaceGen2, WorkspaceGen3
 
 
-class WorkspaceTestSuite(lsst.utils.tests.TestCase):
+class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
 
     def setUp(self):
         self._testWorkspace = tempfile.mkdtemp()
-        self._testbed = Workspace(self._testWorkspace)
+        self._testbed = WorkspaceGen2(self._testWorkspace)
 
     def tearDown(self):
         shutil.rmtree(self._testWorkspace, ignore_errors=True)
@@ -64,14 +65,14 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         self.assertFalse(os.path.exists(newPath), 'Workspace directory must not exist before test.')
 
         try:
-            Workspace(newPath)
+            WorkspaceGen2(newPath)
             self.assertTrue(os.path.exists(newPath), 'Workspace directory must exist.')
         finally:
             shutil.rmtree(newPath, ignore_errors=True)
 
     @staticmethod
     def _allRepos(workspace):
-        """An iterator over all repos exposed by a Workspace.
+        """An iterator over all repos exposed by a WorkspaceGen2.
         """
         yield workspace.dataRepo
         yield workspace.calibRepo
@@ -79,7 +80,7 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         yield workspace.outputRepo
 
     def testDirectories(self):
-        """Verify that a Workspace creates repositories in the target directory.
+        """Verify that a WorkspaceGen2 creates repositories in the target directory.
 
         The exact repository locations are not tested, as they are likely to change.
         """
@@ -87,26 +88,97 @@ class WorkspaceTestSuite(lsst.utils.tests.TestCase):
         root = os.path.abspath(os.path.realpath(self._testWorkspace))
         self.assertEqual(self._testbed.workDir, root)
         self._assertInDir(self._testbed.configDir, root)
-        for repo in WorkspaceTestSuite._allRepos(self._testbed):
+        for repo in self._allRepos(self._testbed):
             # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
             self._assertInDir(url2pathname(repo), root)
 
     def testDatabase(self):
-        """Verify that a Workspace requests a database file in the target
+        """Verify that a WorkspaceGen2 requests a database file in the target
         directory, but not in any repository.
         """
         root = self._testWorkspace
         self._assertInDir(self._testbed.dbLocation, root)
-        for repo in WorkspaceTestSuite._allRepos(self._testbed):
+        for repo in self._allRepos(self._testbed):
             # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
             self._assertNotInDir(self._testbed.dbLocation, url2pathname(repo))
 
-    def testButlerError(self):
-        """Verify that the Gen 3 Butler is not available if the repository is
-        not set up.
+
+class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
+
+    def setUp(self):
+        self._testWorkspace = tempfile.mkdtemp()
+        self._testbed = WorkspaceGen3(self._testWorkspace)
+
+    def tearDown(self):
+        shutil.rmtree(self._testWorkspace, ignore_errors=True)
+
+    def _assertInDir(self, path, baseDir):
+        """Test that ``path`` is a subpath of ``baseDir``.
+        """
+        _canonPath = os.path.abspath(os.path.realpath(path))
+        _canonDir = os.path.abspath(os.path.realpath(baseDir))
+        ancestor = os.path.commonprefix([_canonPath, _canonDir])
+        self.assertEqual(ancestor, _canonDir)
+
+    def _assertNotInDir(self, path, baseDir):
+        """Test that ``path`` is not a subpath of ``baseDir``.
+        """
+        _canonPath = os.path.abspath(os.path.realpath(path))
+        _canonDir = os.path.abspath(os.path.realpath(baseDir))
+        ancestor = os.path.commonprefix([_canonPath, _canonDir])
+        self.assertNotEqual(ancestor, _canonDir)
+
+    def testMakeDir(self):
+        """Verify that a Workspace creates the workspace directory if it does not exist.
+        """
+        newPath = '_temp'
+        shutil.rmtree(newPath, ignore_errors=True)
+        self.assertFalse(os.path.exists(newPath), 'Workspace directory must not exist before test.')
+
+        try:
+            WorkspaceGen3(newPath)
+            self.assertTrue(os.path.exists(newPath), 'Workspace directory must exist.')
+        finally:
+            shutil.rmtree(newPath, ignore_errors=True)
+
+    def testDirectories(self):
+        """Verify that a WorkspaceGen3 creates subdirectories in the target directory.
+
+        The exact locations are not tested, as they are likely to change.
+        """
+        # Workspace should report all paths as absolute
+        root = os.path.abspath(os.path.realpath(self._testWorkspace))
+        self.assertEqual(self._testbed.workDir, root)
+        self._assertInDir(self._testbed.configDir, root)
+        # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+        self._assertInDir(url2pathname(self._testbed.repo), root)
+
+    def testDatabase(self):
+        """Verify that a WorkspaceGen3 requests a database file in the target
+        directory, but not in any repository.
+        """
+        root = self._testWorkspace
+        self._assertInDir(self._testbed.dbLocation, root)
+        # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+        self._assertNotInDir(self._testbed.dbLocation, url2pathname(self._testbed.repo))
+
+    def testWorkButler(self):
+        """Verify that the Gen 3 Butler is available if and only if the repository is set up.
         """
         with self.assertRaises(RuntimeError):
-            self._testbed.gen3WorkButler
+            self._testbed.workButler
+        lsst.daf.butler.Butler.makeRepo(self._testbed.repo)
+        # Can't really test Butler's state, so just make sure it exists
+        self.assertTrue(self._testbed.workButler.isWriteable())
+
+    def testAnalysisButler(self):
+        """Verify that the Gen 3 Butler is available if and only if the repository is set up.
+        """
+        with self.assertRaises(RuntimeError):
+            self._testbed.analysisButler
+        lsst.daf.butler.Butler.makeRepo(self._testbed.repo)
+        # Can't really test Butler's state, so just make sure it exists
+        self.assertFalse(self._testbed.analysisButler.isWriteable())
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

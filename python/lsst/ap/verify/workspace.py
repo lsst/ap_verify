@@ -21,6 +21,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import abc
 import os
 import pathlib
 import stat
@@ -29,13 +30,19 @@ import lsst.daf.persistence as dafPersist
 import lsst.daf.butler as dafButler
 
 
-class Workspace:
-    """A directory used by ``ap_verify`` to handle data.
+class Workspace(metaclass=abc.ABCMeta):
+    """A directory used by ``ap_verify`` to handle data and outputs.
 
     Any object of this class represents a working directory containing
-    (possibly empty) subdirectories for repositories. At present, constructing
-    a Workspace does not *initialize* its repositories; for compatibility
-    reasons, this is best deferred to individual tasks.
+    (possibly empty) subdirectories for various purposes. Subclasses are
+    typically specialized for particular workflows. Keeping such details in
+    separate classes makes it easier to provide guarantees without forcing
+    awkward directory structures on users.
+
+    All Workspace classes must guarantee the existence of any subdirectories
+    inside the workspace. Directories corresponding to repositories do not need
+    to be initialized, since creating a valid repository usually requires
+    external information.
 
     Parameters
     ----------
@@ -48,28 +55,27 @@ class Workspace:
     EnvironmentError
         Raised if ``location`` is not readable or not writeable
     """
-
     def __init__(self, location):
         # Properties must be `str` for backwards compatibility
         self._location = str(pathlib.Path(location).resolve())
 
+        self.mkdir(self._location)
+        self.mkdir(self.configDir)
+
+    @staticmethod
+    def mkdir(directory):
+        """Create a directory for the workspace.
+
+        This method is intended to be called only by subclasses, and should
+        not be used by external code.
+
+        Parameters
+        ----------
+        directory : `str`
+            The directory to create.
+        """
         mode = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH  # a+r, u+rwx
-        kwargs = {"parents": True, "exist_ok": True, "mode": mode}
-        pathlib.Path(self._location).mkdir(**kwargs)
-        pathlib.Path(self.configDir).mkdir(**kwargs)
-        pathlib.Path(self.dataRepo).mkdir(**kwargs)
-        pathlib.Path(self.calibRepo).mkdir(**kwargs)
-        pathlib.Path(self.templateRepo).mkdir(**kwargs)
-        pathlib.Path(self.outputRepo).mkdir(**kwargs)
-
-        # Gen 3 name of the output run
-        self.runName = "ap_verify-output"
-
-        # Lazy evaluation to optimize butlers
-        self._workButler = None
-        self._analysisButler = None
-        self._gen3WorkButler = None
-        self._gen3AnalysisButler = None
+        pathlib.Path(directory).mkdir(parents=True, exist_ok=True, mode=mode)
 
     @property
     def workDir(self):
@@ -84,6 +90,64 @@ class Workspace:
         files for use with the data (`str`, read-only).
         """
         return os.path.join(self._location, 'config')
+
+    @property
+    @abc.abstractmethod
+    def dbLocation(self):
+        """The default absolute location of the source association database to
+        be created or updated by the pipeline (`str`, read-only).
+
+        Shall be a pathname to a database suitable for the backend of `Apdb`.
+        """
+
+    @property
+    @abc.abstractmethod
+    def workButler(self):
+        """A Butler that can produce pipeline inputs and outputs (read-only).
+        The type is class-dependent.
+        """
+
+    @property
+    @abc.abstractmethod
+    def analysisButler(self):
+        """A Butler that can read pipeline outputs (read-only).
+        The type is class-dependent.
+
+        The Butler should be read-only, if its type supports the restriction.
+        """
+
+
+class WorkspaceGen2(Workspace):
+    """A directory used by ``ap_verify`` to handle data.
+
+    Any object of this class represents a working directory containing
+    (possibly empty) subdirectories for repositories. Constructing a
+    WorkspaceGen2 does not *initialize* its repositories, as this requires
+    external information.
+
+    Parameters
+    ----------
+    location : `str`
+       The location on disk where the workspace will be set up. Will be
+       created if it does not already exist.
+
+    Raises
+    ------
+    EnvironmentError
+        Raised if ``location`` is not readable or not writeable
+    """
+
+    def __init__(self, location):
+        super().__init__(location)
+
+        self.mkdir(self.dataRepo)
+        self.mkdir(self.calibRepo)
+        self.mkdir(self.templateRepo)
+        self.mkdir(self.outputRepo)
+
+        # Lazy evaluation to optimize butlers
+        self._workButler = None
+        self._analysisButler = None
 
     @property
     def dataRepo(self):
@@ -110,19 +174,11 @@ class Workspace:
     def outputRepo(self):
         """The absolute path/URI to a Butler repo for AP pipeline products
         (`str`, read-only).
-
-        This location may contain either a Gen 2 or a Gen 3 repository.
         """
         return os.path.join(self._location, 'output')
 
     @property
     def dbLocation(self):
-        """The default absolute location of the source association database to
-        be created or updated by the pipeline (`str`, read-only).
-
-        Shall be a filename to a database file suitable
-        for the sqlite backend of `Apdb`.
-        """
         return os.path.join(self._location, 'association.db')
 
     @property
@@ -166,33 +222,77 @@ class Workspace:
             self._analysisButler = dafPersist.Butler(inputs={"root": self.outputRepo, "mode": "r"})
         return self._analysisButler
 
+
+class WorkspaceGen3(Workspace):
+    """A directory used by ``ap_verify`` to handle data.
+
+    Any object of this class represents a working directory containing
+    subdirectories for a repository and for non-repository files. Constructing
+    a WorkspaceGen3 does not *initialize* its repository, as this requires
+    external information.
+
+    Parameters
+    ----------
+    location : `str`
+       The location on disk where the workspace will be set up. Will be
+       created if it does not already exist.
+
+    Raises
+    ------
+    EnvironmentError
+        Raised if ``location`` is not readable or not writeable
+    """
+
+    def __init__(self, location):
+        super().__init__(location)
+
+        self.mkdir(self.repo)
+
+        # Gen 3 name of the output run
+        self.runName = "ap_verify-output"
+
+        # Lazy evaluation to optimize butlers
+        self._workButler = None
+        self._analysisButler = None
+
     @property
-    def gen3WorkButler(self):
+    def repo(self):
+        """The absolute path/URI to a Butler repo for AP pipeline processing
+        (`str`, read-only).
+        """
+        return os.path.join(self._location, 'repo')
+
+    @property
+    def dbLocation(self):
+        return os.path.join(self._location, 'association.db')
+
+    @property
+    def workButler(self):
         """A Butler that can read and write to a Gen 3 repository (`lsst.daf.butler.Butler`, read-only).
 
         Notes
         -----
-        Assumes `outputRepo` has been initialized.
+        Assumes `repo` has been initialized.
         """
-        if self._gen3WorkButler is None:
+        if self._workButler is None:
             try:
-                self._gen3WorkButler = dafButler.Butler(self.outputRepo, run=self.runName)
+                self._workButler = dafButler.Butler(self.repo, run=self.runName)
             except OSError as e:
-                raise RuntimeError(f"{self.outputRepo} is not a Gen 3 repository") from e
-        return self._gen3WorkButler
+                raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
+        return self._workButler
 
     @property
-    def gen3AnalysisButler(self):
+    def analysisButler(self):
         """A Butler that can read from a Gen 3 repository with outputs (`lsst.daf.butler.Butler`, read-only).
 
         Notes
         -----
-        Assumes `outputRepo` has been initialized.
+        Assumes `repo` has been initialized.
         """
-        if self._gen3AnalysisButler is None:
+        if self._analysisButler is None:
             try:
-                self._gen3AnalysisButler = dafButler.Butler(self.outputRepo, collections=self.runName,
-                                                            writeable=False)
+                self._analysisButler = dafButler.Butler(self.repo, collections=self.runName,
+                                                        writeable=False)
             except OSError as e:
-                raise RuntimeError(f"{self.outputRepo} is not a Gen 3 repository") from e
-        return self._gen3AnalysisButler
+                raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
+        return self._analysisButler

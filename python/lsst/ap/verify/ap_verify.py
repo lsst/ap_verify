@@ -38,7 +38,7 @@ from .dataset import Dataset
 from .ingestion import ingestDataset, ingestDatasetGen3
 from .metrics import MetricsParser, computeMetrics
 from .pipeline_driver import ApPipeParser, runApPipe
-from .workspace import Workspace
+from .workspace import WorkspaceGen2, WorkspaceGen3
 
 
 class _InputOutputParser(argparse.ArgumentParser):
@@ -162,7 +162,7 @@ def runApVerify(cmdLine=None):
     args = _ApVerifyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
 
-    workspace = Workspace(args.output)
+    workspace = WorkspaceGen2(args.output)
     ingestDataset(args.dataset, workspace)
 
     log.info('Running pipeline...')
@@ -214,8 +214,9 @@ def runIngestion(cmdLine=None):
     args = _IngestOnlyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
 
-    workspace = Workspace(args.output)
     if args.useGen3:
+        workspace = WorkspaceGen3(args.output)
         ingestDatasetGen3(args.dataset, workspace)
     else:
+        workspace = WorkspaceGen2(args.output)
         ingestDataset(args.dataset, workspace)

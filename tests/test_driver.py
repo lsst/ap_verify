@@ -33,7 +33,7 @@ from lsst.pipe.base import DataIdContainer, Struct
 import lsst.utils.tests
 from lsst.ap.pipe import ApPipeTask
 from lsst.ap.verify import pipeline_driver
-from lsst.ap.verify.workspace import Workspace
+from lsst.ap.verify.workspace import WorkspaceGen2
 
 
 def _getDataIds():
@@ -71,7 +71,7 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         # Fake Butler to avoid Workspace initialization overhead
         self.setUpMockPatch("lsst.daf.persistence.Butler", autospec=True)
 
-        self.workspace = Workspace(self._testDir)
+        self.workspace = WorkspaceGen2(self._testDir)
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(
             ["--id", "visit=%d" % _getDataIds()[0]["visit"]])
 

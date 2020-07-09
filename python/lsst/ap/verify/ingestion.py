@@ -141,7 +141,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset to be ingested.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The abstract location where ingestion repositories will be created.
             If the repositories already exist, they must support the same
             ``obs`` package as this task's subtasks.
@@ -165,7 +165,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
 
         Raises
@@ -231,7 +231,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
 
         Raises
@@ -296,7 +296,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
         """
         for curated in self.config.curatedCalibPaths:
@@ -336,7 +336,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
 
         Notes
@@ -380,7 +380,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing the config directory.
         """
         if os.listdir(workspace.configDir):
@@ -440,8 +440,8 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     Parameters
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
-        The ap_verify dataset to be ingested.
-    workspace : `lsst.ap.verify.workspace.Workspace`
+        The ``ap_verify`` dataset to be ingested.
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         The abstract location for all ``ap_verify`` outputs, including
         a Gen 3 repository.
     """
@@ -453,9 +453,9 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.dataset = dataset
-        # workspace.gen3WorkButler is undefined until the repository is created
-        self.dataset.makeCompatibleRepoGen3(self.workspace.outputRepo)
-        self.makeSubtask("ingester", butler=self.workspace.gen3WorkButler)
+        # workspace.workButler is undefined until the repository is created
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
+        self.makeSubtask("ingester", butler=self.workspace.workButler)
 
     def run(self):
         """Ingest the contents of a dataset into a Butler repository.
@@ -477,7 +477,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         """
         # TODO: regex is workaround for DM-25945
         rawCollectionFilter = re.compile(self.dataset.instrument.makeDefaultRawIngestRunName())
-        rawCollections = list(self.workspace.gen3WorkButler.registry.queryCollections(rawCollectionFilter))
+        rawCollections = list(self.workspace.workButler.registry.queryCollections(rawCollectionFilter))
         if rawCollections:
             self.log.info("Raw images for %s were previously ingested, skipping...",
                           self.dataset.instrument.getName())
@@ -487,7 +487,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
                                            exclude=self.config.dataBadFiles)
             if dataFiles:
                 self._ingestRaws(dataFiles)
-                self.log.info("Images are now ingested in {0}".format(self.workspace.dataRepo))
+                self.log.info("Images are now ingested in {0}".format(self.workspace.repo))
             else:
                 raise RuntimeError("No raw files found at %s." % self.dataset.rawLocation)
 
@@ -539,7 +539,7 @@ def ingestDataset(dataset, workspace):
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
         The ap_verify dataset to be ingested.
-    workspace : `lsst.ap.verify.workspace.Workspace`
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
         The abstract location where ingestion repositories will be created.
         If the repositories already exist, they must be compatible with
         ``dataset`` (in particular, they must support the relevant
@@ -562,7 +562,7 @@ def ingestDatasetGen3(dataset, workspace):
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
         The ap_verify dataset to be ingested.
-    workspace : `lsst.ap.verify.workspace.Workspace`
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         The abstract location where the epository is be created, if it does
         not already exist.
     """

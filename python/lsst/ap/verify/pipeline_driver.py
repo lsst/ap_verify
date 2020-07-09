@@ -78,7 +78,7 @@ def runApPipe(workspace, parsedCmdLine):
 
     Parameters
     ----------
-    workspace : `lsst.ap.verify.workspace.Workspace`
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.

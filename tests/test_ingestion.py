@@ -32,7 +32,7 @@ import lsst.pipe.tasks as pipeTasks
 from lsst.ap.verify import ingestion
 from lsst.ap.verify.testUtils import DataTestCase
 from lsst.ap.verify.dataset import Dataset
-from lsst.ap.verify.workspace import Workspace
+from lsst.ap.verify.workspace import WorkspaceGen2, WorkspaceGen3
 
 
 class MockDetector(object):
@@ -124,7 +124,7 @@ class IngestionTestSuite(DataTestCase):
         self._dataset = Dataset(self.datasetKey)
         # Fake Workspace because it's too hard to make a real one with a fake Butler
         self._workspace = unittest.mock.NonCallableMock(
-            spec=Workspace,
+            spec=WorkspaceGen2,
             dataRepo=self._repo,
             calibRepo=self._calibRepo,
         )
@@ -344,11 +344,11 @@ class IngestionTestSuiteGen3(DataTestCase):
 
         self.root = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
-        self.workspace = Workspace(self.root)
+        self.workspace = WorkspaceGen3(self.root)
         self.task = ingestion.Gen3DatasetIngestTask(config=self.config,
                                                     dataset=self.dataset, workspace=self.workspace)
 
-        self.butler = self.workspace.gen3WorkButler
+        self.butler = self.workspace.workButler
 
     def assertIngestedDataFiles(self, data, collection):
         """Test that data have been loaded into a specific collection.
