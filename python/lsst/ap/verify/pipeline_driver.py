@@ -48,13 +48,29 @@ class ApPipeParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--id', dest='dataIds', action='append', default=[],
+        # namespace.dataIds will always be a list of 0 or more nonempty strings, regardless of inputs.
+        # TODO: in Python 3.8+, action='extend' handles nargs='?' more naturally than 'append'.
+        self.add_argument('--id', dest='dataIds', action=self.AppendOptional, nargs='?', default=[],
                           help='An identifier for the data to process.')
         self.add_argument("-j", "--processes", default=1, type=int,
                           help="Number of processes to use.")
         self.add_argument("--skip-pipeline", action="store_true",
                           help="Do not run the AP pipeline itself. This argument is useful "
                                "for testing metrics on a fixed data set.")
+
+    class AppendOptional(argparse.Action):
+        """A variant of the built-in "append" action that ignores None values
+        instead of appending them.
+        """
+        # This class can't safely inherit from the built-in "append" action
+        # because there is no public class that implements it.
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values is not None:
+                try:
+                    allValues = getattr(namespace, self.dest)
+                    allValues.append(values)
+                except AttributeError:
+                    setattr(namespace, self.dest, [values])
 
 
 def runApPipe(workspace, parsedCmdLine):

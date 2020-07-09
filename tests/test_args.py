@@ -87,12 +87,26 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         self.assertEqual(parsed.output, "tests/output/foo")
 
     def testDataId(self):
-        """Verify that a command line consisting only of required arguments parses correctly.
+        """Verify that a command line consisting only of required arguments and
+        --id parses correctly.
         """
         args = '--dataset %s --output tests/output/foo --id "visit=54123" --id "filter=x"' \
             % CommandLineTestSuite.datasetKey
         parsed = self._parseString(args)
         self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
+
+    def testEmptyDataId(self):
+        """Test that an --id argument may be not followed by a data ID.
+        """
+        minArgs = f'--dataset {self.datasetKey} --output tests/output/foo'
+
+        # Nothing after --id
+        parsed = self._parseString(minArgs + ' --id')
+        self.assertEqual(parsed.dataIds, [])
+
+        # --dataset immediately after --id
+        parsed = self._parseString('--id ' + minArgs)
+        self.assertEqual(parsed.dataIds, [])
 
     def testBadDataset(self):
         """Verify that a command line with an unregistered dataset is rejected.
