@@ -82,6 +82,7 @@ NUMPROC=${NUMPROC:-$((sys_proc < max_proc ? sys_proc : max_proc))}
 
 echo "Running ap_verify on ${DATASET}..."
 ap_verify.py --dataset "${DATASET}" \
+    --gen2 \    # TODO: generalize in DM-24262
     --output "${WORKSPACE}" \
     --processes "${NUMPROC}" \
     --metrics-file "${WORKSPACE}/ap_verify.{dataId}.verify.json" \

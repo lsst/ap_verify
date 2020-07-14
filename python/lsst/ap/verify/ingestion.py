@@ -23,14 +23,15 @@
 
 """Data ingestion for ap_verify.
 
-This module handles ingestion of a dataset into an appropriate repository, so
+This module handles ingestion of an ap_verify dataset into an appropriate repository, so
 that pipeline code need not be aware of the dataset framework.
 """
 
-__all__ = ["DatasetIngestConfig", "ingestDataset"]
+__all__ = ["DatasetIngestConfig", "Gen3DatasetIngestConfig", "ingestDataset", "ingestDatasetGen3"]
 
 import fnmatch
 import os
+import re
 import shutil
 import tarfile
 from glob import glob
@@ -41,6 +42,8 @@ import lsst.log
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
+import lsst.daf.butler
+import lsst.obs.base
 from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
 from lsst.pipe.tasks.ingestCuratedCalibs import IngestCuratedCalibsTask
@@ -62,10 +65,12 @@ class DatasetIngestConfig(pexConfig.Config):
         target=IngestTask,
         doc="Task used to perform raw data ingestion.",
     )
+    # Normally file patterns should be user input, but put them in a config so
+    # the ap_verify dataset can configure them
     dataFiles = pexConfig.ListField(
         dtype=str,
         default=["*.fits", "*.fz", "*.fits.gz"],
-        doc="Names of raw science files (no path; wildcards allowed) to ingest from the dataset.",
+        doc="Names of raw science files (no path; wildcards allowed) to ingest from the ap_verify dataset.",
     )
     dataBadFiles = pexConfig.ListField(
         dtype=str,
@@ -81,7 +86,7 @@ class DatasetIngestConfig(pexConfig.Config):
     calibFiles = pexConfig.ListField(
         dtype=str,
         default=["*.fits", "*.fz", "*.fits.gz"],
-        doc="Names of calib files (no path; wildcards allowed) to ingest from the dataset.",
+        doc="Names of calib files (no path; wildcards allowed) to ingest from the ap_verify dataset.",
     )
     calibBadFiles = pexConfig.ListField(
         dtype=str,
@@ -113,11 +118,11 @@ class DatasetIngestConfig(pexConfig.Config):
 
 
 class DatasetIngestTask(pipeBase.Task):
-    """Task for automating ingestion of a dataset.
+    """Task for automating ingestion of a ap_verify dataset.
 
     Each dataset configures this task as appropriate for the files it provides
     and the target instrument. Therefore, this task takes no input besides the
-    dataset to load and the repositories to ingest to.
+    ap_verify dataset to load and the repositories to ingest to.
     """
 
     ConfigClass = DatasetIngestConfig
@@ -136,7 +141,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset to be ingested.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The abstract location where ingestion repositories will be created.
             If the repositories already exist, they must support the same
             ``obs`` package as this task's subtasks.
@@ -160,7 +165,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
 
         Raises
@@ -226,7 +231,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
 
         Raises
@@ -291,7 +296,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
         """
         for curated in self.config.curatedCalibPaths:
@@ -331,7 +336,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing all ingestion repositories.
 
         Notes
@@ -375,7 +380,7 @@ class DatasetIngestTask(pipeBase.Task):
         ----------
         dataset : `lsst.ap.verify.dataset.Dataset`
             The dataset on which the pipeline will be run.
-        workspace : `lsst.ap.verify.workspace.Workspace`
+        workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
             The location containing the config directory.
         """
         if os.listdir(workspace.configDir):
@@ -399,16 +404,142 @@ class DatasetIngestTask(pipeBase.Task):
             shutil.copy2(configFile, destination)
 
 
+class Gen3DatasetIngestConfig(pexConfig.Config):
+    """Settings and defaults for `Gen3DatasetIngestTask`.
+
+    The correct target for `ingester` can be found in the documentation of
+    the appropriate ``obs`` package.
+    """
+
+    ingester = pexConfig.ConfigurableField(
+        target=lsst.obs.base.RawIngestTask,
+        doc="Task used to perform raw data ingestion.",
+    )
+    # Normally file patterns should be user input, but put them in a config so
+    # the ap_verify dataset can configure them
+    dataFiles = pexConfig.ListField(
+        dtype=str,
+        default=["*.fits", "*.fz", "*.fits.gz"],
+        doc="Names of raw science files (no path; wildcards allowed) to ingest from the ap_verify dataset.",
+    )
+    dataBadFiles = pexConfig.ListField(
+        dtype=str,
+        default=[],
+        doc="Names of raw science files (no path; wildcards allowed) to not ingest, "
+            "supersedes ``dataFiles``.",
+    )
+
+
+class Gen3DatasetIngestTask(pipeBase.Task):
+    """Task for automating ingestion of a ap_verify dataset.
+
+    Each dataset configures this task as appropriate for the files it provides
+    and the target instrument. Therefore, this task takes no input besides the
+    ap_verify dataset to load and the repositories to ingest to.
+
+    Parameters
+    ----------
+    dataset : `lsst.ap.verify.dataset.Dataset`
+        The ``ap_verify`` dataset to be ingested.
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
+        The abstract location for all ``ap_verify`` outputs, including
+        a Gen 3 repository.
+    """
+
+    ConfigClass = Gen3DatasetIngestConfig
+    _DefaultName = "gen3DatasetIngest"
+
+    def __init__(self, dataset, workspace, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.workspace = workspace
+        self.dataset = dataset
+        # workspace.workButler is undefined until the repository is created
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
+        self.makeSubtask("ingester", butler=self.workspace.workButler)
+
+    def run(self):
+        """Ingest the contents of a dataset into a Butler repository.
+        """
+        self._ensureRaws()
+        self._copyConfigs()
+
+    def _ensureRaws(self):
+        """Ensure that the repository in ``workspace`` has raws ingested.
+
+        After this method returns, this task's repository contains all science
+        data from this task's ap_verify dataset. Butler operations on the
+        repository are not able to modify ``dataset`` in any way.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if there are no files to ingest.
+        """
+        # TODO: regex is workaround for DM-25945
+        rawCollectionFilter = re.compile(self.dataset.instrument.makeDefaultRawIngestRunName())
+        rawCollections = list(self.workspace.workButler.registry.queryCollections(rawCollectionFilter))
+        if rawCollections:
+            self.log.info("Raw images for %s were previously ingested, skipping...",
+                          self.dataset.instrument.getName())
+        else:
+            self.log.info("Ingesting raw images...")
+            dataFiles = _findMatchingFiles(self.dataset.rawLocation, self.config.dataFiles,
+                                           exclude=self.config.dataBadFiles)
+            if dataFiles:
+                self._ingestRaws(dataFiles)
+                self.log.info("Images are now ingested in {0}".format(self.workspace.repo))
+            else:
+                raise RuntimeError("No raw files found at %s." % self.dataset.rawLocation)
+
+    def _ingestRaws(self, dataFiles):
+        """Ingest raw images into a repository.
+
+        This task's repository is populated with *links* to ``dataFiles``.
+
+        Parameters
+        ----------
+        dataFiles : `list` of `str`
+            A list of filenames to ingest. May contain wildcards.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if ``dataFiles`` is empty or any file has already been ingested.
+        """
+        if not dataFiles:
+            raise RuntimeError("No raw files to ingest (expected list of filenames, got %r)." % dataFiles)
+
+        try:
+            self.ingester.run(dataFiles, run=None)  # expect ingester to name a new collection
+        except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
+            raise RuntimeError("Not all raw files are unique") from detail
+
+    def _copyConfigs(self):
+        """Give a workspace a copy of all configs associated with the
+        ingested data.
+
+        After this method returns, the config directory in the workspace
+        contains all config files from the ap_verify dataset.
+        """
+        if os.listdir(self.workspace.configDir):
+            self.log.info("Configs already copied, skipping...")
+        else:
+            self.log.info("Storing data-specific configs...")
+            for configFile in _findMatchingFiles(self.dataset.configLocation, ['*.py']):
+                shutil.copy2(configFile, self.workspace.configDir)
+            self.log.info("Configs are now stored in {0}".format(self.workspace.configDir))
+
+
 def ingestDataset(dataset, workspace):
-    """Ingest the contents of a dataset into a Butler repository.
+    """Ingest the contents of an ap_veify dataset into a Butler repository.
 
     The original data directory shall not be modified.
 
     Parameters
     ----------
     dataset : `lsst.ap.verify.dataset.Dataset`
-        The dataset to be ingested.
-    workspace : `lsst.ap.verify.workspace.Workspace`
+        The ap_verify dataset to be ingested.
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
         The abstract location where ingestion repositories will be created.
         If the repositories already exist, they must be compatible with
         ``dataset`` (in particular, they must support the relevant
@@ -417,28 +548,52 @@ def ingestDataset(dataset, workspace):
     # TODO: generalize to support arbitrary URIs (DM-11482)
     log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
 
-    ingester = DatasetIngestTask(config=_getConfig(dataset))
+    ingester = DatasetIngestTask(config=_getConfig(DatasetIngestTask, dataset))
     ingester.run(dataset, workspace)
     log.info("Data ingested")
 
 
-def _getConfig(dataset):
+def ingestDatasetGen3(dataset, workspace):
+    """Ingest the contents of an ap_verify dataset into a Gen 3 Butler repository.
+
+    The original data directory is not modified.
+
+    Parameters
+    ----------
+    dataset : `lsst.ap.verify.dataset.Dataset`
+        The ap_verify dataset to be ingested.
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
+        The abstract location where the epository is be created, if it does
+        not already exist.
+    """
+    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
+
+    ingester = Gen3DatasetIngestTask(dataset, workspace, config=_getConfig(Gen3DatasetIngestTask, dataset))
+    ingester.run()
+    log.info("Data ingested")
+
+
+def _getConfig(task, dataset):
     """Return the ingestion config associated with a specific dataset.
 
     Parameters
     ----------
+    task : `lsst.pipe.base.Task`-type
+        The task whose config is needed
     dataset : `lsst.ap.verify.dataset.Dataset`
         The dataset whose ingestion config is desired.
 
     Returns
     -------
-    config : `DatasetIngestConfig`
-        The config for running `DatasetIngestTask` on ``dataset``.
+    config : ``task.ConfigClass``
+        The config for running ``task`` on ``dataset``.
     """
-    overrideFile = DatasetIngestTask._DefaultName + ".py"
+    # Can't use dataset.instrument.applyConfigOverrides for this, because the
+    # dataset might not have Gen 3 support.
+    overrideFile = task._DefaultName + ".py"
     packageDir = lsst.utils.getPackageDir(dataset.obsPackage)
 
-    config = DatasetIngestTask.ConfigClass()
+    config = task.ConfigClass()
     for path in [
         os.path.join(packageDir, 'config'),
         os.path.join(packageDir, 'config', dataset.camera),

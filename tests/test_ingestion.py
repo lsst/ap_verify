@@ -32,7 +32,7 @@ import lsst.pipe.tasks as pipeTasks
 from lsst.ap.verify import ingestion
 from lsst.ap.verify.testUtils import DataTestCase
 from lsst.ap.verify.dataset import Dataset
-from lsst.ap.verify.workspace import Workspace
+from lsst.ap.verify.workspace import WorkspaceGen2, WorkspaceGen3
 
 
 class MockDetector(object):
@@ -124,7 +124,7 @@ class IngestionTestSuite(DataTestCase):
         self._dataset = Dataset(self.datasetKey)
         # Fake Workspace because it's too hard to make a real one with a fake Butler
         self._workspace = unittest.mock.NonCallableMock(
-            spec=Workspace,
+            spec=WorkspaceGen2,
             dataRepo=self._repo,
             calibRepo=self._calibRepo,
         )
@@ -285,7 +285,7 @@ class IngestionTestSuite(DataTestCase):
         self._registerTask.addRow.assert_not_called()
 
     def testBadFileIngest(self):
-        """Test that ingestion of raw data ignores blacklisted files.
+        """Test that ingestion of raw data ignores forbidden files.
         """
         badFiles = ['raw_v2_fg.fits.gz']
         self.setUpRawRegistry()
@@ -305,10 +305,119 @@ class IngestionTestSuite(DataTestCase):
                                           create=False, dryrun=False)
                 self.assertNotIn(call, self._registerTask.addRow.mock_calls)
 
+
+class IngestionTestSuiteGen3(DataTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.dataset = Dataset(cls.datasetKey)
+
+        cls.INSTRUMENT = cls.dataset.instrument.getName()
+        cls.VISIT_ID = 204595
+        cls.DETECTOR_ID = 37
+
+        cls.rawData = [{'type': 'raw', 'file': 'lsst_a_204595_R11_S01_i.fits',
+                        'exposure': cls.VISIT_ID, 'detector': cls.DETECTOR_ID,
+                        'instrument': cls.INSTRUMENT},
+                       ]
+
+        cls.calibData = [{'type': 'bias', 'file': 'bias-R11-S01-det037_2022-01-01.fits.gz',
+                          'detector': cls.DETECTOR_ID, 'instrument': cls.INSTRUMENT},
+                         {'type': 'flat', 'file': 'flat_i-R11-S01-det037_2022-08-06.fits.gz',
+                          'detector': cls.DETECTOR_ID, 'instrument': cls.INSTRUMENT,
+                          'physical_filter': 'i'},
+                         ]
+
+    @staticmethod
+    def makeTestConfig():
+        config = ingestion.Gen3DatasetIngestConfig()
+        return config
+
+    def setUp(self):
+        super().setUp()
+
+        self.config = self.makeTestConfig()
+        self.config.validate()
+        self.config.freeze()
+
+        self.root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
+        self.workspace = WorkspaceGen3(self.root)
+        self.task = ingestion.Gen3DatasetIngestTask(config=self.config,
+                                                    dataset=self.dataset, workspace=self.workspace)
+
+        self.butler = self.workspace.workButler
+
+    def assertIngestedDataFiles(self, data, collection):
+        """Test that data have been loaded into a specific collection.
+
+        Parameters
+        ----------
+        data : `collections.abc.Iterable` [`collections.abc.Mapping`]
+            An iterable of mappings, each representing the properties of a
+            single input dataset. Each mapping must contain a `"type"` key
+            that maps to the dataset's Gen 3 type.
+        collection : `lsst.daf.butler.CollectionType`
+            Any valid :ref:`collection expression <daf_butler_collection_expressions>`
+            for the collection expected to contain the data.
+        """
+        for datum in data:
+            dataId = datum.copy()
+            dataId.pop("type", None)
+            dataId.pop("file", None)
+
+            matches = [x for x in self.butler.registry.queryDatasets(datum['type'],
+                                                                     collections=collection,
+                                                                     dataId=dataId)]
+            self.assertNotEqual(matches, [])
+
+    def testDataIngest(self):
+        """Test that ingesting science images given specific files adds them to a repository.
+        """
+        files = [os.path.join(self.dataset.rawLocation, datum['file']) for datum in self.rawData]
+        self.task._ingestRaws(files)
+        self.assertIngestedDataFiles(self.rawData, self.dataset.instrument.makeDefaultRawIngestRunName())
+
+    def testDataDoubleIngest(self):
+        """Test that re-ingesting science images raises RuntimeError.
+        """
+        files = [os.path.join(self.dataset.rawLocation, datum['file']) for datum in self.rawData]
+        self.task._ingestRaws(files)
+        with self.assertRaises(RuntimeError):
+            self.task._ingestRaws(files)
+
+    def testDataIngestDriver(self):
+        """Test that ingesting science images starting from an abstract dataset adds them to a repository.
+        """
+        self.task._ensureRaws()
+        self.assertIngestedDataFiles(self.rawData, self.dataset.instrument.makeDefaultRawIngestRunName())
+
+    def testCalibIngestDriver(self):
+        """Test that ingesting calibrations starting from an abstract dataset adds them to a repository.
+        """
+        self.task._ensureRaws()  # Should not affect calibs, but would be run
+        self.assertIngestedDataFiles(self.calibData, self.dataset.instrument.makeCollectionName("calib"))
+
+    def testNoFileIngest(self):
+        """Test that attempts to ingest nothing raise an exception.
+        """
+        with self.assertRaises(RuntimeError):
+            self.task._ingestRaws([])
+
+    def testCopyConfigs(self):
+        """Test that "ingesting" configs stores them in the workspace for later reference.
+        """
+        self.task._copyConfigs()
+        self.assertTrue(os.path.exists(self.workspace.configDir))
+        # Only testdata file that *must* be supported in the future
+        self.assertTrue(os.path.exists(os.path.join(self.workspace.configDir, "datasetIngest.py")))
+
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.
         """
-        testDir = self._dataset.datasetRoot
+        testDir = self.dataset.datasetRoot
         allFiles = {os.path.join(testDir, 'calib', f) for f in
                     {'bias-R11-S01-det037_2022-01-01.fits.gz',
                      'flat_i-R11-S01-det037_2022-08-06.fits.gz',

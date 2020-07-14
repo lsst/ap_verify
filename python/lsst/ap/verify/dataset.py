@@ -23,7 +23,9 @@
 
 import os
 
-from lsst.daf.persistence import Butler
+import lsst.daf.persistence as dafPersistence
+import lsst.daf.butler as dafButler
+import lsst.obs.base as obsBase
 import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
@@ -34,9 +36,9 @@ class Dataset:
     """A dataset supported by ``ap_verify``.
 
     Any object of this class is guaranteed to represent a ready-for-use
-    dataset, barring concurrent changes to the file system or EUPS operations.
-    Constructing a Dataset does not create a compatible output repository(ies),
-    which can be done by calling `makeCompatibleRepo`.
+    ap_verify dataset, barring concurrent changes to the file system or EUPS
+    operations. Constructing a Dataset does not create a compatible output
+    repository(ies), which can be done by calling `makeCompatibleRepo`.
 
     Parameters
     ----------
@@ -48,8 +50,8 @@ class Dataset:
     RuntimeError
         Raised if `datasetId` exists, but is not correctly organized or incomplete
     ValueError
-        Raised if `datasetId` is not a recognized dataset. No side effects if this
-        exception is raised.
+        Raised if `datasetId` is not a recognized ap_verify dataset. No side
+        effects if this exception is raised.
     """
 
     def __init__(self, datasetId):
@@ -74,7 +76,7 @@ class Dataset:
         self._initPackage(datasetPackage)
 
     def _initPackage(self, name):
-        """Prepare the package backing this dataset.
+        """Prepare the package backing this ap_verify dataset.
 
         Parameters
         ----------
@@ -86,7 +88,7 @@ class Dataset:
 
     @staticmethod
     def getSupportedDatasets():
-        """The dataset IDs that can be passed to this class's constructor.
+        """The ap_verify dataset IDs that can be passed to this class's constructor.
 
         Returns
         -------
@@ -104,7 +106,7 @@ class Dataset:
 
     @staticmethod
     def _getDatasetInfo():
-        """Return external data on supported datasets.
+        """Return external data on supported ap_verify datasets.
 
         If an exception is raised, the program state shall be unchanged.
 
@@ -122,7 +124,8 @@ class Dataset:
 
     @property
     def datasetRoot(self):
-        """The parent directory containing everything related to the dataset (`str`, read-only).
+        """The parent directory containing everything related to the
+        ap_verify dataset (`str`, read-only).
         """
         return self._dataRootDir
 
@@ -153,27 +156,50 @@ class Dataset:
 
     @property
     def configLocation(self):
-        """The directory containing configs that can be used to process the dataset (`str`, read-only).
+        """The directory containing configs that can be used to process the data (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'config')
 
     @property
     def obsPackage(self):
-        """The name of the obs package associated with this dataset (`str`, read-only).
+        """The name of the obs package associated with this data (`str`, read-only).
         """
-        return Butler.getMapperClass(self._stubInputRepo).getPackageName()
+        return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getPackageName()
 
     @property
     def camera(self):
-        """The name of the camera associated with this dataset (`str`, read-only).
+        """The name of the Gen 2 camera associated with this data (`str`, read-only).
         """
-        return Butler.getMapperClass(self._stubInputRepo).getCameraName()
+        return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getCameraName()
+
+    @property
+    def instrument(self):
+        """The Gen 3 instrument associated with this data (`lsst.obs.base.Instrument`, read-only).
+        """
+        butler = dafButler.Butler(self._preloadedRepo, writeable=False)
+        instruments = list(butler.registry.queryDimensions('instrument'))
+        if len(instruments) != 1:
+            raise RuntimeError(f"Dataset does not have exactly one instrument; got {instruments}.")
+        else:
+            return obsBase.Instrument.fromName(instruments[0]["instrument"], butler.registry)
 
     @property
     def _stubInputRepo(self):
         """The directory containing the data set's input stub (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'repo')
+
+    @property
+    def _preloadedRepo(self):
+        """The directory containing the pre-ingested Gen 3 repo (`str`, read-only).
+        """
+        return os.path.join(self.datasetRoot, 'preloaded')
+
+    @property
+    def _preloadedExport(self):
+        """The file containing an exported registry of `_preloadedRepo` (`str`, read-only).
+        """
+        return os.path.join(self.configLocation, 'export.yaml')
 
     def _validatePackage(self):
         """Confirm that the dataset directory satisfies all assumptions.
@@ -205,7 +231,7 @@ class Dataset:
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
     def makeCompatibleRepo(self, repoDir, calibRepoDir):
-        """Set up a directory as a repository compatible with this dataset.
+        """Set up a directory as a Gen 2 repository compatible with this ap_verify dataset.
 
         If the directory already exists, any files required by the dataset will
         be added if absent; otherwise the directory will remain unchanged.
@@ -220,11 +246,27 @@ class Dataset:
         mapperArgs = {'mapperArgs': {'calibRoot': calibRepoDir}}
         if _isRepo(self.templateLocation):
             # Stub repo is not a parent because can't mix v1 and v2 repositories in parents list
-            Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
+            dafPersistence.Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
+                                  outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
         else:
-            Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
-                   outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
+            dafPersistence.Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
+                                  outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
+
+    def makeCompatibleRepoGen3(self, repoDir):
+        """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.
+
+        If the directory already exists, any files required by the dataset will
+        be added if absent; otherwise the directory will remain unchanged.
+
+        Parameters
+        ----------
+        repoDir : `str`
+            The directory where the output repository will be created.
+        """
+        repoConfig = dafButler.Butler.makeRepo(repoDir, overwrite=True)
+        butler = dafButler.Butler(repoConfig, writeable=True)
+        butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport,
+                       transfer="auto")
 
 
 def _isRepo(repoDir):
