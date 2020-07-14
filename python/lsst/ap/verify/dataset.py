@@ -34,9 +34,9 @@ class Dataset:
     """A dataset supported by ``ap_verify``.
 
     Any object of this class is guaranteed to represent a ready-for-use
-    dataset, barring concurrent changes to the file system or EUPS operations.
-    Constructing a Dataset does not create a compatible output repository(ies),
-    which can be done by calling `makeCompatibleRepo`.
+    ap_verify dataset, barring concurrent changes to the file system or EUPS
+    operations. Constructing a Dataset does not create a compatible output
+    repository(ies), which can be done by calling `makeCompatibleRepo`.
 
     Parameters
     ----------
@@ -48,8 +48,8 @@ class Dataset:
     RuntimeError
         Raised if `datasetId` exists, but is not correctly organized or incomplete
     ValueError
-        Raised if `datasetId` is not a recognized dataset. No side effects if this
-        exception is raised.
+        Raised if `datasetId` is not a recognized ap_verify dataset. No side
+        effects if this exception is raised.
     """
 
     def __init__(self, datasetId):
@@ -74,7 +74,7 @@ class Dataset:
         self._initPackage(datasetPackage)
 
     def _initPackage(self, name):
-        """Prepare the package backing this dataset.
+        """Prepare the package backing this ap_verify dataset.
 
         Parameters
         ----------
@@ -86,7 +86,7 @@ class Dataset:
 
     @staticmethod
     def getSupportedDatasets():
-        """The dataset IDs that can be passed to this class's constructor.
+        """The ap_verify dataset IDs that can be passed to this class's constructor.
 
         Returns
         -------
@@ -104,7 +104,7 @@ class Dataset:
 
     @staticmethod
     def _getDatasetInfo():
-        """Return external data on supported datasets.
+        """Return external data on supported ap_verify datasets.
 
         If an exception is raised, the program state shall be unchanged.
 
@@ -122,7 +122,8 @@ class Dataset:
 
     @property
     def datasetRoot(self):
-        """The parent directory containing everything related to the dataset (`str`, read-only).
+        """The parent directory containing everything related to the
+        ap_verify dataset (`str`, read-only).
         """
         return self._dataRootDir
 
@@ -153,19 +154,19 @@ class Dataset:
 
     @property
     def configLocation(self):
-        """The directory containing configs that can be used to process the dataset (`str`, read-only).
+        """The directory containing configs that can be used to process the data (`str`, read-only).
         """
         return os.path.join(self.datasetRoot, 'config')
 
     @property
     def obsPackage(self):
-        """The name of the obs package associated with this dataset (`str`, read-only).
+        """The name of the obs package associated with this data (`str`, read-only).
         """
         return Butler.getMapperClass(self._stubInputRepo).getPackageName()
 
     @property
     def camera(self):
-        """The name of the camera associated with this dataset (`str`, read-only).
+        """The name of the camera associated with this data (`str`, read-only).
         """
         return Butler.getMapperClass(self._stubInputRepo).getCameraName()
 
@@ -205,7 +206,7 @@ class Dataset:
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
     def makeCompatibleRepo(self, repoDir, calibRepoDir):
-        """Set up a directory as a repository compatible with this dataset.
+        """Set up a directory as a repository compatible with this ap_verify dataset.
 
         If the directory already exists, any files required by the dataset will
         be added if absent; otherwise the directory will remain unchanged.
