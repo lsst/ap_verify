@@ -415,7 +415,7 @@ class IngestionTestSuiteGen3(DataTestCase):
         self.task._defineVisits()
 
         testId = {"visit": self.VISIT_ID, "instrument": self.INSTRUMENT, }
-        exposures = list(self.butler.registry.queryDimensions("exposure", dataId=testId))
+        exposures = list(self.butler.registry.queryDataIds("exposure", dataId=testId))
         self.assertEqual(len(exposures), 1)
         self.assertEqual(exposures[0]["exposure"], self.VISIT_ID)
 
@@ -427,7 +427,7 @@ class IngestionTestSuiteGen3(DataTestCase):
         self.task._defineVisits()  # must not raise
 
         testId = {"visit": self.VISIT_ID, "instrument": self.INSTRUMENT, }
-        exposures = list(self.butler.registry.queryDimensions("exposure", dataId=testId))
+        exposures = list(self.butler.registry.queryDataIds("exposure", dataId=testId))
         self.assertEqual(len(exposures), 1)
 
     def testVisitsUndefinable(self):

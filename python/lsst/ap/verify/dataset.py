@@ -177,7 +177,7 @@ class Dataset:
         """The Gen 3 instrument associated with this data (`lsst.obs.base.Instrument`, read-only).
         """
         butler = dafButler.Butler(self._preloadedRepo, writeable=False)
-        instruments = list(butler.registry.queryDimensions('instrument'))
+        instruments = list(butler.registry.queryDataIds('instrument'))
         if len(instruments) != 1:
             raise RuntimeError(f"Dataset does not have exactly one instrument; got {instruments}.")
         else:
