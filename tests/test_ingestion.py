@@ -330,9 +330,11 @@ class IngestionTestSuiteGen3(DataTestCase):
                           'physical_filter': 'i'},
                          ]
 
-    @staticmethod
-    def makeTestConfig():
+    @classmethod
+    def makeTestConfig(cls):
+        instrument = cls.dataset.instrument
         config = ingestion.Gen3DatasetIngestConfig()
+        instrument.applyConfigOverrides(ingestion.Gen3DatasetIngestTask._DefaultName, config)
         return config
 
     def setUp(self):

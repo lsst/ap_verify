@@ -28,6 +28,7 @@ import stat
 
 import lsst.daf.persistence as dafPersist
 import lsst.daf.butler as dafButler
+import lsst.obs.base as obsBase
 
 
 class Workspace(metaclass=abc.ABCMeta):
@@ -276,7 +277,15 @@ class WorkspaceGen3(Workspace):
         """
         if self._workButler is None:
             try:
-                self._workButler = dafButler.Butler(self.repo, run=self.runName)
+                # All Gen 3 collection names subject to change; don't hardcode them
+                queryButler = dafButler.Butler(self.repo, writeable=True)  # writeable for _workButler
+                inputs = set(queryButler.registry.queryCollections(
+                    collectionType=dafButler.CollectionType.RUN))
+                for dimension in queryButler.registry.queryDimensions('instrument'):
+                    instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
+                    inputs.add(instrument.makeDefaultRawIngestRunName())
+
+                self._workButler = dafButler.Butler(butler=queryButler, collections=inputs, run=self.runName)
             except OSError as e:
                 raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
         return self._workButler
