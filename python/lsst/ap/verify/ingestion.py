@@ -415,6 +415,10 @@ class Gen3DatasetIngestConfig(pexConfig.Config):
         target=lsst.obs.base.RawIngestTask,
         doc="Task used to perform raw data ingestion.",
     )
+    visitDefiner = pexConfig.ConfigurableField(
+        target=lsst.obs.base.DefineVisitsTask,
+        doc="Task used to organize raw exposures into visits.",
+    )
     # Normally file patterns should be user input, but put them in a config so
     # the ap_verify dataset can configure them
     dataFiles = pexConfig.ListField(
@@ -447,7 +451,8 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     """
 
     ConfigClass = Gen3DatasetIngestConfig
-    _DefaultName = "gen3DatasetIngest"
+    # Suffix is de-facto convention for distinguishing Gen 2 and Gen 3 config overrides
+    _DefaultName = "datasetIngest-gen3"
 
     def __init__(self, dataset, workspace, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -456,11 +461,13 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         # workspace.workButler is undefined until the repository is created
         self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
         self.makeSubtask("ingester", butler=self.workspace.workButler)
+        self.makeSubtask("visitDefiner", butler=self.workspace.workButler)
 
     def run(self):
         """Ingest the contents of a dataset into a Butler repository.
         """
         self._ensureRaws()
+        self._defineVisits()
         self._copyConfigs()
 
     def _ensureRaws(self):
@@ -513,6 +520,30 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             self.ingester.run(dataFiles, run=None)  # expect ingester to name a new collection
         except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
             raise RuntimeError("Not all raw files are unique") from detail
+
+    def _defineVisits(self):
+        """Map visits to the ingested exposures.
+
+        This step is necessary to be able to run most pipelines on raw datasets.
+
+        Raises
+        ------
+        RuntimeError
+            Raised if there are no exposures in the repository.
+        """
+        exposures = set(self.workspace.workButler.registry.queryDimensions(["exposure"]))
+        if not exposures:
+            raise RuntimeError(f"No exposures defined in {self.workspace.repo}.")
+
+        exposureKeys = list(exposures)[0].graph
+        exposuresWithVisits = {x.subset(exposureKeys) for x in
+                               self.workspace.workButler.registry.queryDimensions(["exposure", "visit"])}
+        exposuresNoVisits = exposures - exposuresWithVisits
+        if exposuresNoVisits:
+            self.log.info("Defining visits...")
+            self.visitDefiner.run(exposuresNoVisits)
+        else:
+            self.log.info("Visits were previously defined, skipping...")
 
     def _copyConfigs(self):
         """Give a workspace a copy of all configs associated with the
