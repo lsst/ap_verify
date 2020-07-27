@@ -37,7 +37,7 @@ import lsst.log
 from .dataset import Dataset
 from .ingestion import ingestDataset, ingestDatasetGen3
 from .metrics import MetricsParser, computeMetrics
-from .pipeline_driver import ApPipeParser, runApPipe
+from .pipeline_driver import ApPipeParser, runApPipeGen2
 from .workspace import WorkspaceGen2, WorkspaceGen3
 
 
@@ -166,7 +166,7 @@ def runApVerify(cmdLine=None):
     ingestDataset(args.dataset, workspace)
 
     log.info('Running pipeline...')
-    apPipeResults = runApPipe(workspace, args)
+    apPipeResults = runApPipeGen2(workspace, args)
     computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
 
     return _getCmdLineExitStatus(apPipeResults.resultList)

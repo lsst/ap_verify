@@ -27,7 +27,7 @@ This module handles calling `ap_pipe` and converting any information
 as needed.
 """
 
-__all__ = ["ApPipeParser", "runApPipe"]
+__all__ = ["ApPipeParser", "runApPipeGen2"]
 
 import argparse
 import os
@@ -73,7 +73,7 @@ class ApPipeParser(argparse.ArgumentParser):
                     setattr(namespace, self.dest, [values])
 
 
-def runApPipe(workspace, parsedCmdLine):
+def runApPipeGen2(workspace, parsedCmdLine):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
@@ -90,7 +90,7 @@ def runApPipe(workspace, parsedCmdLine):
         ``doReturnResults=False``. This object is valid even if
         `~lsst.ap.pipe.ApPipeTask` was never run.
     """
-    log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipe')
+    log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen2')
 
     configArgs = _getConfigArguments(workspace)
     makeApdb(configArgs)

@@ -63,7 +63,7 @@ def patchApPipe(method):
     return wrapper
 
 
-class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
+class PipelineDriverTestSuiteGen2(lsst.utils.tests.TestCase):
     def setUp(self):
         self._testDir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self._testDir, ignore_errors=True)
@@ -111,19 +111,19 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
 
     # Mock up ApPipeTask to avoid doing any processing.
     @patchApPipe
-    def testRunApPipeSteps(self, mockDb, mockClass):
-        """Test that runApPipe runs the entire pipeline.
+    def testrunApPipeGen2Steps(self, mockDb, mockClass):
+        """Test that runApPipeGen2 runs the entire pipeline.
         """
-        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        pipeline_driver.runApPipeGen2(self.workspace, self.apPipeArgs)
 
         mockDb.assert_called_once()
         mockClass.parseAndRun.assert_called_once()
 
     @patchApPipe
-    def testRunApPipeDataIdReporting(self, _mockDb, _mockClass):
-        """Test that runApPipe reports the data IDs that were processed.
+    def testrunApPipeGen2DataIdReporting(self, _mockDb, _mockClass):
+        """Test that runApPipeGen2 reports the data IDs that were processed.
         """
-        results = pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        results = pipeline_driver.runApPipeGen2(self.workspace, self.apPipeArgs)
         ids = results.parsedCmd.id
 
         self.assertEqual(ids.idList, _getDataIds())
@@ -137,21 +137,21 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
             self.fail("No command-line args passed to parseAndRun!")
 
     @patchApPipe
-    def testRunApPipeCustomConfig(self, _mockDb, mockClass):
-        """Test that runApPipe can pass custom configs from a workspace to ApPipeTask.
+    def testrunApPipeGen2CustomConfig(self, _mockDb, mockClass):
+        """Test that runApPipeGen2 can pass custom configs from a workspace to ApPipeTask.
         """
         mockParse = mockClass.parseAndRun
-        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        pipeline_driver.runApPipeGen2(self.workspace, self.apPipeArgs)
         mockParse.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
         self.assertIn(os.path.join(self.workspace.configDir, "apPipe.py"), cmdLineArgs)
 
     @patchApPipe
-    def testRunApPipeWorkspaceDb(self, mockDb, mockClass):
-        """Test that runApPipe places a database in the workspace location by default.
+    def testrunApPipeGen2WorkspaceDb(self, mockDb, mockClass):
+        """Test that runApPipeGen2 places a database in the workspace location by default.
         """
         mockParse = mockClass.parseAndRun
-        pipeline_driver.runApPipe(self.workspace, self.apPipeArgs)
+        pipeline_driver.runApPipeGen2(self.workspace, self.apPipeArgs)
 
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
@@ -162,13 +162,13 @@ class PipelineDriverTestSuite(lsst.utils.tests.TestCase):
         self.assertIn("diaPipe.apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
     @patchApPipe
-    def testRunApPipeReuse(self, _mockDb, mockClass):
-        """Test that runApPipe does not run the pipeline at all (not even with
+    def testrunApPipeGen2Reuse(self, _mockDb, mockClass):
+        """Test that runApPipeGen2 does not run the pipeline at all (not even with
         --reuse-outputs-from) if --skip-pipeline is provided.
         """
         mockParse = mockClass.parseAndRun
         skipArgs = pipeline_driver.ApPipeParser().parse_args(["--skip-pipeline"])
-        pipeline_driver.runApPipe(self.workspace, skipArgs)
+        pipeline_driver.runApPipeGen2(self.workspace, skipArgs)
         mockParse.assert_not_called()
 
 
