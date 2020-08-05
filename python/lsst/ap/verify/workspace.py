@@ -103,6 +103,13 @@ class Workspace(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
+    def alertLocation(self):
+        """The absolute location of an output directory for persisted
+        alert packets (`str`, read-only).
+        """
+
+    @property
+    @abc.abstractmethod
     def workButler(self):
         """A Butler that can produce pipeline inputs and outputs (read-only).
         The type is class-dependent.
@@ -181,6 +188,10 @@ class WorkspaceGen2(Workspace):
     @property
     def dbLocation(self):
         return os.path.join(self._location, 'association.db')
+
+    @property
+    def alertLocation(self):
+        return os.path.join(self._location, 'alerts')
 
     @property
     def workButler(self):
@@ -266,6 +277,10 @@ class WorkspaceGen3(Workspace):
     @property
     def dbLocation(self):
         return os.path.join(self._location, 'association.db')
+
+    @property
+    def alertLocation(self):
+        return os.path.join(self._location, 'alerts')
 
     @property
     def workButler(self):

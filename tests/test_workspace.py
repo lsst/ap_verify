@@ -102,6 +102,16 @@ class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
             # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
             self._assertNotInDir(self._testbed.dbLocation, url2pathname(repo))
 
+    def testAlerts(self):
+        """Verify that a WorkspaceGen2 requests an alert dump in the target
+        directory, but not in any repository.
+        """
+        root = self._testWorkspace
+        self._assertInDir(self._testbed.alertLocation, root)
+        for repo in self._allRepos(self._testbed):
+            # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+            self._assertNotInDir(self._testbed.alertLocation, url2pathname(repo))
+
 
 class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
 
@@ -161,6 +171,15 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
         self._assertInDir(self._testbed.dbLocation, root)
         # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
         self._assertNotInDir(self._testbed.dbLocation, url2pathname(self._testbed.repo))
+
+    def testAlerts(self):
+        """Verify that a WorkspaceGen3 requests an alert dump in the target
+        directory, but not in any repository.
+        """
+        root = self._testWorkspace
+        self._assertInDir(self._testbed.alertLocation, root)
+        # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+        self._assertNotInDir(self._testbed.alertLocation, url2pathname(self._testbed.repo))
 
     def testWorkButler(self):
         """Verify that the Gen 3 Butler is available if and only if the repository is set up.
