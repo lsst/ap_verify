@@ -156,7 +156,7 @@ def runApPipeGen3(workspace, parsedCmdLine):
     pipelineArgs.extend(_getConfigArgumentsGen3(workspace))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
-            pipelineArgs.extend(["--data-query", *singleId.split(" ")])
+            pipelineArgs.extend(["--data-query", singleId])
     pipelineArgs.extend(["--processes", str(parsedCmdLine.processes)])
     pipelineArgs.extend(["--register-dataset-types"])
 
@@ -256,5 +256,5 @@ def _getCollectionArguments(workspace):
     inputs = set(butler.registry.queryCollections(collectionType=dafButler.CollectionType.RUN))
     inputs.discard(workspace.runName)
     return ["--input", ",".join(inputs),
-            "--output-run", workspace.runName, "--extend-run",
+            "--output-run", workspace.runName,
             ]

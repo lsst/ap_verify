@@ -300,7 +300,8 @@ class WorkspaceGen3(Workspace):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
                     inputs.add(instrument.makeDefaultRawIngestRunName())
 
-                self._workButler = dafButler.Butler(butler=queryButler, collections=inputs, run=self.runName)
+                # should set run=self.runName, but this breaks quantum graph generation (DM-26246)
+                self._workButler = dafButler.Butler(butler=queryButler, collections=inputs)
             except OSError as e:
                 raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
         return self._workButler

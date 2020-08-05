@@ -26,12 +26,15 @@ In particular, where possible it will :ref:`preserve metrics<ap-verify-failsafe-
 Recovering metrics from partial runs
 ====================================
 
-``ap_verify`` produces some measurements even if the pipeline cannot run to completion.
+In Gen 2 mode, ``ap_verify`` produces some measurements even if the pipeline cannot run to completion.
 Specifically, if a task fails, any previously completed tasks that store measurements to disk will have done so.
 In addition, if a metric cannot be computed, ``ap_verify`` may attempt to store the values of the remaining metrics.
 
 If the pipeline fails, ``ap_verify`` may not preserve measurements computed from the dataset.
 Once the framework for handling metrics is finalized, ``ap_verify`` may be able to offer a broader guarantee that does not depend on how or where any individual metric is implemented.
+
+The Gen 3 framework is not yet mature enough to handle partial failures.
+It is expected that Gen 3 processing will eventually be able to compute all metrics from completed tasks.
 
 Further reading
 ===============

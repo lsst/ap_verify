@@ -26,8 +26,8 @@ The dataset names are a placeholder for a future data repository versioning syst
 
 .. _ap-verify-run-output:
 
-How to run ap_verify in a new workspace
-=======================================
+How to run ap_verify in a new workspace (Gen 2 pipeline)
+========================================================
 
 Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run :command:`ap_verify.py` as follows:
 
@@ -45,9 +45,9 @@ while the output is:
 
 * :command:`workspaces/hits/` is the location where the pipeline will create any :ref:`Butler repositories<command-line-task-data-repo-using-uris>` necessary,
 
-This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visit 412518 through the entire AP pipeline.
+This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visits 412518 and 412568 through the entire AP pipeline.
 
-It's also possible to run an entire dataset by omitting the :command:`--id` argument (as some datasets are very large, do this with caution):
+It's also possible to run an entire dataset by omitting the :option:`--id` argument (as some datasets are very large, do this with caution):
 
 .. prompt:: bash
 
@@ -57,6 +57,25 @@ It's also possible to run an entire dataset by omitting the :command:`--id` argu
 
    The command-line interface for :command:`ap_verify.py` is at present more limited than those of command-line tasks.
    See the :doc:`command-line-reference` for details.
+
+.. _ap-verify-run-output-gen3:
+
+How to run ap_verify in a new workspace (Gen 3 pipeline)
+========================================================
+
+The command for running the pipeline on Gen 3 data is almost identical to Gen 2:
+
+.. prompt:: bash
+
+   ap_verify.py --dataset HiTS2015 --gen3 --id "visit in (412518, 412568) and abstract_filter='g'" --output workspaces/hits/
+
+The only differences are substituting :option:`--gen3` for :option:`--gen2`, and formatting the (optional) data ID in the :ref:`Gen 3 query syntax <daf_butler_dimension_expressions>`.
+
+.. note::
+
+   Because the science pipelines are still being converted to Gen 3, Gen 3 processing may not be supported for all ap_verify datasets.
+   See the individual dataset's documentation for more details.
+
 
 .. _ap-verify-run-ingest:
 
@@ -78,8 +97,8 @@ Other options from :command:`ap_verify.py` are not available.
 
 .. _ap-verify-results:
 
-How to use measurements of metrics
-==================================
+How to use measurements of metrics (Gen 2 pipeline)
+===================================================
 
 After ``ap_verify`` has run, it will produce files named, by default, :file:`ap_verify.<dataId>.verify.json` in the caller's directory.
 The file name may be customized using the :option:`--metrics-file` command-line argument.
@@ -87,6 +106,19 @@ These files contain metric measurements in ``lsst.verify`` format, and can be lo
 
 If the pipeline is interrupted by a fatal error, completed measurements will be saved to metrics files for debugging purposes.
 See the :ref:`error-handling policy <ap-verify-failsafe-partialmetric>` for details.
+
+.. _ap-verify-results-gen3:
+
+How to use measurements of metrics (Gen 3 pipeline)
+===================================================
+
+After ``ap_verify`` has run, it will produce Butler datasets named ``metricValue_<metric package>_<metric>``.
+These can be queried, like any Butler dataset, using methods like `~lsst.daf.butler.Registry.queryDatasetTypes` and `~lsst.daf.butler.Butler.get`.
+
+.. note::
+
+   Not all metric values need have the same data ID as the data run through the pipeline.
+   For example, metrics describing the full focal plane have a visit but no detector.
 
 Further reading
 ===============

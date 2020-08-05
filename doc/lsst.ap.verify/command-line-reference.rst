@@ -29,8 +29,10 @@ These two arguments are mandatory, all others are optional (though use of either
 Status code
 ===========
 
-Like :ref:`command-line tasks <command-line-task-argument-reference>`, :command:`ap_verify.py` returns the number of data IDs that could not be processed (i.e., 0 on a complete success).
-However, an uncaught exception causes :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead (also as for command-line tasks).
+:command:`ap_verify.py` returns 0 on success, and a non-zero value if there were any processing problems.
+In :option:`--gen2` mode, the status code is the number of data IDs that could not be processed, like for :ref:`command-line tasks <command-line-task-argument-reference>`.
+
+With both :option:`--gen2` and :option:`--gen3`, an uncaught exception may cause :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead of the above.
 
 .. _ap-verify-cmd-args:
 
@@ -43,8 +45,10 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    **Butler data ID.**
 
-   Specify data ID to process using :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`.
-   For example, ``--id "visit=12345 ccd=1..6 filter=g"``.
+   Specify data ID to process.
+   If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--id "visit=12345 ccd=1..6 filter=g"``.
+   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--id "visit=12345 and detector in (1..6) and abstract_filter='g'"``.
+
    Multiple copies of this argument are allowed.
    For compatibility with the syntax used by command line tasks, ``--id`` with no argument processes all data IDs.
 
@@ -109,7 +113,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: --metrics-file <filename>
 
-   **Output metrics file.**
+   **Output metrics file. (Gen 2 only)**
 
    The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
    The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.

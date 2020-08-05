@@ -37,7 +37,7 @@ import lsst.log
 from .dataset import Dataset
 from .ingestion import ingestDataset, ingestDatasetGen3
 from .metrics import MetricsParser, computeMetrics
-from .pipeline_driver import ApPipeParser, runApPipeGen2
+from .pipeline_driver import ApPipeParser, runApPipeGen2, runApPipeGen3
 from .workspace import WorkspaceGen2, WorkspaceGen3
 
 
@@ -162,14 +162,19 @@ def runApVerify(cmdLine=None):
     args = _ApVerifyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
 
-    workspace = WorkspaceGen2(args.output)
-    ingestDataset(args.dataset, workspace)
-
-    log.info('Running pipeline...')
-    apPipeResults = runApPipeGen2(workspace, args)
-    computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
-
-    return _getCmdLineExitStatus(apPipeResults.resultList)
+    if args.useGen3:
+        workspace = WorkspaceGen3(args.output)
+        ingestDatasetGen3(args.dataset, workspace)
+        log.info('Running pipeline...')
+        # Gen 3 pipeline includes both AP and metrics
+        return runApPipeGen3(workspace, args)
+    else:
+        workspace = WorkspaceGen2(args.output)
+        ingestDataset(args.dataset, workspace)
+        log.info('Running pipeline...')
+        apPipeResults = runApPipeGen2(workspace, args)
+        computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
+        return _getCmdLineExitStatus(apPipeResults.resultList)
 
 
 def _getCmdLineExitStatus(resultList):
