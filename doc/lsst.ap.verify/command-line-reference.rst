@@ -73,6 +73,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    If this argument is omitted, :file:`config/default_dataset_metrics.py` will be used.
 
    Use :option:`--image-metrics-config` to configure image-level metrics instead.
+   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
 .. option:: --gen2
@@ -109,6 +110,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    If this argument is omitted, :file:`config/default_image_metrics.py` will be used.
 
    Use :option:`--dataset-metrics-config` to configure dataset-level metrics instead.
+   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
 .. option:: --metrics-file <filename>
@@ -127,3 +129,19 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
    The path may be absolute or relative to the current working directory.
+
+.. option:: -p, --pipeline <filename>
+
+   **Custom ap_verify pipeline. (Gen 3 only)**
+
+   A pipeline definition file containing a custom verification pipeline.
+   If omitted, :file:`pipelines/ApVerify.yaml` will be used.
+
+   The most common use for a custom pipeline is adding or removing metrics to be run along with the AP pipeline.
+
+   .. note::
+
+      At present, ap_verify assumes that the provided pipeline is some superset of the AP pipeline.
+      It will likely crash if any AP tasks are missing.
+
+   For the Gen 2 equivalent to this option, see :option:`--dataset-metrics-config` and :option:`--image-metrics-config`.

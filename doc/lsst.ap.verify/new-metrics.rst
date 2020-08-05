@@ -20,8 +20,11 @@ The ``ap_verify`` package provides two config files in the :file:`config/` direc
 These files feature complex logic to minimize code duplication and minimize the work in adding new metrics.
 This complexity is not required by ``MetricsControllerTask``; a config that's just a list of assignments will also work.
 
-In Gen 3, the metrics computed by ``ap_verify`` are configured as part of the pipeline in :file:`pipelines/ApVerify.yaml`.
-To make it easy to manage, all :lsst-task:`~lsst.verify.gen2tasks.metricTask.MetricTask` configuration is done in separate sub-pipelines that are then included in :file:`ApVerify.yaml`.
+In Gen 3, the metrics computed by ``ap_verify`` are configured as part of the pipeline.
+The pipeline can be overridden using the :option:`--pipeline` command-line option.
+
+The ``ap_verify`` package provides a default-instrumented pipeline in :file:`pipelines/ApVerify.yaml`.
+To make it easy to mix and match metrics, all :lsst-task:`~lsst.verify.gen2tasks.metricTask.MetricTask` configuration is done in separate sub-pipelines that are then included in :file:`ApVerify.yaml`.
 
 Further reading
 ===============

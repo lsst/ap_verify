@@ -49,12 +49,16 @@ class ApPipeParser(argparse.ArgumentParser):
     """
 
     def __init__(self):
+        defaultPipeline = os.path.join(getPackageDir("ap_verify"), "pipelines", "ApVerify.yaml")
+
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
         # namespace.dataIds will always be a list of 0 or more nonempty strings, regardless of inputs.
         # TODO: in Python 3.8+, action='extend' handles nargs='?' more naturally than 'append'.
         self.add_argument('--id', dest='dataIds', action=self.AppendOptional, nargs='?', default=[],
                           help='An identifier for the data to process.')
+        self.add_argument("-p", "--pipeline", default=defaultPipeline,
+                          help="A custom version of the ap_verify pipeline (e.g., with different metrics).")
         self.add_argument("-j", "--processes", default=1, type=int,
                           help="Number of processes to use.")
         self.add_argument("--skip-pipeline", action="store_true",
@@ -143,11 +147,9 @@ def runApPipeGen3(workspace, parsedCmdLine):
     # Currently makeApdb has different argument conventions from Gen 3; see DM-22663
     makeApdb(_getConfigArguments(workspace))
 
-    # TODO: add user override for this
-    pipelineFile = os.path.join(getPackageDir("ap_verify"), "pipelines", "ApVerify.yaml")
     pipelineArgs = ["run",
                     "--butler-config", workspace.repo,
-                    "--pipeline", pipelineFile,
+                    "--pipeline", parsedCmdLine.pipeline,
                     ]
     # TODO: collections should be determined exclusively by Workspace.workButler,
     # but I can't find a way to hook that up to the graph builder. So use the CLI
