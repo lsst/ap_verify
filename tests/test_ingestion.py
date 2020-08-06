@@ -330,9 +330,11 @@ class IngestionTestSuiteGen3(DataTestCase):
                           'physical_filter': 'i'},
                          ]
 
-    @staticmethod
-    def makeTestConfig():
+    @classmethod
+    def makeTestConfig(cls):
+        instrument = cls.dataset.instrument
         config = ingestion.Gen3DatasetIngestConfig()
+        instrument.applyConfigOverrides(ingestion.Gen3DatasetIngestTask._DefaultName, config)
         return config
 
     def setUp(self):
@@ -405,6 +407,34 @@ class IngestionTestSuiteGen3(DataTestCase):
         """
         with self.assertRaises(RuntimeError):
             self.task._ingestRaws([])
+
+    def testVisitDefinition(self):
+        """Test that the final repository supports indexing by visit.
+        """
+        self.task._ensureRaws()
+        self.task._defineVisits()
+
+        testId = {"visit": self.VISIT_ID, "instrument": self.INSTRUMENT, }
+        exposures = list(self.butler.registry.queryDimensions("exposure", dataId=testId))
+        self.assertEqual(len(exposures), 1)
+        self.assertEqual(exposures[0]["exposure"], self.VISIT_ID)
+
+    def testVisitDoubleDefinition(self):
+        """Test that re-defining visits is guarded against.
+        """
+        self.task._ensureRaws()
+        self.task._defineVisits()
+        self.task._defineVisits()  # must not raise
+
+        testId = {"visit": self.VISIT_ID, "instrument": self.INSTRUMENT, }
+        exposures = list(self.butler.registry.queryDimensions("exposure", dataId=testId))
+        self.assertEqual(len(exposures), 1)
+
+    def testVisitsUndefinable(self):
+        """Test that attempts to define visits with no exposures raise an exception.
+        """
+        with self.assertRaises(RuntimeError):
+            self.task._defineVisits()
 
     def testCopyConfigs(self):
         """Test that "ingesting" configs stores them in the workspace for later reference.
