@@ -60,7 +60,7 @@ class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
     def testMakeDir(self):
         """Verify that a Workspace creates the workspace directory if it does not exist.
         """
-        newPath = '_temp'
+        newPath = '_temp2'  # can't use mkdtemp because creation is what we're testing
         shutil.rmtree(newPath, ignore_errors=True)
         self.assertFalse(os.path.exists(newPath), 'Workspace directory must not exist before test.')
 
@@ -131,7 +131,7 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
     def testMakeDir(self):
         """Verify that a Workspace creates the workspace directory if it does not exist.
         """
-        newPath = '_temp'
+        newPath = '_temp3'  # can't use mkdtemp because creation is what we're testing
         shutil.rmtree(newPath, ignore_errors=True)
         self.assertFalse(os.path.exists(newPath), 'Workspace directory must not exist before test.')
 
