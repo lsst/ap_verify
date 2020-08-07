@@ -531,13 +531,13 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         RuntimeError
             Raised if there are no exposures in the repository.
         """
-        exposures = set(self.workspace.workButler.registry.queryDimensions(["exposure"]))
+        exposures = set(self.workspace.workButler.registry.queryDataIds(["exposure"]))
         if not exposures:
             raise RuntimeError(f"No exposures defined in {self.workspace.repo}.")
 
         exposureKeys = list(exposures)[0].graph
         exposuresWithVisits = {x.subset(exposureKeys) for x in
-                               self.workspace.workButler.registry.queryDimensions(["exposure", "visit"])}
+                               self.workspace.workButler.registry.queryDataIds(["exposure", "visit"])}
         exposuresNoVisits = exposures - exposuresWithVisits
         if exposuresNoVisits:
             self.log.info("Defining visits...")
