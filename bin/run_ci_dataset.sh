@@ -35,17 +35,19 @@ print_error() {
 
 usage() {
     print_error
-    print_error "Usage: $0 -d DATASET [-h]"
+    print_error "Usage: $0 -d DATASET [-g NUM] [-h]"
     print_error
     print_error "Specifc options:"
     print_error "   -d          Dataset name"
+    print_error "   -g          Middleware generation number (int)"
     print_error "   -h          show this message"
     exit 1
 }
 
-while getopts "d:h" option; do
+while getopts "d:g:h" option; do
     case "$option" in
         d)  DATASET="$OPTARG";;
+        g)  GEN="$OPTARG";;
         h)  usage;;
         *)  usage;;
     esac
@@ -54,6 +56,9 @@ if [[ -z "${DATASET}" ]]; then
     print_error "$0: mandatory argument -- d"
     usage
     exit 1
+fi
+if [[ -n "${GEN}" ]]; then
+    GEN="--gen${GEN}"
 fi
 shift $((OPTIND-1))
 
@@ -80,10 +85,9 @@ fi
 max_proc=8
 NUMPROC=${NUMPROC:-$((sys_proc < max_proc ? sys_proc : max_proc))}
 
-echo "Running ap_verify on ${DATASET}..."
-# TODO: let caller choose --gen2 or --gen3 in DM-24262
+echo "Running ap_verify on ${DATASET} ${GEN}..."
 ap_verify.py --dataset "${DATASET}" \
-    --gen2 \
+    ${GEN} \
     --output "${WORKSPACE}" \
     --processes "${NUMPROC}" \
     --metrics-file "${WORKSPACE}/ap_verify.{dataId}.verify.json" \
