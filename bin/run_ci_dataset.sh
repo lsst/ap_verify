@@ -37,7 +37,7 @@ usage() {
     print_error
     print_error "Usage: $0 -d DATASET [-g NUM] [-h]"
     print_error
-    print_error "Specifc options:"
+    print_error "Specific options:"
     print_error "   -d          Dataset name"
     print_error "   -g          Middleware generation number (int)"
     print_error "   -h          show this message"
