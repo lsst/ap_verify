@@ -103,6 +103,13 @@ class Workspace(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
+    def alertLocation(self):
+        """The absolute location of an output directory for persisted
+        alert packets (`str`, read-only).
+        """
+
+    @property
+    @abc.abstractmethod
     def workButler(self):
         """A Butler that can produce pipeline inputs and outputs (read-only).
         The type is class-dependent.
@@ -181,6 +188,10 @@ class WorkspaceGen2(Workspace):
     @property
     def dbLocation(self):
         return os.path.join(self._location, 'association.db')
+
+    @property
+    def alertLocation(self):
+        return os.path.join(self._location, 'alerts')
 
     @property
     def workButler(self):
@@ -268,6 +279,10 @@ class WorkspaceGen3(Workspace):
         return os.path.join(self._location, 'association.db')
 
     @property
+    def alertLocation(self):
+        return os.path.join(self._location, 'alerts')
+
+    @property
     def workButler(self):
         """A Butler that can read and write to a Gen 3 repository (`lsst.daf.butler.Butler`, read-only).
 
@@ -285,7 +300,8 @@ class WorkspaceGen3(Workspace):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
                     inputs.add(instrument.makeDefaultRawIngestRunName())
 
-                self._workButler = dafButler.Butler(butler=queryButler, collections=inputs, run=self.runName)
+                # should set run=self.runName, but this breaks quantum graph generation (DM-26246)
+                self._workButler = dafButler.Butler(butler=queryButler, collections=inputs)
             except OSError as e:
                 raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
         return self._workButler

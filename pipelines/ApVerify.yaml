@@ -1,0 +1,19 @@
+# Gen 3 pipeline for ap_verify
+# This concatenates various lsst.verify metrics to an AP pipeline
+
+description: Fully instrumented AP pipeline
+inherits:
+    - location: $AP_PIPE_DIR/pipelines/ApPipe.yaml
+    - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
+    - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
+tasks:
+    diaPipe:
+        # TODO: how to prevent duplication with ApPipe definition?
+        class: lsst.ap.association.DiaPipelineTask
+        config:
+            apdb.isolation_level: READ_UNCOMMITTED
+            doPackageAlerts: True
+contracts:
+    # Metric inputs must match pipeline outputs
+    - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
+    - imageDifference.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType

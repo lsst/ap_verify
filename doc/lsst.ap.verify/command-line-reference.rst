@@ -29,8 +29,10 @@ These two arguments are mandatory, all others are optional (though use of either
 Status code
 ===========
 
-Like :ref:`command-line tasks <command-line-task-argument-reference>`, :command:`ap_verify.py` returns the number of data IDs that could not be processed (i.e., 0 on a complete success).
-However, an uncaught exception causes :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead (also as for command-line tasks).
+:command:`ap_verify.py` returns 0 on success, and a non-zero value if there were any processing problems.
+In :option:`--gen2` mode, the status code is the number of data IDs that could not be processed, like for :ref:`command-line tasks <command-line-task-argument-reference>`.
+
+With both :option:`--gen2` and :option:`--gen3`, an uncaught exception may cause :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead of the above.
 
 .. _ap-verify-cmd-args:
 
@@ -43,8 +45,10 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    **Butler data ID.**
 
-   Specify data ID to process using :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`.
-   For example, ``--id "visit=12345 ccd=1..6 filter=g"``.
+   Specify data ID to process.
+   If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--id "visit=12345 ccd=1..6 filter=g"``.
+   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--id "visit=12345 and detector in (1..6) and abstract_filter='g'"``.
+
    Multiple copies of this argument are allowed.
    For compatibility with the syntax used by command line tasks, ``--id`` with no argument processes all data IDs.
 
@@ -63,12 +67,13 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: --dataset-metrics-config <filename>
 
-   **Input dataset-level metrics config.**
+   **Input dataset-level metrics config. (Gen 2 only)**
 
    A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
    If this argument is omitted, :file:`config/default_dataset_metrics.py` will be used.
 
    Use :option:`--image-metrics-config` to configure image-level metrics instead.
+   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
 .. option:: --gen2
@@ -99,17 +104,18 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    
 .. option:: --image-metrics-config <filename>
 
-   **Input image-level metrics config.**
+   **Input image-level metrics config. (Gen 2 only)**
 
    A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
    If this argument is omitted, :file:`config/default_image_metrics.py` will be used.
 
    Use :option:`--dataset-metrics-config` to configure dataset-level metrics instead.
+   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
 .. option:: --metrics-file <filename>
 
-   **Output metrics file.**
+   **Output metrics file. (Gen 2 only)**
 
    The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
    The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.
@@ -123,3 +129,19 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
    The path may be absolute or relative to the current working directory.
+
+.. option:: -p, --pipeline <filename>
+
+   **Custom ap_verify pipeline. (Gen 3 only)**
+
+   A pipeline definition file containing a custom verification pipeline.
+   If omitted, :file:`pipelines/ApVerify.yaml` will be used.
+
+   The most common use for a custom pipeline is adding or removing metrics to be run along with the AP pipeline.
+
+   .. note::
+
+      At present, ap_verify assumes that the provided pipeline is some superset of the AP pipeline.
+      It will likely crash if any AP tasks are missing.
+
+   For the Gen 2 equivalent to this option, see :option:`--dataset-metrics-config` and :option:`--image-metrics-config`.
