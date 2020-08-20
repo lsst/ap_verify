@@ -23,10 +23,17 @@ timingConfigs = {
     "apPipe:differencer:subtract.subtractExposures": "ip_diffim.ImagePsfMatchTime",
     "apPipe:differencer:detection.run": "meas_algorithms.SourceDetectionTime",
     "apPipe:differencer:measurement.run": "ip_diffim.DipoleFitTime",
+    "apPipe:diaPipe.run": "ap_association.DiaPipelineTime",
+    "apPipe:diaPipe:diaSourceDpddifier.run": "ap_association.MapDiaSourceTime",
+    "apPipe:diaPipe:diaCatalogLoader.run": "ap_association.LoadDiaCatalogsTime",
     "apPipe:diaPipe:associator.run": "ap_association.AssociationTime",
+    "apPipe:diaPipe:diaForcedSource.run": "ap_association.DiaForcedSourceTime",
+    "apPipe:diaPipe:alertPackager.run": "ap_association.PackageAlertsTime",
 }
 memoryConfigs = {
     "apPipe.runDataRef": "ap_pipe.ApPipeMemory",
+    "apPipe:diaPipe:diaForcedSource.run": "ap_association.DiaForcedSourceMemory",
+    "apPipe:diaPipe:alertPackager.run": "ap_association.PackageAlertsMemory",
 }
 for target, metric in timingConfigs.items():
     subConfig = TimingMetricConfig()
