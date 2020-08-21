@@ -72,6 +72,27 @@ tasks:
             connections.labelName: imageDifference
             metadataDimensions: [instrument, visit, detector, skymap]
             target: imageDifference:measurement.run
+    timing_diaPipe:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: DiaPipelineTime
+            connections.labelName: diaPipe
+            target: diaPipe.run
+    timing_diaPipe_diaSourceDpddifier:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: MapDiaSourceTime
+            connections.labelName: diaPipe
+            target: diaPipe:diaSourceDpddifier.run
+    timing_diaPipe_diaCatalogLoader:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: LoadDiaCatalogsTime
+            connections.labelName: diaPipe
+            target: diaPipe:diaCatalogLoader.run
     timing_diaPipe_associator:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
@@ -79,6 +100,20 @@ tasks:
             connections.metric: AssociationTime
             connections.labelName: diaPipe
             target: diaPipe:associator.run
+    timing_diaPipe_diaForcedSource:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: DiaForcedSourceTime
+            connections.labelName: diaPipe
+            target: diaPipe:diaForcedSource.run
+    timing_diaPipe_alertPackager:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: PackageAlertsTime
+            connections.labelName: diaPipe
+            target: diaPipe:alertPackager.run
     memory_apPipe:
         class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
         config:
@@ -86,3 +121,17 @@ tasks:
             connections.metric: ApPipeMemory
             connections.labelName: diaPipe
             target: diaPipe.run  # Memory use is peak over process, so measure last task
+    memory_diaForcedSource:
+        class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: DiaForcedSourceMemory
+            connections.labelName: diaPipe
+            target: diaPipe:diaForcedSource.run
+    memory_alertPackager:
+        class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
+        config:
+            connections.package: ap_association
+            connections.metric: PackageAlertsMemory
+            connections.labelName: diaPipe
+            target: diaPipe:alertPackager.run
