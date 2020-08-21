@@ -65,6 +65,18 @@ class _InputOutputParser(argparse.ArgumentParser):
                            help='Handle the ap_verify dataset using the Gen 3 framework.')
 
 
+class _ProcessingParser(argparse.ArgumentParser):
+    """An argument parser for general run-time characteristics.
+
+    This parser is not complete, and is designed to be passed to another parser
+    using the `parent` parameter.
+    """
+
+    def __init__(self):
+        # Help and documentation will be handled by main program's parser
+        argparse.ArgumentParser.__init__(self, add_help=False)
+
+
 class _ApVerifyParser(argparse.ArgumentParser):
     """An argument parser for data needed by the main ap_verify program.
     """
@@ -74,7 +86,7 @@ class _ApVerifyParser(argparse.ArgumentParser):
             self,
             description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
             epilog='',
-            parents=[_InputOutputParser(), ApPipeParser(), MetricsParser()],
+            parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), MetricsParser()],
             add_help=True)
 
 
@@ -92,7 +104,7 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             'passing the same --output argument, or by other programs that accept '
             'Butler repositories as input.',
             epilog='',
-            parents=[_InputOutputParser()],
+            parents=[_InputOutputParser(), _ProcessingParser()],
             add_help=True)
 
 
