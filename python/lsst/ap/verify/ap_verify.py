@@ -75,6 +75,8 @@ class _ProcessingParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
+        self.add_argument("-j", "--processes", default=1, type=int,
+                          help="Number of processes to use.")
 
 
 class _ApVerifyParser(argparse.ArgumentParser):
@@ -179,12 +181,12 @@ def runApVerify(cmdLine=None):
         ingestDatasetGen3(args.dataset, workspace)
         log.info('Running pipeline...')
         # Gen 3 pipeline includes both AP and metrics
-        return runApPipeGen3(workspace, args)
+        return runApPipeGen3(workspace, args, processes=args.processes)
     else:
         workspace = WorkspaceGen2(args.output)
         ingestDataset(args.dataset, workspace)
         log.info('Running pipeline...')
-        apPipeResults = runApPipeGen2(workspace, args)
+        apPipeResults = runApPipeGen2(workspace, args, processes=args.processes)
         computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
         return _getCmdLineExitStatus(apPipeResults.resultList)
 

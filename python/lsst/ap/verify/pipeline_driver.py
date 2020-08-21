@@ -59,8 +59,6 @@ class ApPipeParser(argparse.ArgumentParser):
                           help='An identifier for the data to process.')
         self.add_argument("-p", "--pipeline", default=defaultPipeline,
                           help="A custom version of the ap_verify pipeline (e.g., with different metrics).")
-        self.add_argument("-j", "--processes", default=1, type=int,
-                          help="Number of processes to use.")
         self.add_argument("--skip-pipeline", action="store_true",
                           help="Do not run the AP pipeline itself. This argument is useful "
                                "for testing metrics on a fixed data set.")
@@ -80,7 +78,7 @@ class ApPipeParser(argparse.ArgumentParser):
                     setattr(namespace, self.dest, [values])
 
 
-def runApPipeGen2(workspace, parsedCmdLine):
+def runApPipeGen2(workspace, parsedCmdLine, processes=1):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
@@ -89,6 +87,8 @@ def runApPipeGen2(workspace, parsedCmdLine):
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
+    processes : `int`
+        The number of processes with which to call the AP pipeline
 
     Returns
     -------
@@ -112,7 +112,7 @@ def runApPipeGen2(workspace, parsedCmdLine):
             pipelineArgs.extend(["--id", *singleId.split(" ")])
     else:
         pipelineArgs.extend(["--id"])
-    pipelineArgs.extend(["--processes", str(parsedCmdLine.processes)])
+    pipelineArgs.extend(["--processes", str(processes)])
     pipelineArgs.extend(["--noExit"])
 
     if not parsedCmdLine.skip_pipeline:
@@ -132,7 +132,7 @@ def runApPipeGen2(workspace, parsedCmdLine):
     return results
 
 
-def runApPipeGen3(workspace, parsedCmdLine):
+def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     """Run `ap_pipe` on this object's dataset.
 
     Parameters
@@ -141,6 +141,8 @@ def runApPipeGen3(workspace, parsedCmdLine):
         The abstract location containing input and output repositories.
     parsedCmdLine : `argparse.Namespace`
         Command-line arguments, including all arguments supported by `ApPipeParser`.
+    processes : `int`
+        The number of processes with which to call the AP pipeline
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
 
@@ -159,7 +161,7 @@ def runApPipeGen3(workspace, parsedCmdLine):
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
             pipelineArgs.extend(["--data-query", singleId])
-    pipelineArgs.extend(["--processes", str(parsedCmdLine.processes)])
+    pipelineArgs.extend(["--processes", str(processes)])
     pipelineArgs.extend(["--register-dataset-types"])
 
     if not parsedCmdLine.skip_pipeline:
