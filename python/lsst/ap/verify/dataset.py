@@ -255,18 +255,21 @@ class Dataset:
     def makeCompatibleRepoGen3(self, repoDir):
         """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.
 
-        If the directory already exists, any files required by the dataset will
-        be added if absent; otherwise the directory will remain unchanged.
+        If the repository already exists, this call has no effect.
 
         Parameters
         ----------
         repoDir : `str`
             The directory where the output repository will be created.
         """
-        repoConfig = dafButler.Butler.makeRepo(repoDir, overwrite=True)
-        butler = dafButler.Butler(repoConfig, writeable=True)
-        butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport,
-                       transfer="auto")
+        # No way to tell makeRepo "create only what's missing"
+        try:
+            repoConfig = dafButler.Butler.makeRepo(repoDir)
+            butler = dafButler.Butler(repoConfig, writeable=True)
+            butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport,
+                           transfer="auto")
+        except FileExistsError:
+            pass
 
 
 def _isRepo(repoDir):
