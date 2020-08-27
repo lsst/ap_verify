@@ -55,6 +55,7 @@ class Dataset:
     """
 
     def __init__(self, datasetId):
+        self._id = datasetId
         # daf.persistence.Policy's behavior on missing keys is apparently undefined
         # test for __getattr__ *either* raising KeyError or returning None
         try:
@@ -229,6 +230,18 @@ class Dataset:
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing stub repo')
         if not _isRepo(self._stubInputRepo):
             raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
+
+    def __eq__(self, other):
+        """Test that two Dataset objects are equal.
+
+        Two objects are equal iff they refer to the same ap_verify dataset.
+        """
+        return self.datasetRoot == other.datasetRoot
+
+    def __repr__(self):
+        """A string representation that can be used to reconstruct the dataset.
+        """
+        return f"Dataset({self._id!r})"
 
     def makeCompatibleRepo(self, repoDir, calibRepoDir):
         """Set up a directory as a Gen 2 repository compatible with this ap_verify dataset.
