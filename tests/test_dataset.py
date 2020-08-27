@@ -115,6 +115,20 @@ class DatasetTestSuite(DataTestCase):
             if os.path.exists(testDir):
                 shutil.rmtree(testDir, ignore_errors=True)
 
+    def _checkOutputGen3(self, repo):
+        """Perform various integrity checks on a repository.
+
+        Parameters
+        ----------
+        repo : `str`
+            The repository to test. Currently only filesystem repositories
+            are supported.
+        """
+        self.assertTrue(os.path.exists(repo), 'Output directory must exist.')
+        # Call to Butler will fail if repo is corrupted
+        butler = dafButler.Butler(repo)
+        self.assertIn("LSST-ImSim/calib", butler.registry.queryCollections())
+
     def testOutputGen3(self):
         """Verify that a Dataset can create an output repository as desired.
         """
@@ -123,12 +137,7 @@ class DatasetTestSuite(DataTestCase):
 
         try:
             self._testbed.makeCompatibleRepoGen3(outputDir)
-            self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
-            self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(outputDir, 'butler.yaml')),
-                            'Output directory must have a butler.yaml file.')
-            butler = dafButler.Butler(outputDir)
-            self.assertIn("LSST-ImSim/calib", butler.registry.queryCollections())
+            self._checkOutputGen3(outputDir)
         finally:
             if os.path.exists(testDir):
                 shutil.rmtree(testDir, ignore_errors=True)
@@ -141,18 +150,10 @@ class DatasetTestSuite(DataTestCase):
         outputDir = os.path.join(testDir, 'badOut')
 
         try:
-            os.makedirs(outputDir)
-            output = os.path.join(outputDir, 'foo.txt')
-            with open(output, 'w') as dummy:
-                dummy.write('This is a test!')
-
             self._testbed.makeCompatibleRepoGen3(outputDir)
-            self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
-            self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(outputDir, 'butler.yaml')),
-                            'Output directory must have a butler.yaml file.')
-            butler = dafButler.Butler(outputDir)
-            self.assertIn("LSST-ImSim/calib", butler.registry.queryCollections())
+            self._checkOutputGen3(outputDir)
+            self._testbed.makeCompatibleRepoGen3(outputDir)
+            self._checkOutputGen3(outputDir)
         finally:
             if os.path.exists(testDir):
                 shutil.rmtree(testDir, ignore_errors=True)
