@@ -41,6 +41,23 @@ class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
     def tearDown(self):
         shutil.rmtree(self._testWorkspace, ignore_errors=True)
 
+    def testRepr(self):
+        # Required to match constructor call
+        self.assertEqual(repr(self._testbed), "WorkspaceGen2(" + repr(self._testWorkspace) + ")")
+
+    def testEq(self):
+        copied = WorkspaceGen2(self._testWorkspace)
+        self.assertEqual(self._testbed, copied)
+
+        alternate = WorkspaceGen3(self._testWorkspace)
+        self.assertNotEqual(self._testbed, alternate)
+        self.assertNotEqual(copied, alternate)
+
+        with tempfile.TemporaryDirectory() as temp:
+            different = WorkspaceGen2(temp)
+            self.assertNotEqual(self._testbed, different)
+            self.assertNotEqual(copied, different)
+
     def _assertInDir(self, path, baseDir):
         """Test that ``path`` is a subpath of ``baseDir``.
         """
@@ -121,6 +138,23 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self._testWorkspace, ignore_errors=True)
+
+    def testRepr(self):
+        # Required to match constructor call
+        self.assertEqual(repr(self._testbed), "WorkspaceGen3(" + repr(self._testWorkspace) + ")")
+
+    def testEq(self):
+        copied = WorkspaceGen3(self._testWorkspace)
+        self.assertEqual(self._testbed, copied)
+
+        alternate = WorkspaceGen2(self._testWorkspace)
+        self.assertNotEqual(self._testbed, alternate)
+        self.assertNotEqual(copied, alternate)
+
+        with tempfile.TemporaryDirectory() as temp:
+            different = WorkspaceGen3(temp)
+            self.assertNotEqual(self._testbed, different)
+            self.assertNotEqual(copied, different)
 
     def _assertInDir(self, path, baseDir):
         """Test that ``path`` is a subpath of ``baseDir``.

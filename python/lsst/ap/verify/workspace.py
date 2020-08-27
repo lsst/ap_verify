@@ -78,6 +78,17 @@ class Workspace(metaclass=abc.ABCMeta):
         mode = stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH  # a+r, u+rwx
         pathlib.Path(directory).mkdir(parents=True, exist_ok=True, mode=mode)
 
+    def __eq__(self, other):
+        """Test whether two workspaces are of the same type and have the
+        same location.
+        """
+        return type(self) == type(other) and self.workDir == other.workDir
+
+    def __repr__(self):
+        """A string representation that can be used to reconstruct the Workspace.
+        """
+        return f"{type(self).__name__}({self.workDir!r})"
+
     @property
     def workDir(self):
         """The absolute location of the workspace as a whole
