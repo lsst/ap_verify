@@ -22,6 +22,7 @@
 #
 
 import os
+import pickle
 import shutil
 import tempfile
 import unittest.mock
@@ -470,6 +471,19 @@ class IngestionTestSuiteGen3(DataTestCase):
             ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['calib']),
             allFiles
         )
+
+    def testPickling(self):
+        """Test that a Gen3DatasetIngestTask can be pickled correctly.
+
+        This is needed for multiprocessing support.
+        """
+        stream = pickle.dumps(self.task)
+        copy = pickle.loads(stream)
+        self.assertEqual(self.task.getFullName(), copy.getFullName())
+        self.assertEqual(self.task.log.getName(), copy.log.getName())
+        # Equality for config ill-behaved; skip testing it
+        self.assertEqual(self.task.dataset, copy.dataset)
+        self.assertEqual(self.task.workspace, copy.workspace)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
