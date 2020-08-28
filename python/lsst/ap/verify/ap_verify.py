@@ -178,7 +178,7 @@ def runApVerify(cmdLine=None):
 
     if args.useGen3:
         workspace = WorkspaceGen3(args.output)
-        ingestDatasetGen3(args.dataset, workspace)
+        ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
         log.info('Running pipeline...')
         # Gen 3 pipeline includes both AP and metrics
         return runApPipeGen3(workspace, args, processes=args.processes)
@@ -235,7 +235,7 @@ def runIngestion(cmdLine=None):
 
     if args.useGen3:
         workspace = WorkspaceGen3(args.output)
-        ingestDatasetGen3(args.dataset, workspace)
+        ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
     else:
         workspace = WorkspaceGen2(args.output)
         ingestDataset(args.dataset, workspace)

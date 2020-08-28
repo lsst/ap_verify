@@ -92,7 +92,7 @@ Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as 
 
    ingest_dataset.py --dataset HiTS2015 --gen2 --output workspaces/hits/
 
-The :option:`--dataset`, :option:`--output`, :option:`--gen2`, and :option:`--gen3` arguments behave the same way as for :command:`ap_verify.py`.
+The :option:`--dataset`, :option:`--output`, :option:`--gen2`, :option:`--gen3`, and :option:`--processes` arguments behave the same way as for :command:`ap_verify.py`.
 Other options from :command:`ap_verify.py` are not available.
 
 .. _ap-verify-results:

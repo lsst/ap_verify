@@ -468,19 +468,29 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         baseArgs = super().__reduce__()[1]
         return (self.__class__, (self.dataset, self.workspace, *baseArgs))
 
-    def run(self):
+    def run(self, processes=1):
         """Ingest the contents of a dataset into a Butler repository.
+
+        Parameters
+        ----------
+        processes : `int`
+            The number processes to use to ingest.
         """
-        self._ensureRaws()
-        self._defineVisits()
+        self._ensureRaws(processes=processes)
+        self._defineVisits(processes=processes)
         self._copyConfigs()
 
-    def _ensureRaws(self):
+    def _ensureRaws(self, processes):
         """Ensure that the repository in ``workspace`` has raws ingested.
 
         After this method returns, this task's repository contains all science
         data from this task's ap_verify dataset. Butler operations on the
         repository are not able to modify ``dataset`` in any way.
+
+        Parameters
+        ----------
+        processes : `int`
+            The number processes to use to ingest, if ingestion must be run.
 
         Raises
         ------
@@ -498,12 +508,12 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             dataFiles = _findMatchingFiles(self.dataset.rawLocation, self.config.dataFiles,
                                            exclude=self.config.dataBadFiles)
             if dataFiles:
-                self._ingestRaws(dataFiles)
+                self._ingestRaws(dataFiles, processes=processes)
                 self.log.info("Images are now ingested in {0}".format(self.workspace.repo))
             else:
                 raise RuntimeError("No raw files found at %s." % self.dataset.rawLocation)
 
-    def _ingestRaws(self, dataFiles):
+    def _ingestRaws(self, dataFiles, processes):
         """Ingest raw images into a repository.
 
         This task's repository is populated with *links* to ``dataFiles``.
@@ -512,6 +522,8 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         ----------
         dataFiles : `list` of `str`
             A list of filenames to ingest. May contain wildcards.
+        processes : `int`
+            The number processes to use to ingest.
 
         Raises
         ------
@@ -522,14 +534,20 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             raise RuntimeError("No raw files to ingest (expected list of filenames, got %r)." % dataFiles)
 
         try:
-            self.ingester.run(dataFiles, run=None)  # expect ingester to name a new collection
+            # run=None because expect ingester to name a new collection
+            self.ingester.run(dataFiles, run=None, processes=processes)
         except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
             raise RuntimeError("Not all raw files are unique") from detail
 
-    def _defineVisits(self):
+    def _defineVisits(self, processes):
         """Map visits to the ingested exposures.
 
         This step is necessary to be able to run most pipelines on raw datasets.
+
+        Parameters
+        ----------
+        processes : `int`
+            The number processes to use to define visits.
 
         Raises
         ------
@@ -546,7 +564,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         exposuresNoVisits = exposures - exposuresWithVisits
         if exposuresNoVisits:
             self.log.info("Defining visits...")
-            self.visitDefiner.run(exposuresNoVisits)
+            self.visitDefiner.run(exposuresNoVisits, processes=processes)
         else:
             self.log.info("Visits were previously defined, skipping...")
 
@@ -589,7 +607,7 @@ def ingestDataset(dataset, workspace):
     log.info("Data ingested")
 
 
-def ingestDatasetGen3(dataset, workspace):
+def ingestDatasetGen3(dataset, workspace, processes=1):
     """Ingest the contents of an ap_verify dataset into a Gen 3 Butler repository.
 
     The original data directory is not modified.
@@ -601,11 +619,13 @@ def ingestDatasetGen3(dataset, workspace):
     workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         The abstract location where the epository is be created, if it does
         not already exist.
+    processes : `int`
+        The number processes to use to ingest.
     """
     log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
 
     ingester = Gen3DatasetIngestTask(dataset, workspace, config=_getConfig(Gen3DatasetIngestTask, dataset))
-    ingester.run()
+    ingester.run(processes=processes)
     log.info("Data ingested")
 
 
