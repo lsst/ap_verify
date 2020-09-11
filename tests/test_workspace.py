@@ -35,7 +35,8 @@ from lsst.ap.verify.workspace import WorkspaceGen2, WorkspaceGen3
 class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self._testWorkspace = tempfile.mkdtemp()
+        # Use realpath to avoid link problems
+        self._testWorkspace = os.path.realpath(tempfile.mkdtemp())
         self._testbed = WorkspaceGen2(self._testWorkspace)
 
     def tearDown(self):
@@ -133,7 +134,8 @@ class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
 class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
 
     def setUp(self):
-        self._testWorkspace = tempfile.mkdtemp()
+        # Use realpath to avoid link problems
+        self._testWorkspace = os.path.realpath(tempfile.mkdtemp())
         self._testbed = WorkspaceGen3(self._testWorkspace)
 
     def tearDown(self):
