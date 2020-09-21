@@ -22,6 +22,7 @@
 #
 
 import os
+import pickle
 import shutil
 import tempfile
 import unittest.mock
@@ -379,40 +380,40 @@ class IngestionTestSuiteGen3(DataTestCase):
         """Test that ingesting science images given specific files adds them to a repository.
         """
         files = [os.path.join(self.dataset.rawLocation, datum['file']) for datum in self.rawData]
-        self.task._ingestRaws(files)
+        self.task._ingestRaws(files, processes=1)
         self.assertIngestedDataFiles(self.rawData, self.dataset.instrument.makeDefaultRawIngestRunName())
 
     def testDataDoubleIngest(self):
         """Test that re-ingesting science images raises RuntimeError.
         """
         files = [os.path.join(self.dataset.rawLocation, datum['file']) for datum in self.rawData]
-        self.task._ingestRaws(files)
+        self.task._ingestRaws(files, processes=1)
         with self.assertRaises(RuntimeError):
-            self.task._ingestRaws(files)
+            self.task._ingestRaws(files, processes=1)
 
     def testDataIngestDriver(self):
         """Test that ingesting science images starting from an abstract dataset adds them to a repository.
         """
-        self.task._ensureRaws()
+        self.task._ensureRaws(processes=1)
         self.assertIngestedDataFiles(self.rawData, self.dataset.instrument.makeDefaultRawIngestRunName())
 
     def testCalibIngestDriver(self):
         """Test that ingesting calibrations starting from an abstract dataset adds them to a repository.
         """
-        self.task._ensureRaws()  # Should not affect calibs, but would be run
+        self.task._ensureRaws(processes=1)  # Should not affect calibs, but would be run
         self.assertIngestedDataFiles(self.calibData, self.dataset.instrument.makeCollectionName("calib"))
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
         """
         with self.assertRaises(RuntimeError):
-            self.task._ingestRaws([])
+            self.task._ingestRaws([], processes=1)
 
     def testVisitDefinition(self):
         """Test that the final repository supports indexing by visit.
         """
-        self.task._ensureRaws()
-        self.task._defineVisits()
+        self.task._ensureRaws(processes=1)
+        self.task._defineVisits(processes=1)
 
         testId = {"visit": self.VISIT_ID, "instrument": self.INSTRUMENT, }
         exposures = list(self.butler.registry.queryDataIds("exposure", dataId=testId))
@@ -422,9 +423,9 @@ class IngestionTestSuiteGen3(DataTestCase):
     def testVisitDoubleDefinition(self):
         """Test that re-defining visits is guarded against.
         """
-        self.task._ensureRaws()
-        self.task._defineVisits()
-        self.task._defineVisits()  # must not raise
+        self.task._ensureRaws(processes=1)
+        self.task._defineVisits(processes=1)
+        self.task._defineVisits(processes=1)  # must not raise
 
         testId = {"visit": self.VISIT_ID, "instrument": self.INSTRUMENT, }
         exposures = list(self.butler.registry.queryDataIds("exposure", dataId=testId))
@@ -434,7 +435,7 @@ class IngestionTestSuiteGen3(DataTestCase):
         """Test that attempts to define visits with no exposures raise an exception.
         """
         with self.assertRaises(RuntimeError):
-            self.task._defineVisits()
+            self.task._defineVisits(processes=1)
 
     def testCopyConfigs(self):
         """Test that "ingesting" configs stores them in the workspace for later reference.
@@ -470,6 +471,19 @@ class IngestionTestSuiteGen3(DataTestCase):
             ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['calib']),
             allFiles
         )
+
+    def testPickling(self):
+        """Test that a Gen3DatasetIngestTask can be pickled correctly.
+
+        This is needed for multiprocessing support.
+        """
+        stream = pickle.dumps(self.task)
+        copy = pickle.loads(stream)
+        self.assertEqual(self.task.getFullName(), copy.getFullName())
+        self.assertEqual(self.task.log.getName(), copy.log.getName())
+        # Equality for config ill-behaved; skip testing it
+        self.assertEqual(self.task.dataset, copy.dataset)
+        self.assertEqual(self.task.workspace, copy.workspace)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

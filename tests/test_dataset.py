@@ -45,6 +45,10 @@ class DatasetTestSuite(DataTestCase):
     def setUp(self):
         self._testbed = Dataset(DatasetTestSuite.datasetKey)
 
+    def testRepr(self):
+        # Required to match constructor call
+        self.assertEqual(repr(self._testbed), "Dataset(" + repr(self.datasetKey) + ")")
+
     def testDatasets(self):
         """Verify that a Dataset knows its supported datasets.
         """

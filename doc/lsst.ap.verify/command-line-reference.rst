@@ -101,6 +101,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Number of processes to use.**
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
+   In Gen 3 mode, data ingestion may also be parallelized.
    
 .. option:: --image-metrics-config <filename>
 

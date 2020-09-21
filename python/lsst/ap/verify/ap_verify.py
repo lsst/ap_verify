@@ -65,6 +65,20 @@ class _InputOutputParser(argparse.ArgumentParser):
                            help='Handle the ap_verify dataset using the Gen 3 framework.')
 
 
+class _ProcessingParser(argparse.ArgumentParser):
+    """An argument parser for general run-time characteristics.
+
+    This parser is not complete, and is designed to be passed to another parser
+    using the `parent` parameter.
+    """
+
+    def __init__(self):
+        # Help and documentation will be handled by main program's parser
+        argparse.ArgumentParser.__init__(self, add_help=False)
+        self.add_argument("-j", "--processes", default=1, type=int,
+                          help="Number of processes to use.")
+
+
 class _ApVerifyParser(argparse.ArgumentParser):
     """An argument parser for data needed by the main ap_verify program.
     """
@@ -74,7 +88,7 @@ class _ApVerifyParser(argparse.ArgumentParser):
             self,
             description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
             epilog='',
-            parents=[_InputOutputParser(), ApPipeParser(), MetricsParser()],
+            parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), MetricsParser()],
             add_help=True)
 
 
@@ -92,7 +106,7 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             'passing the same --output argument, or by other programs that accept '
             'Butler repositories as input.',
             epilog='',
-            parents=[_InputOutputParser()],
+            parents=[_InputOutputParser(), _ProcessingParser()],
             add_help=True)
 
 
@@ -164,15 +178,15 @@ def runApVerify(cmdLine=None):
 
     if args.useGen3:
         workspace = WorkspaceGen3(args.output)
-        ingestDatasetGen3(args.dataset, workspace)
+        ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
         log.info('Running pipeline...')
         # Gen 3 pipeline includes both AP and metrics
-        return runApPipeGen3(workspace, args)
+        return runApPipeGen3(workspace, args, processes=args.processes)
     else:
         workspace = WorkspaceGen2(args.output)
         ingestDataset(args.dataset, workspace)
         log.info('Running pipeline...')
-        apPipeResults = runApPipeGen2(workspace, args)
+        apPipeResults = runApPipeGen2(workspace, args, processes=args.processes)
         computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
         return _getCmdLineExitStatus(apPipeResults.resultList)
 
@@ -221,7 +235,7 @@ def runIngestion(cmdLine=None):
 
     if args.useGen3:
         workspace = WorkspaceGen3(args.output)
-        ingestDatasetGen3(args.dataset, workspace)
+        ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
     else:
         workspace = WorkspaceGen2(args.output)
         ingestDataset(args.dataset, workspace)
