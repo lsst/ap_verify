@@ -257,7 +257,7 @@ def _getCollectionArguments(workspace):
         following the conventions of `sys.argv`.
     """
     butler = workspace.workButler
-    inputs = set(butler.registry.queryCollections(collectionType=dafButler.CollectionType.RUN))
+    inputs = set(butler.registry.queryCollections(collectionTypes={dafButler.CollectionType.RUN}))
     inputs.discard(workspace.runName)
     return ["--input", ",".join(inputs),
             "--output-run", workspace.runName,

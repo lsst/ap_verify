@@ -306,7 +306,7 @@ class WorkspaceGen3(Workspace):
                 # All Gen 3 collection names subject to change; don't hardcode them
                 queryButler = dafButler.Butler(self.repo, writeable=True)  # writeable for _workButler
                 inputs = set(queryButler.registry.queryCollections(
-                    collectionType=dafButler.CollectionType.RUN))
+                    collectionTypes={dafButler.CollectionType.RUN}))
                 for dimension in queryButler.registry.queryDataIds('instrument'):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
                     inputs.add(instrument.makeDefaultRawIngestRunName())
