@@ -40,7 +40,7 @@ class DatasetTestSuite(DataTestCase):
 
         cls.obsPackage = 'obs_lsst'
         cls.camera = 'imsim'
-        cls.gen3Camera = 'LSST-ImSim'
+        cls.gen3Camera = 'LSSTCam-imSim'
 
     def setUp(self):
         self._testbed = Dataset(DatasetTestSuite.datasetKey)
@@ -131,7 +131,7 @@ class DatasetTestSuite(DataTestCase):
         self.assertTrue(os.path.exists(repo), 'Output directory must exist.')
         # Call to Butler will fail if repo is corrupted
         butler = dafButler.Butler(repo)
-        self.assertIn("LSST-ImSim/calib", butler.registry.queryCollections())
+        self.assertIn("LSSTCam-imSim/calib", butler.registry.queryCollections())
 
     def testOutputGen3(self):
         """Verify that a Dataset can create an output repository as desired.
