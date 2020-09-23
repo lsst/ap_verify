@@ -69,13 +69,13 @@ class IngestionTestSuite(DataTestCase):
 
         cls.testApVerifyData = os.path.join('tests', 'ingestion')
 
-        cls.rawData = [{'file': 'lsst_a_204595_R11_S01_i.fits', 'expId': 204595, 'filter': 'i',
+        cls.rawData = [{'file': 'lsst_a_204595_R11_S01_i.fits', 'expId': 204595, 'filter': 'i_sim_1.4',
                         'exptime': 30.0},
                        ]
         cls.calibData = [{'type': 'bias', 'file': 'bias-R11-S01-det037_2022-01-01.fits.gz',
                           'filter': 'NONE', 'date': '2022-01-01'},
                          {'type': 'flat', 'file': 'flat_i-R11-S01-det037_2022-08-06.fits.gz',
-                          'filter': 'i', 'date': '2022-08-06'},
+                          'filter': 'i_sim_1.4', 'date': '2022-08-06'},
                          ]
 
     @staticmethod
@@ -328,7 +328,7 @@ class IngestionTestSuiteGen3(DataTestCase):
                           'detector': cls.DETECTOR_ID, 'instrument': cls.INSTRUMENT},
                          {'type': 'flat', 'file': 'flat_i-R11-S01-det037_2022-08-06.fits.gz',
                           'detector': cls.DETECTOR_ID, 'instrument': cls.INSTRUMENT,
-                          'physical_filter': 'i'},
+                          'physical_filter': 'i_sim_1.4'},
                          ]
 
     @classmethod
