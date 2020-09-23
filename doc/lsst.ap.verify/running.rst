@@ -67,7 +67,7 @@ The command for running the pipeline on Gen 3 data is almost identical to Gen 2:
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --gen3 --id "visit in (412518, 412568) and abstract_filter='g'" --output workspaces/hits/
+   ap_verify.py --dataset HiTS2015 --gen3 --id "visit in (412518, 412568) and band='g'" --output workspaces/hits/
 
 The only differences are substituting :option:`--gen3` for :option:`--gen2`, and formatting the (optional) data ID in the :ref:`Gen 3 query syntax <daf_butler_dimension_expressions>`.
 
