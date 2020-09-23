@@ -362,7 +362,7 @@ class IngestionTestSuiteGen3(DataTestCase):
             An iterable of mappings, each representing the properties of a
             single input dataset. Each mapping must contain a `"type"` key
             that maps to the dataset's Gen 3 type.
-        collection : `lsst.daf.butler.CollectionType`
+        collection
             Any valid :ref:`collection expression <daf_butler_collection_expressions>`
             for the collection expected to contain the data.
         """
