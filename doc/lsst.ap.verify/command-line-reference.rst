@@ -47,7 +47,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    Specify data ID to process.
    If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--id "visit=12345 ccd=1..6 filter=g"``.
-   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--id "visit=12345 and detector in (1..6) and abstract_filter='g'"``.
+   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--id "visit=12345 and detector in (1..6) and band='g'"``.
 
    Multiple copies of this argument are allowed.
    For compatibility with the syntax used by command line tasks, ``--id`` with no argument processes all data IDs.
