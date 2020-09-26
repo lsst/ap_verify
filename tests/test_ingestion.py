@@ -23,12 +23,14 @@
 
 import os
 import pickle
+import re
 import shutil
 import tempfile
 import unittest.mock
 
 from lsst.utils import getPackageDir
 import lsst.utils.tests
+from lsst.daf.butler import CollectionType
 import lsst.pipe.tasks as pipeTasks
 from lsst.ap.verify import ingestion
 from lsst.ap.verify.testUtils import DataTestCase
@@ -362,7 +364,7 @@ class IngestionTestSuiteGen3(DataTestCase):
             An iterable of mappings, each representing the properties of a
             single input dataset. Each mapping must contain a `"type"` key
             that maps to the dataset's Gen 3 type.
-        collection : `lsst.daf.butler.CollectionType`
+        collection
             Any valid :ref:`collection expression <daf_butler_collection_expressions>`
             for the collection expected to contain the data.
         """
@@ -401,7 +403,19 @@ class IngestionTestSuiteGen3(DataTestCase):
         """Test that ingesting calibrations starting from an abstract dataset adds them to a repository.
         """
         self.task._ensureRaws(processes=1)  # Should not affect calibs, but would be run
-        self.assertIngestedDataFiles(self.calibData, self.dataset.instrument.makeCollectionName("calib"))
+        # queryDatasets cannot (yet) search CALIBRATION collections, so we
+        # instead search the RUN-type collections that calibrations are
+        # ingested into first before being associated with a validity range.
+        calibrationRunPattern = re.compile(
+            re.escape(self.dataset.instrument.makeCollectionName("calib") + "/") + ".+"
+        )
+        calibrationRuns = list(
+            self.butler.registry.queryCollections(
+                calibrationRunPattern,
+                collectionTypes={CollectionType.RUN},
+            )
+        )
+        self.assertIngestedDataFiles(self.calibData, calibrationRuns)
 
     def testNoFileIngest(self):
         """Test that attempts to ingest nothing raise an exception.
