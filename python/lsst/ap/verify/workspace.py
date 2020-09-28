@@ -24,6 +24,7 @@
 import abc
 import os
 import pathlib
+import re
 import stat
 
 import lsst.daf.persistence as dafPersist
@@ -303,13 +304,14 @@ class WorkspaceGen3(Workspace):
         """
         if self._workButler is None:
             try:
-                # All Gen 3 collection names subject to change; don't hardcode them
+                # Hard-code the collection names because it's hard to infer the inputs from the Butler
                 queryButler = dafButler.Butler(self.repo, writeable=True)  # writeable for _workButler
-                inputs = set(queryButler.registry.queryCollections(
-                    collectionTypes={dafButler.CollectionType.RUN}))
+                inputs = {"skymaps", "refcats"}
                 for dimension in queryButler.registry.queryDataIds('instrument'):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
                     inputs.add(instrument.makeDefaultRawIngestRunName())
+                    inputs.add(instrument.makeCalibrationCollectionName())
+                inputs.update(queryButler.registry.queryCollections(re.compile(r"templates/\w+")))
 
                 # should set run=self.runName, but this breaks quantum graph generation (DM-26246)
                 self._workButler = dafButler.Butler(butler=queryButler, collections=inputs)
