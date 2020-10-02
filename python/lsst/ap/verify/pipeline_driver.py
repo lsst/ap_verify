@@ -31,11 +31,12 @@ __all__ = ["ApPipeParser", "runApPipeGen2", "runApPipeGen3"]
 
 import argparse
 import os
+import re
 
 import lsst.log
 from lsst.utils import getPackageDir
-import lsst.daf.butler as dafButler
 import lsst.pipe.base as pipeBase
+import lsst.obs.base as obsBase
 import lsst.ctrl.mpexec as ctrlMpexec
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
@@ -257,8 +258,14 @@ def _getCollectionArguments(workspace):
         following the conventions of `sys.argv`.
     """
     butler = workspace.workButler
-    inputs = set(butler.registry.queryCollections(collectionTypes={dafButler.CollectionType.RUN}))
-    inputs.discard(workspace.runName)
+    # Hard-code the collection names because it's hard to infer the inputs from the Butler
+    inputs = {"skymaps", "refcats"}
+    for dimension in butler.registry.queryDataIds('instrument'):
+        instrument = obsBase.Instrument.fromName(dimension["instrument"], butler.registry)
+        inputs.add(instrument.makeDefaultRawIngestRunName())
+        inputs.add(instrument.makeCalibrationCollectionName())
+    inputs.update(butler.registry.queryCollections(re.compile(r"templates/\w+")))
+
     return ["--input", ",".join(inputs),
             "--output-run", workspace.runName,
             ]
