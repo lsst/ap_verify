@@ -95,6 +95,14 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         parsed = self._parseString(args)
         self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
 
+    def testMixedDataId(self):
+        """Verify that a command line with both --id and --data-query parses correctly.
+        """
+        args = '--dataset %s --output tests/output/foo --id "visit=54123" -d "filter=x"' \
+            % CommandLineTestSuite.datasetKey
+        parsed = self._parseString(args)
+        self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
+
     def testEmptyDataId(self):
         """Test that an --id argument may be not followed by a data ID.
         """

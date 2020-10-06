@@ -58,7 +58,8 @@ class ApPipeParser(argparse.ArgumentParser):
         argparse.ArgumentParser.__init__(self, add_help=False)
         # namespace.dataIds will always be a list of 0 or more nonempty strings, regardless of inputs.
         # TODO: in Python 3.8+, action='extend' handles nargs='?' more naturally than 'append'.
-        self.add_argument('--id', dest='dataIds', action=self.AppendOptional, nargs='?', default=[],
+        self.add_argument('--id', '-d', '--data-query', dest='dataIds',
+                          action=self.AppendOptional, nargs='?', default=[],
                           help='An identifier for the data to process.')
         self.add_argument("-p", "--pipeline", default=defaultPipeline,
                           help="A custom version of the ap_verify pipeline (e.g., with different metrics).")
