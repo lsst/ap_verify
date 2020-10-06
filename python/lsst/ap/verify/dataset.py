@@ -277,7 +277,10 @@ class Dataset:
         """
         # No way to tell makeRepo "create only what's missing"
         try:
-            repoConfig = dafButler.Butler.makeRepo(repoDir)
+            seedConfig = dafButler.Config()
+            # Checksums greatly slow importing of large repositories
+            seedConfig["datastore", "checksum"] = False
+            repoConfig = dafButler.Butler.makeRepo(repoDir, config=seedConfig)
             butler = dafButler.Butler(repoConfig, writeable=True)
             butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport,
                            transfer="auto")
