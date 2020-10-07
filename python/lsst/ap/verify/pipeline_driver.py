@@ -219,7 +219,7 @@ def _getConfigArgumentsGen3(workspace):
     Returns
     -------
     args : `list` of `str`
-        Command-line arguments calling ``--config`` or ``--configFile``,
+        Command-line arguments calling ``--config`` or ``--config-file``,
         following the conventions of `sys.argv`.
     """
     args = [
@@ -230,8 +230,8 @@ def _getConfigArgumentsGen3(workspace):
         "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,
         "--config", "diaPipe:doPackageAlerts=True",
         # TODO: the configs below should not be needed after DM-26140
-        "--configfile", "calibrate:" + os.path.join(workspace.configDir, "calibrate.py"),
-        "--configfile", "imageDifference:" + os.path.join(workspace.configDir, "imageDifference.py"),
+        "--config-file", "calibrate:" + os.path.join(workspace.configDir, "calibrate.py"),
+        "--config-file", "imageDifference:" + os.path.join(workspace.configDir, "imageDifference.py"),
     ]
     # TODO: reverse-engineering the instrument should not be needed after DM-26140
     # pipetask will crash if there is more than one instrument
