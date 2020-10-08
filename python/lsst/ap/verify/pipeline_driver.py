@@ -33,11 +33,13 @@ import argparse
 import os
 import re
 
+import click.testing
+
 import lsst.log
 from lsst.utils import getPackageDir
 import lsst.pipe.base as pipeBase
 import lsst.obs.base as obsBase
-import lsst.ctrl.mpexec as ctrlMpexec
+import lsst.ctrl.mpexec.cli.pipetask
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
 
@@ -166,13 +168,16 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     pipelineArgs.extend(["--register-dataset-types"])
 
     if not parsedCmdLine.skip_pipeline:
+        # CliRunner is an unsafe workaround for DM-26239
+        runner = click.testing.CliRunner()
         # TODO: generalize this code in DM-26028
-        activator = ctrlMpexec.CmdLineFwk()
         # TODO: work off of workspace.workButler after DM-26239
-        results = activator.parseAndRun(pipelineArgs)
+        results = runner.invoke(lsst.ctrl.mpexec.cli.pipetask.cli, pipelineArgs)
+        if results.exception:
+            raise RuntimeError("Pipeline failed.") from results.exception
 
         log.info('Pipeline complete.')
-        return results
+        return results.exit_code
     else:
         log.info('Skipping AP pipeline entirely.')
 
