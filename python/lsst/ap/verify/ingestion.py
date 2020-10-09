@@ -463,10 +463,9 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         self.makeSubtask("ingester", butler=self.workspace.workButler)
         self.makeSubtask("visitDefiner", butler=self.workspace.workButler)
 
-    # Overrides Task.__reduce__
-    def __reduce__(self):
-        baseArgs = super().__reduce__()[1]
-        return (self.__class__, (self.dataset, self.workspace, *baseArgs))
+    def _reduce_kwargs(self):
+        # Add extra parameters to pickle
+        return dict(**super()._reduce_kwargs(), dataset=self.dataset, workspace=self.workspace)
 
     def run(self, processes=1):
         """Ingest the contents of a dataset into a Butler repository.
