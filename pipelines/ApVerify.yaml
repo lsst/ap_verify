@@ -7,12 +7,33 @@ imports:
     - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
     - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
 tasks:
+    createFakes:
+        class: lsst.ap.pipe.createApFakes.CreateRandomApFakesTask
+    coaddFakes:
+        class: lsst.pipe.tasks.insertFakes.InsertFakesTask
+        config:
+            doSubSelectSources: True
+            sourceSelectionColName: "isTemplateSource"
+    visitFakes:
+        class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithFakesTask
+        config:
+            insertFakes.doSubSelectSources: True
+            insertFakes.sourceSelectionColName: "isVisitSource"
+    imageDifference:
+        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+        config:
+            # TODO: remove after ap_verify datasets follow RFC-741 conventions
+            connections.skyMap: "{skyMapName}Coadd_skyMap"
+            connections.coaddExposures: "fakes_deepCoadd"
+            connections.exposure: "fakes_calexp"
     diaPipe:
         # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
         config:
             apdb.isolation_level: READ_UNCOMMITTED
             doPackageAlerts: True
+            doWriteAssociatedSources: True
+            connections.exposure: "fakes_calexp"
 contracts:
     # Metric inputs must match pipeline outputs
     - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
