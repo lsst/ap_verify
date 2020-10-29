@@ -103,14 +103,13 @@ def runApPipeGen2(workspace, parsedCmdLine, processes=1):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen2')
 
-    configArgs = _getConfigArguments(workspace)
-    makeApdb(configArgs)
+    makeApdb(_getApdbArguments(workspace))
 
     pipelineArgs = [workspace.dataRepo,
                     "--output", workspace.outputRepo,
                     "--calib", workspace.calibRepo,
                     "--template", workspace.templateRepo]
-    pipelineArgs.extend(configArgs)
+    pipelineArgs.extend(_getConfigArguments(workspace))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
             pipelineArgs.extend(["--id", *singleId.split(" ")])
@@ -151,7 +150,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
 
     # Currently makeApdb has different argument conventions from Gen 3; see DM-22663
-    makeApdb(_getConfigArguments(workspace))
+    makeApdb(_getApdbArguments(workspace))
 
     pipelineArgs = ["run",
                     "--butler-config", workspace.repo,
@@ -183,6 +182,29 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         log.info('Skipping AP pipeline entirely.')
 
 
+def _getApdbArguments(workspace):
+    """Return the config options for running make_apdb.py on this workspace,
+    as command-line arguments.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
+        A Workspace whose config directory may contain an
+        `~lsst.ap.pipe.ApPipeTask` config.
+
+    Returns
+    -------
+    args : `list` of `str`
+        Command-line arguments calling ``--config`` or ``--config-file``,
+        following the conventions of `sys.argv`.
+    """
+    # ApVerify will use the sqlite hooks for the Apdb.
+    return [
+        "--config", "db_url=sqlite:///" + workspace.dbLocation,
+        "--config", "isolation_level=READ_UNCOMMITTED",
+    ]
+
+
 def _getConfigArguments(workspace):
     """Return the config options for running ApPipeTask on this workspace, as
     command-line arguments.
@@ -196,16 +218,16 @@ def _getConfigArguments(workspace):
     Returns
     -------
     args : `list` of `str`
-        Command-line arguments calling ``--config`` or ``--configFile``,
+        Command-line arguments calling ``--config`` or ``--configfile``,
         following the conventions of `sys.argv`.
     """
     overrideFile = apPipe.ApPipeTask._DefaultName + ".py"
     overridePath = os.path.join(workspace.configDir, overrideFile)
 
     args = ["--configfile", overridePath]
-    # ApVerify will use the sqlite hooks for the Apdb.
-    args.extend(["--config", "diaPipe.apdb.db_url=sqlite:///" + workspace.dbLocation])
-    args.extend(["--config", "diaPipe.apdb.isolation_level=READ_UNCOMMITTED"])
+    # Translate APDB-only arguments to work as a sub-config
+    args.extend([("diaPipe.apdb." + arg if arg != "--config" else arg)
+                 for arg in _getApdbArguments(workspace)])
     # Put output alerts into the workspace.
     args.extend(["--config", "diaPipe.alertPackager.alertWriteLocation=" + workspace.alertLocation])
     args.extend(["--config", "diaPipe.doPackageAlerts=True"])
@@ -228,17 +250,17 @@ def _getConfigArgumentsGen3(workspace):
         Command-line arguments calling ``--config`` or ``--config-file``,
         following the conventions of `sys.argv`.
     """
-    args = [
-        # ApVerify will use the sqlite hooks for the Apdb.
-        "--config", "diaPipe:apdb.db_url=sqlite:///" + workspace.dbLocation,
-        "--config", "diaPipe:apdb.isolation_level=READ_UNCOMMITTED",
+    # Translate APDB-only arguments to work as a sub-config
+    args = [("diaPipe:apdb." + arg if arg != "--config" else arg)
+            for arg in _getApdbArguments(workspace)]
+    args.extend([
         # Put output alerts into the workspace.
         "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,
         "--config", "diaPipe:doPackageAlerts=True",
         # TODO: the configs below should not be needed after DM-26140
         "--config-file", "calibrate:" + os.path.join(workspace.configDir, "calibrate.py"),
         "--config-file", "imageDifference:" + os.path.join(workspace.configDir, "imageDifference.py"),
-    ]
+    ])
     # TODO: reverse-engineering the instrument should not be needed after DM-26140
     # pipetask will crash if there is more than one instrument
     for idRecord in workspace.workButler.registry.queryDataIds("instrument").expanded():
