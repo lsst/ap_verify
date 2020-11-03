@@ -170,7 +170,7 @@ class PipelineDriverTestSuiteGen2(lsst.utils.tests.TestCase):
 
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
-        self.assertIn("diaPipe.apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        self.assertIn("db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
         mockParse.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
@@ -263,7 +263,7 @@ class PipelineDriverTestSuiteGen3(lsst.utils.tests.TestCase):
 
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
-        self.assertIn("diaPipe.apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        self.assertIn("db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
         mockParse = mockFwk().parseAndRun
         mockParse.assert_called_once()
