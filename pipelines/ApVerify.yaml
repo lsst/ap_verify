@@ -34,6 +34,8 @@ tasks:
             doPackageAlerts: True
             doWriteAssociatedSources: True
             connections.exposure: "fakes_calexp"
+    matchFakes:
+        class: lsst.ap.pipe.matchApFakes.MatchApFakesTask
 contracts:
     # Metric inputs must match pipeline outputs
     - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
