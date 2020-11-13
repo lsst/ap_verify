@@ -149,7 +149,6 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
 
-    # Currently makeApdb has different argument conventions from Gen 3; see DM-22663
     makeApdb(_getApdbArguments(workspace))
 
     pipelineArgs = ["run",
