@@ -187,7 +187,7 @@ def _getApdbArguments(workspace):
 
     Parameters
     ----------
-    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
+    workspace : `lsst.ap.verify.workspace.Workspace`
         A Workspace whose config directory may contain an
         `~lsst.ap.pipe.ApPipeTask` config.
 
