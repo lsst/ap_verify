@@ -177,6 +177,22 @@ class PipelineDriverTestSuiteGen2(lsst.utils.tests.TestCase):
         self.assertIn("diaPipe.apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
     @patchApPipe
+    def testrunApPipeGen2WorkspaceDbCustom(self, mockDb, mockClass):
+        """Test that runApPipeGen2 places a database in the specified location.
+        """
+        self.apPipeArgs.db = "postgresql://somebody@pgdb.misc.org/custom_db"
+        mockParse = mockClass.parseAndRun
+        pipeline_driver.runApPipeGen2(self.workspace, self.apPipeArgs)
+
+        mockDb.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
+        self.assertIn("db_url=" + self.apPipeArgs.db, cmdLineArgs)
+
+        mockParse.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
+        self.assertIn("diaPipe.apdb.db_url=" + self.apPipeArgs.db, cmdLineArgs)
+
+    @patchApPipe
     def testrunApPipeGen2Reuse(self, _mockDb, mockClass):
         """Test that runApPipeGen2 does not run the pipeline at all (not even with
         --reuse-outputs-from) if --skip-pipeline is provided.
@@ -269,6 +285,23 @@ class PipelineDriverTestSuiteGen3(lsst.utils.tests.TestCase):
         mockParse.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
         self.assertIn("diaPipe:apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+
+    @unittest.skip("Fix test in DM-27117")
+    @patchApPipeGen3
+    def testrunApPipeGen3WorkspaceCustom(self, mockDb, mockFwk):
+        """Test that runApPipeGen3 places a database in the specified location.
+        """
+        self.apPipeArgs.db = "postgresql://somebody@pgdb.misc.org/custom_db"
+        pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
+
+        mockDb.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
+        self.assertIn("db_url=" + self.apPipeArgs.db, cmdLineArgs)
+
+        mockParse = mockFwk().parseAndRun
+        mockParse.assert_called_once()
+        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
+        self.assertIn("diaPipe:apdb.db_url=" + self.apPipeArgs.db, cmdLineArgs)
 
     @unittest.skip("Fix test in DM-27117")
     @patchApPipeGen3
