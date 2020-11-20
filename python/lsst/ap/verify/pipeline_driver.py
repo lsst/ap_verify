@@ -63,6 +63,9 @@ class ApPipeParser(argparse.ArgumentParser):
                           help='An identifier for the data to process.')
         self.add_argument("-p", "--pipeline", default=defaultPipeline,
                           help="A custom version of the ap_verify pipeline (e.g., with different metrics).")
+        self.add_argument("--db", "--db_url", default=None,
+                          help="A location for the AP database, formatted as if for ApdbConfig.db_url. "
+                               "Defaults to an SQLite file in the --output directory.")
         self.add_argument("--skip-pipeline", action="store_true",
                           help="Do not run the AP pipeline itself. This argument is useful "
                                "for testing metrics on a fixed data set.")
@@ -103,13 +106,13 @@ def runApPipeGen2(workspace, parsedCmdLine, processes=1):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen2')
 
-    makeApdb(_getApdbArguments(workspace))
+    makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 
     pipelineArgs = [workspace.dataRepo,
                     "--output", workspace.outputRepo,
                     "--calib", workspace.calibRepo,
                     "--template", workspace.templateRepo]
-    pipelineArgs.extend(_getConfigArguments(workspace))
+    pipelineArgs.extend(_getConfigArguments(workspace, parsedCmdLine))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
             pipelineArgs.extend(["--id", *singleId.split(" ")])
@@ -149,8 +152,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
 
-    # Currently makeApdb has different argument conventions from Gen 3; see DM-22663
-    makeApdb(_getApdbArguments(workspace))
+    makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 
     pipelineArgs = ["run",
                     "--butler-config", workspace.repo,
@@ -160,7 +162,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     # but I can't find a way to hook that up to the graph builder. So use the CLI
     # for now and revisit once DM-26239 is done.
     pipelineArgs.extend(_getCollectionArguments(workspace))
-    pipelineArgs.extend(_getConfigArgumentsGen3(workspace))
+    pipelineArgs.extend(_getConfigArgumentsGen3(workspace, parsedCmdLine))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
             pipelineArgs.extend(["--data-query", singleId])
@@ -182,15 +184,17 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         log.info('Skipping AP pipeline entirely.')
 
 
-def _getApdbArguments(workspace):
+def _getApdbArguments(workspace, parsed):
     """Return the config options for running make_apdb.py on this workspace,
     as command-line arguments.
 
     Parameters
     ----------
-    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
+    workspace : `lsst.ap.verify.workspace.Workspace`
         A Workspace whose config directory may contain an
         `~lsst.ap.pipe.ApPipeTask` config.
+    parsed : `argparse.Namespace`
+        Command-line arguments, including all arguments supported by `ApPipeParser`.
 
     Returns
     -------
@@ -198,14 +202,18 @@ def _getApdbArguments(workspace):
         Command-line arguments calling ``--config`` or ``--config-file``,
         following the conventions of `sys.argv`.
     """
-    # ApVerify will use the sqlite hooks for the Apdb.
-    return [
-        "--config", "db_url=sqlite:///" + workspace.dbLocation,
-        "--config", "isolation_level=READ_UNCOMMITTED",
-    ]
+    if not parsed.db:
+        parsed.db = "sqlite:///" + workspace.dbLocation
+
+    args = ["--config", "db_url=" + parsed.db]
+    # Same special-case check as ApdbConfig.validate()
+    if parsed.db.startswith("sqlite"):
+        args.extend(["--config", "isolation_level=READ_UNCOMMITTED"])
+
+    return args
 
 
-def _getConfigArguments(workspace):
+def _getConfigArguments(workspace, parsed):
     """Return the config options for running ApPipeTask on this workspace, as
     command-line arguments.
 
@@ -214,6 +222,8 @@ def _getConfigArguments(workspace):
     workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
         A Workspace whose config directory may contain an
         `~lsst.ap.pipe.ApPipeTask` config.
+    parsed : `argparse.Namespace`
+        Command-line arguments, including all arguments supported by `ApPipeParser`.
 
     Returns
     -------
@@ -227,7 +237,7 @@ def _getConfigArguments(workspace):
     args = ["--configfile", overridePath]
     # Translate APDB-only arguments to work as a sub-config
     args.extend([("diaPipe.apdb." + arg if arg != "--config" else arg)
-                 for arg in _getApdbArguments(workspace)])
+                 for arg in _getApdbArguments(workspace, parsed)])
     # Put output alerts into the workspace.
     args.extend(["--config", "diaPipe.alertPackager.alertWriteLocation=" + workspace.alertLocation])
     args.extend(["--config", "diaPipe.doPackageAlerts=True"])
@@ -235,7 +245,7 @@ def _getConfigArguments(workspace):
     return args
 
 
-def _getConfigArgumentsGen3(workspace):
+def _getConfigArgumentsGen3(workspace, parsed):
     """Return the config options for running the Gen 3 AP Pipeline on this
     workspace, as command-line arguments.
 
@@ -243,6 +253,8 @@ def _getConfigArgumentsGen3(workspace):
     ----------
     workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         A Workspace whose config directory may contain various configs.
+    parsed : `argparse.Namespace`
+        Command-line arguments, including all arguments supported by `ApPipeParser`.
 
     Returns
     -------
@@ -252,7 +264,7 @@ def _getConfigArgumentsGen3(workspace):
     """
     # Translate APDB-only arguments to work as a sub-config
     args = [("diaPipe:apdb." + arg if arg != "--config" else arg)
-            for arg in _getApdbArguments(workspace)]
+            for arg in _getApdbArguments(workspace, parsed)]
     args.extend([
         # Put output alerts into the workspace.
         "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,

@@ -84,6 +84,16 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
+.. option:: --db, --db_url
+
+   **Target Alert Production Database**
+
+   A URI string identifying the database in which to store source associations.
+   The string must be in the format expected by `lsst.dax.apdb.ApdbConfig.db_url`, i.e. an SQLAlchemy connection string.
+   The indicated database is created if it does not exist and this is appropriate for the database type.
+
+   If this argument is omitted, ``ap_verify`` creates an SQLite database inside the directory indicated by :option:`--output`.
+
 .. option:: --gen2
 .. option:: --gen3
 
