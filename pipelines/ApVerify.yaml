@@ -13,6 +13,11 @@ tasks:
         config:
             apdb.isolation_level: READ_UNCOMMITTED
             doPackageAlerts: True
+    imageDifference:
+        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+        config:
+            # TODO: remove after ap_verify datasets follow RFC-741 conventions
+            connections.skyMap: "{skyMapName}Coadd_skyMap"
 contracts:
     # Metric inputs must match pipeline outputs
     - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
