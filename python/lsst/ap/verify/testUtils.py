@@ -45,6 +45,12 @@ class DataTestCase(lsst.utils.tests.TestCase):
     testDataset = 'ap_verify_testdata'
     """The EUPS package name of the dataset to use for testing (`str`).
     """
+    obsPackage = 'obs_lsst'
+    """The obs package associated with ``testDataset`` (`str`).
+
+    Set to `None` if ``testDataset`` loads its own dependencies (not
+    recommended for test datasets).
+    """
     datasetKey = 'test'
     """The ap_verify dataset name that would be used on the command line (`str`).
     """
@@ -54,7 +60,12 @@ class DataTestCase(lsst.utils.tests.TestCase):
         try:
             lsst.utils.getPackageDir(cls.testDataset)
         except pexExcept.NotFoundError:
-            raise unittest.SkipTest(cls.testDataset + ' not set up')
+            raise unittest.SkipTest(f'{cls.testDataset} not set up')
+        if cls.obsPackage:
+            try:
+                lsst.utils.getPackageDir(cls.obsPackage)
+            except LookupError:
+                raise unittest.SkipTest(f'{cls.obsPackage} not set up; needed for {cls.testDataset}')
 
         # Hack the config for testing purposes
         # Note that Config.instance is supposed to be immutable, so, depending on initialization order,
