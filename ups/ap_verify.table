@@ -9,6 +9,7 @@ setupRequired(ctrl_mpexec)
 
 # For testing
 setupOptional(ap_verify_testdata)
+setupOptional(obs_lsst)
 
 # For default metric configs
 setupRequired(ip_diffim)
