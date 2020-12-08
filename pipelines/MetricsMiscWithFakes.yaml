@@ -22,3 +22,8 @@ tasks:
         class: lsst.ip.diffim.metrics.NumberSciSourcesMetricTask
     fracDiaSourcesToSciSources:
         class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+    apFakesCompleteness20t30:
+        class: lsst.ap.pipe.metrics.ApFakesCompletenessMetricTask
+        config:
+           magMin: 20
+           magMax: 30
