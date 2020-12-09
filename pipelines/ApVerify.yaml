@@ -2,7 +2,7 @@
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 description: Fully instrumented AP pipeline
-inherits:
+imports:
     - location: $AP_PIPE_DIR/pipelines/ApPipe.yaml
     - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
     - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
