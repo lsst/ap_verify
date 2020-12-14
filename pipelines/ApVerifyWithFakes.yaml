@@ -9,6 +9,11 @@ inherits:
 tasks:
     createFakes:
         class: lsst.ap.pipe.createApFakes.CreateRandomApFakesTask
+        config:
+            magMin: 20
+            magMax: 26
+            fraction: 0
+            fakeDensity: 2000
     coaddFakes:
         class: lsst.pipe.tasks.insertFakes.InsertFakesTask
         config:
@@ -22,10 +27,12 @@ tasks:
     imageDifference:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
-            # TODO: remove after ap_verify datasets follow RFC-741 conventions
-            connections.skyMap: "{skyMapName}Coadd_skyMap"
-            connections.coaddExposures: "fakes_deepCoadd"
-            connections.exposure: "fakes_calexp"
+            # Always prefer decorrelation; may eventually become ImageDifferenceTask default
+            doDecorrelation: True
+            detection.thresholdValue: 5.0  # needed with doDecorrelation
+            # Don't have source catalogs for templates
+            doSelectSources: False
+            connections.fakesType: "fakes_"
     diaPipe:
         # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
@@ -33,7 +40,7 @@ tasks:
             apdb.isolation_level: READ_UNCOMMITTED
             doPackageAlerts: True
             doWriteAssociatedSources: True
-            connections.exposure: "fakes_calexp"
+            connections.fakesType: "fakes_"
     matchFakes:
         class: lsst.ap.pipe.matchApFakes.MatchApFakesTask
 contracts:
