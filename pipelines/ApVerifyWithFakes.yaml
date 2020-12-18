@@ -1,10 +1,9 @@
 # Gen 3 pipeline for ap_verify
 # This concatenates various lsst.verify metrics to an AP pipeline
 
-description: Fully instrumented AP pipeline
-inherits:
-    - location: $AP_PIPE_DIR/pipelines/ApPipe.yaml
-    - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
+description: Fully instrumented AP pipeline with fakes
+imports:
+    - location: $AP_PIPE_DIR/pipelines/ApVerify.yaml
     - location: $AP_VERIFY_DIR/pipelines/MetricsMiscWithFakes.yaml
 tasks:
     createFakes:
@@ -28,22 +27,29 @@ tasks:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
             # Always prefer decorrelation; may eventually become ImageDifferenceTask default
-            doDecorrelation: True
-            detection.thresholdValue: 5.0  # needed with doDecorrelation
-            # Don't have source catalogs for templates
-            doSelectSources: False
             connections.fakesType: "fakes_"
     diaPipe:
         # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
         config:
-            apdb.isolation_level: READ_UNCOMMITTED
-            doPackageAlerts: True
             doWriteAssociatedSources: True
             connections.fakesType: "fakes_"
     matchFakes:
         class: lsst.ap.pipe.matchApFakes.MatchApFakesTask
 contracts:
     # Metric inputs must match pipeline outputs
-    - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
-    - imageDifference.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType
+    - createFakes.connections.fakesType == coaddFakes.connections.fakesType
+    - createFakes.connections.fakesType == visitFakes.connections.fakesType
+    - createFakes.connections.fakesType == imageDifference.connections.fakesType
+    - createFakes.connections.fakesType == diaPipe.connections.fakesType
+    - createFakes.connections.fakesType == matchFakes.connections.fakesType
+    - createFakes.connections.fakesType == apFakesCompletenessMag20t22.connections.fakesType
+    - createFakes.connections.fakesType == apFakesCompletenessMag22t24.connections.fakesType
+    - createFakes.connections.fakesType == apFakesCompletenessMag24t26.connections.fakesType
+    - coaddFakes.connections.coaddName == visitFakes.connections.coaddName
+    - coaddFakes.connections.coaddName == imageDifference.connections.coaddName
+    - coaddFakes.connections.coaddName == diaPipe.connections.coaddName
+    - coaddFakes.connections.coaddName == matchFakes.connections.coaddName
+    - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
+    - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
+    - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
