@@ -4,10 +4,6 @@
 
 description: Miscelaneous AP Pipeline metrics
 tasks:
-    fracDiaSourcesToSciSources:
-        class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
-        config:
-            connections.fakesType: "fakes_"
     apFakesCompletenessMag20t22:
         class: lsst.ap.pipe.metrics.ApFakesCompletenessMetricTask
         config:
