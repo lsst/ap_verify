@@ -504,7 +504,13 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         # TODO: regex is workaround for DM-25945
         rawCollectionFilter = re.compile(self.dataset.instrument.makeDefaultRawIngestRunName())
         rawCollections = list(self.workspace.workButler.registry.queryCollections(rawCollectionFilter))
-        if rawCollections:
+        rawData = list(self.workspace.workButler.registry.queryDatasets(
+            'raw',
+            collections=rawCollections,
+            dataId={"instrument": self.dataset.instrument.getName()})) \
+            if rawCollections else []
+
+        if rawData:
             self.log.info("Raw images for %s were previously ingested, skipping...",
                           self.dataset.instrument.getName())
         else:
