@@ -307,5 +307,5 @@ def _getCollectionArguments(workspace):
     inputs.update(butler.registry.queryCollections(re.compile(r"templates/\w+")))
 
     return ["--input", ",".join(inputs),
-            "--output-run", workspace.runName,
+            "--output-run", workspace.outputName,
             ]

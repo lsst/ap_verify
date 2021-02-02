@@ -272,8 +272,8 @@ class WorkspaceGen3(Workspace):
 
         self.mkdir(self.repo)
 
-        # Gen 3 name of the output run
-        self.runName = "ap_verify-output"
+        # Gen 3 name of the output
+        self.outputName = "ap_verify-output"
 
         # Lazy evaluation to optimize butlers
         self._workButler = None
@@ -313,7 +313,7 @@ class WorkspaceGen3(Workspace):
                     inputs.add(instrument.makeCalibrationCollectionName())
                 inputs.update(queryButler.registry.queryCollections(re.compile(r"templates/\w+")))
 
-                # should set run=self.runName, but this breaks quantum graph generation (DM-26246)
+                # should set run=self.outputName, but this breaks quantum graph generation (DM-26246)
                 self._workButler = dafButler.Butler(butler=queryButler, collections=inputs)
             except OSError as e:
                 raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
@@ -329,7 +329,7 @@ class WorkspaceGen3(Workspace):
         """
         if self._analysisButler is None:
             try:
-                self._analysisButler = dafButler.Butler(self.repo, collections=self.runName,
+                self._analysisButler = dafButler.Butler(self.repo, collections=self.outputName,
                                                         writeable=False)
             except OSError as e:
                 raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
