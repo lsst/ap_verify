@@ -294,6 +294,23 @@ class WorkspaceGen3(Workspace):
     def alertLocation(self):
         return os.path.join(self._location, 'alerts')
 
+    def _ensureCollection(self, registry, name, collectionType):
+        """Add a collection to a repository if it does not already exist.
+
+        Parameters
+        ----------
+        registry : `lsst.daf.butler.Registry`
+            The repository to which to add the collection.
+        name : `str`
+            The name of the collection to test for and add.
+        collectionType : `lsst.daf.butler.CollectionType`
+            The type of collection to add. This field is ignored when
+            testing if a collection exists.
+        """
+        matchingCollections = list(registry.queryCollections(re.compile(name)))
+        if not matchingCollections:
+            registry.registerCollection(name, type=collectionType)
+
     @property
     def workButler(self):
         """A Butler that can read and write to a Gen 3 repository (`lsst.daf.butler.Butler`, read-only).
@@ -309,12 +326,21 @@ class WorkspaceGen3(Workspace):
                 inputs = {"skymaps", "refcats"}
                 for dimension in queryButler.registry.queryDataIds('instrument'):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
-                    inputs.add(instrument.makeDefaultRawIngestRunName())
+                    rawName = instrument.makeDefaultRawIngestRunName()
+                    inputs.add(rawName)
+                    self._ensureCollection(queryButler.registry, rawName, dafButler.CollectionType.RUN)
                     inputs.add(instrument.makeCalibrationCollectionName())
                 inputs.update(queryButler.registry.queryCollections(re.compile(r"templates/\w+")))
 
-                # should set run=self.outputName, but this breaks quantum graph generation (DM-26246)
-                self._workButler = dafButler.Butler(butler=queryButler, collections=inputs)
+                # Create an output chain here, so that workButler can see it.
+                # Definition does not conflict with what pipetask --output uses.
+                # Regex is workaround for DM-25945.
+                if not list(queryButler.registry.queryCollections(re.compile(self.outputName))):
+                    queryButler.registry.registerCollection(self.outputName,
+                                                            dafButler.CollectionType.CHAINED)
+                    queryButler.registry.setCollectionChain(self.outputName, inputs)
+
+                self._workButler = dafButler.Butler(butler=queryButler, collections=self.outputName)
             except OSError as e:
                 raise RuntimeError(f"{self.repo} is not a Gen 3 repository") from e
         return self._workButler

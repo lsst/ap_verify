@@ -223,6 +223,13 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
         with self.assertRaises(RuntimeError):
             self._testbed.workButler
         lsst.daf.butler.Butler.makeRepo(self._testbed.repo)
+        # workButler definition currently requires valid collections; this
+        # should be an implementation detail.
+        registry = lsst.daf.butler.Butler(self._testbed.repo, writeable=True).registry
+        registry.registerCollection('refcats', lsst.daf.butler.CollectionType.RUN)
+        registry.registerCollection('skymaps', lsst.daf.butler.CollectionType.RUN)
+        registry.registerCollection('templates/foo', lsst.daf.butler.CollectionType.RUN)
+
         # Can't really test Butler's state, so just make sure it exists
         self.assertTrue(self._testbed.workButler.isWriteable())
 

@@ -31,14 +31,12 @@ __all__ = ["ApPipeParser", "runApPipeGen2", "runApPipeGen3"]
 
 import argparse
 import os
-import re
 
 import click.testing
 
 import lsst.log
 from lsst.utils import getPackageDir
 import lsst.pipe.base as pipeBase
-import lsst.obs.base as obsBase
 import lsst.ctrl.mpexec.cli.pipetask
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
@@ -297,15 +295,7 @@ def _getCollectionArguments(workspace):
         Command-line arguments calling ``--input`` or ``--output``,
         following the conventions of `sys.argv`.
     """
-    butler = workspace.workButler
-    # Hard-code the collection names because it's hard to infer the inputs from the Butler
-    inputs = {"skymaps", "refcats"}
-    for dimension in butler.registry.queryDataIds('instrument'):
-        instrument = obsBase.Instrument.fromName(dimension["instrument"], butler.registry)
-        inputs.add(instrument.makeDefaultRawIngestRunName())
-        inputs.add(instrument.makeCalibrationCollectionName())
-    inputs.update(butler.registry.queryCollections(re.compile(r"templates/\w+")))
-
-    return ["--input", ",".join(inputs),
-            "--output-run", workspace.outputName,
+    # workspace.outputName is a chained collection containing all inputs
+    return ["--output", workspace.outputName,
+            "--clobber-partial-outputs",
             ]
