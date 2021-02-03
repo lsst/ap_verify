@@ -31,6 +31,7 @@ __all__ = ["ApPipeParser", "runApPipeGen2", "runApPipeGen3"]
 
 import argparse
 import os
+import re
 
 import click.testing
 
@@ -296,6 +297,12 @@ def _getCollectionArguments(workspace):
         following the conventions of `sys.argv`.
     """
     # workspace.outputName is a chained collection containing all inputs
-    return ["--output", workspace.outputName,
+    args = ["--output", workspace.outputName,
             "--clobber-partial-outputs",
             ]
+
+    registry = workspace.workButler.registry
+    oldRuns = list(registry.queryCollections(re.compile(workspace.outputName + r"/\d+T\d+Z")))
+    if oldRuns:
+        args.extend(["--extend-run", "--skip-existing"])
+    return args
