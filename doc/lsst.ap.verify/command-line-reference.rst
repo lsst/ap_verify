@@ -41,6 +41,21 @@ Named arguments
 
 Required arguments are :option:`--dataset` and :option:`--output`.
 
+.. option:: --clean-run
+
+   **Rerun ap_verify in a clean Gen 3 run even if the workspace already exists. (Gen 3 only)**
+
+   By default, when ``ap_verify`` is run multiple times with the same :option:`--output` workspace, the previous run collection is reused to avoid repeating processing.
+   If this is undesirable (e.g., experimental config changes), this flag creates a new run, and the pipeline is run from the beginning.
+   This flag has no effect if :option:`--output` is a fresh directory.
+
+   .. note::
+
+      The ``--clean-run`` flag does *not* reset the alert production database,
+      as this is not something that can be done without knowledge of the
+      specific database system being used. If the database has been written to
+      by a previous run, clear it by hand before running with ``--clean-run``.
+
 .. option:: --id <dataId>
 
    **Butler data ID.**
