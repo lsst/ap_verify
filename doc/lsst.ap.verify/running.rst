@@ -29,29 +29,31 @@ The dataset names are a placeholder for a future data repository versioning syst
 How to run ap_verify in a new workspace (Gen 2 pipeline)
 ========================================================
 
-Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run :command:`ap_verify.py` as follows:
+Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows:
+
+.. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --gen2 --id "visit=412518^412568 filter=g" --output workspaces/hits/
+   ap_verify.py --dataset CI-CosmosPDR2 --gen2 --id "visit=59150^59160 filter=HSC-G" --output workspaces/cosmos/
 
 Here the inputs are:
 
-* :command:`HiTS2015` is the ``ap_verify`` :ref:`dataset name <ap-verify-dataset-name>`,
+* :command:`CI-CosmosPDR2` is the ``ap_verify`` :ref:`dataset name <ap-verify-dataset-name>`,
 * :option:`--gen2` specifies to process the dataset using the Gen 2 pipeline framework,
-* :command:`visit=412518^412568 filter=g` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :command:`visit=59150^59160 filter=HSC-G` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
 while the output is:
 
-* :command:`workspaces/hits/` is the location where the pipeline will create any :ref:`Butler repositories<command-line-task-data-repo-using-uris>` necessary,
+* :command:`workspaces/cosmos/` is the location where the pipeline will create any :ref:`Butler repositories<command-line-task-data-repo-using-uris>` necessary,
 
-This call will create a new directory at :file:`workspaces/hits`, ingest the HiTS data into a new repository based on :file:`<hits-data>/repo/`, then run visits 412518 and 412568 through the entire AP pipeline.
+This call will create a new directory at :file:`workspaces/cosmos`, ingest the Cosmos data into a new repository based on :file:`<cosmos-data>/repo/`, then run visits 59150 and 59160 through the entire AP pipeline.
 
 It's also possible to run an entire dataset by omitting the :option:`--id` argument (as some datasets are very large, do this with caution):
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-HiTS2015 --gen2 --output workspaces/hits/
+   ap_verify.py --dataset CI-CosmosPDR2 --gen2 --output workspaces/cosmos/
 
 .. note::
 
@@ -67,7 +69,7 @@ The command for running the pipeline on Gen 3 data is almost identical to Gen 2:
 
 .. prompt:: bash
 
-   ap_verify.py --dataset HiTS2015 --gen3 --id "visit in (412518, 412568) and band='g'" --output workspaces/hits/
+   ap_verify.py --dataset CI-CosmosPDR2 --gen3 --id "visit in (59150, 59160) and band='g'" --output workspaces/cosmos/
 
 The only differences are substituting :option:`--gen3` for :option:`--gen2`, and formatting the (optional) data ID in the :ref:`Gen 3 query syntax <daf_butler_dimension_expressions>`.
 For further compatibility with Gen 3 pipelines, :option:`--id` may be replaced with :option:`--data-query`.
@@ -87,11 +89,11 @@ How to run ingestion by itself
 This is useful if the data need special processing or as a precursor to massive processing runs.
 Running :command:`ap_verify.py` with the same arguments as a previous run of :command:`ingest_dataset.py` will automatically skip ingestion.
 
-Using the `HiTS 2015 <https://github.com/lsst/ap_verify_hits2015/>`_ dataset as an example, one can run ``ingest_dataset`` as follows:
+Using the `Cosmos PDR2`_ dataset as an example, one can run ``ingest_dataset`` in Gen 2 as follows:
 
 .. prompt:: bash
 
-   ingest_dataset.py --dataset HiTS2015 --gen2 --output workspaces/hits/
+   ingest_dataset.py --dataset CI-CosmosPDR2 --gen2 --output workspaces/cosmos/
 
 The :option:`--dataset`, :option:`--output`, :option:`--gen2`, :option:`--gen3`, and :option:`--processes` arguments behave the same way as for :command:`ap_verify.py`.
 Other options from :command:`ap_verify.py` are not available.
