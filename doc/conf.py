@@ -3,10 +3,11 @@
 This configuration only affects single-package Sphinx documenation builds.
 """
 
-from documenteer.sphinxconfig.stackconf import build_package_configs
-import lsst.ap.verify
+from documenteer.conf.pipelinespkg import *  # noqa F403, import *
 
-_g = globals()
-_g.update(build_package_configs(
-    project_name="ap_verify",
-    version=lsst.ap.verify.version.__version__))
+
+project = "ap_verify"
+html_theme_options["logotext"] = project  # noqa F405, unknown name
+html_title = project
+html_short_title = project
+doxylink = {}
