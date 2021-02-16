@@ -65,14 +65,31 @@ It's also possible to run an entire dataset by omitting the :option:`--id` argum
 How to run ap_verify in a new workspace (Gen 3 pipeline)
 ========================================================
 
-The command for running the pipeline on Gen 3 data is almost identical to Gen 2:
+Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows:
+
+.. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-CosmosPDR2 --gen3 --id "visit in (59150, 59160) and band='g'" --output workspaces/cosmos/
+   ap_verify.py --dataset CI-CosmosPDR2 --gen3 --data-query "visit in (59150, 59160) and band='g'" --output workspaces/cosmos/
 
-The only differences are substituting :option:`--gen3` for :option:`--gen2`, and formatting the (optional) data ID in the :ref:`Gen 3 query syntax <daf_butler_dimension_expressions>`.
-For further compatibility with Gen 3 pipelines, :option:`--id` may be replaced with :option:`--data-query`.
+Here the inputs are:
+
+* :command:`CI-CosmosPDR2` is the ``ap_verify`` :ref:`dataset name <ap-verify-dataset-name>`,
+* :option:`--gen3` specifies to process the dataset using the Gen 3 pipeline framework,
+* :command:`visit in (59150, 59160) and band='g'` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
+
+while the output is:
+
+* :command:`workspaces/cosmos/` is the location where the pipeline will create a Butler repository along with other outputs such as the alert production database.
+
+This call will create a new directory at :file:`workspaces/cosmos`, ingest the Cosmos data into a new repository, then run visits 59150 and 59160 through the entire AP pipeline.
+
+It's also possible to run an entire dataset by omitting the :option:`--data-query` argument (as some datasets are very large, do this with caution):
+
+.. prompt:: bash
+
+   ap_verify.py --dataset CI-CosmosPDR2 --gen3 --output workspaces/cosmos/
 
 .. note::
 
