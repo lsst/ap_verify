@@ -41,6 +41,7 @@ These datasets are also listed when running :option:`ap_verify.py -h`.
 
 * `HiTS2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_hits2015/>`_
 * `CI-HiTS2015 (HiTS 2015 CI Subset) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
+* `CI-CosmosPDR2 (Cosmos DR2 ultradeep fields) <https://github.com/lsst/ap_verify_ci_cosmos_pdr2/>`_
 
 ..
    TODO: switch to toctree once these docs included in pipelines.lsst.io
@@ -49,4 +50,4 @@ These datasets are also listed when running :option:`ap_verify.py -h`.
 
       /packages/ap_verify_hits2015/index
       /packages/ap_verify_ci_hits2015/index
-
+      /packages/ap_verify_ci_cosmos_pdr2/index
