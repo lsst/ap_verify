@@ -38,7 +38,6 @@ import click.testing
 import lsst.log
 from lsst.utils import getPackageDir
 import lsst.pipe.base as pipeBase
-import lsst.obs.base as obsBase
 import lsst.ctrl.mpexec.cli.pipetask
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
@@ -69,6 +68,9 @@ class ApPipeParser(argparse.ArgumentParser):
         self.add_argument("--skip-pipeline", action="store_true",
                           help="Do not run the AP pipeline itself. This argument is useful "
                                "for testing metrics on a fixed data set.")
+        self.add_argument("--clean-run", action="store_true",
+                          help="Run the pipeline with a new run collection, "
+                               "even if one already exists.")
 
     class AppendOptional(argparse.Action):
         """A variant of the built-in "append" action that ignores None values
@@ -161,7 +163,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     # TODO: collections should be determined exclusively by Workspace.workButler,
     # but I can't find a way to hook that up to the graph builder. So use the CLI
     # for now and revisit once DM-26239 is done.
-    pipelineArgs.extend(_getCollectionArguments(workspace))
+    pipelineArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
     pipelineArgs.extend(_getConfigArgumentsGen3(workspace, parsedCmdLine))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
@@ -282,7 +284,7 @@ def _getConfigArgumentsGen3(workspace, parsed):
     return args
 
 
-def _getCollectionArguments(workspace):
+def _getCollectionArguments(workspace, reuse):
     """Return the collections for running the Gen 3 AP Pipeline on this
     workspace, as command-line arguments.
 
@@ -290,6 +292,9 @@ def _getCollectionArguments(workspace):
     ----------
     workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         A Workspace with a Gen 3 repository.
+    reuse : `bool`
+        If true, use the previous run collection if one exists. Otherwise,
+        create a new run.
 
     Returns
     -------
@@ -297,15 +302,13 @@ def _getCollectionArguments(workspace):
         Command-line arguments calling ``--input`` or ``--output``,
         following the conventions of `sys.argv`.
     """
-    butler = workspace.workButler
-    # Hard-code the collection names because it's hard to infer the inputs from the Butler
-    inputs = {"skymaps", "refcats"}
-    for dimension in butler.registry.queryDataIds('instrument'):
-        instrument = obsBase.Instrument.fromName(dimension["instrument"], butler.registry)
-        inputs.add(instrument.makeDefaultRawIngestRunName())
-        inputs.add(instrument.makeCalibrationCollectionName())
-    inputs.update(butler.registry.queryCollections(re.compile(r"templates/\w+")))
-
-    return ["--input", ",".join(inputs),
-            "--output-run", workspace.runName,
+    # workspace.outputName is a chained collection containing all inputs
+    args = ["--output", workspace.outputName,
+            "--clobber-partial-outputs",
             ]
+
+    registry = workspace.workButler.registry
+    oldRuns = list(registry.queryCollections(re.compile(workspace.outputName + r"/\d+T\d+Z")))
+    if reuse and oldRuns:
+        args.extend(["--extend-run", "--skip-existing"])
+    return args

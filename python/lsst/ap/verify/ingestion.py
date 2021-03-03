@@ -116,6 +116,10 @@ class DatasetIngestConfig(pexConfig.Config):
         doc="Map from a refcat name to a tar.gz file containing the sharded catalog. May be empty.",
     )
 
+    def setDefaults(self):
+        # Can't easily check for prior curated ingestion, so make it not matter
+        self.curatedCalibIngester.clobber = True
+
 
 class DatasetIngestTask(pipeBase.Task):
     """Task for automating ingestion of a ap_verify dataset.
@@ -300,6 +304,7 @@ class DatasetIngestTask(pipeBase.Task):
             The location containing all ingestion repositories.
         """
         for curated in self.config.curatedCalibPaths:
+            # Can't easily check for prior ingestion; workaround in config
             self.log.info("Ingesting curated calibs...")
             self._doIngestCuratedCalibs(workspace.dataRepo, workspace.calibRepo, curated)
             self.log.info("Curated calibs are now ingested in {0}".format(workspace.calibRepo))
@@ -319,7 +324,7 @@ class DatasetIngestTask(pipeBase.Task):
             a path in ``obs_*_data``.
         """
 
-        curatedargs = [repo, curatedPath, "--calib", calibRepo]
+        curatedargs = [repo, curatedPath, "--calib", calibRepo, "--ignore-ingested"]
         try:
             _runIngestTask(self.curatedCalibIngester, curatedargs)
         except sqlite3.IntegrityError as detail:
@@ -499,7 +504,13 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         # TODO: regex is workaround for DM-25945
         rawCollectionFilter = re.compile(self.dataset.instrument.makeDefaultRawIngestRunName())
         rawCollections = list(self.workspace.workButler.registry.queryCollections(rawCollectionFilter))
-        if rawCollections:
+        rawData = list(self.workspace.workButler.registry.queryDatasets(
+            'raw',
+            collections=rawCollections,
+            dataId={"instrument": self.dataset.instrument.getName()})) \
+            if rawCollections else []
+
+        if rawData:
             self.log.info("Raw images for %s were previously ingested, skipping...",
                           self.dataset.instrument.getName())
         else:
