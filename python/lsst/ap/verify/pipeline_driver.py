@@ -38,6 +38,7 @@ import click.testing
 import lsst.log
 from lsst.utils import getPackageDir
 import lsst.pipe.base as pipeBase
+import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.ctrl.mpexec.cli.pipetask
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
@@ -170,6 +171,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
             pipelineArgs.extend(["--data-query", singleId])
     pipelineArgs.extend(["--processes", str(processes)])
     pipelineArgs.extend(["--register-dataset-types"])
+    pipelineArgs.extend(["--graph-fixup", "lsst.ap.verify.pipeline_driver._getExecOrder"])
 
     if not parsedCmdLine.skip_pipeline:
         # CliRunner is an unsafe workaround for DM-26239
@@ -184,6 +186,28 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         return results.exit_code
     else:
         log.info('Skipping AP pipeline entirely.')
+
+
+def _getExecOrder():
+    """Return any constraints on the Gen 3 execution order.
+
+    The current constraints are that executions of DiaPipelineTask must be
+    ordered by visit ID, but this is subject to change.
+
+    Returns
+    -------
+    order : `lsst.ctrl.mpexec.ExecutionGraphFixup`
+        An object encoding the desired execution order as an algorithm for
+        modifying inter-quantum dependencies.
+
+    Notes
+    -----
+    This function must be importable, but need not be public.
+    """
+    # Source association algorithm is not time-symmetric. Force execution of
+    # association (through DiaPipelineTask) in order of ascending visit number.
+    return lsst.ctrl.mpexec.execFixupDataId.ExecFixupDataId(
+        taskLabel="diaPipe", dimensions=["visit", ], reverse=False)
 
 
 def _getApdbArguments(workspace, parsed):
