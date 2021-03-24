@@ -24,6 +24,8 @@
 import os
 import warnings
 
+from deprecated.sphinx import deprecated
+
 import lsst.daf.persistence as dafPersistence
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
@@ -91,7 +93,10 @@ class Dataset:
         # No initialization required at present
         pass
 
+    # TODO: remove in DM-29042
     @staticmethod
+    @deprecated(reason="The concept of 'supported' datasets is deprecated. This "
+                       "method will be removed after v24.0.", version="v22.0", category=FutureWarning)
     def getSupportedDatasets():
         """The ap_verify dataset IDs that can be passed to this class's constructor.
 
@@ -109,6 +114,7 @@ class Dataset:
         """
         return Dataset._getDatasetInfo().keys()
 
+    # TODO: remove in DM-29042
     @staticmethod
     def _getDatasetInfo():
         """Return external data on supported ap_verify datasets.
