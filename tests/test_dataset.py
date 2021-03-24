@@ -55,11 +55,17 @@ class DatasetTestSuite(DataTestCase):
         datasets = Dataset.getSupportedDatasets()
         self.assertIn(DatasetTestSuite.datasetKey, datasets)  # assumed by other tests
 
+    def testOldDataset(self):
+        """Verify that Dataset construction warns on old-style dataset names.
+        """
+        with self.assertWarns(FutureWarning):
+            Dataset(DatasetTestSuite.datasetKey)
+
     def testBadDataset(self):
-        """Verify that Dataset construction fails gracefully on unsupported datasets.
+        """Verify that Dataset construction fails gracefully on nonexistent datasets.
         """
         with self.assertRaises(ValueError):
-            Dataset("TotallyBogusDataset")
+            Dataset("ap_verify_totally_bogus")
 
     def testDirectories(self):
         """Verify that a Dataset reports the desired directory structure.
