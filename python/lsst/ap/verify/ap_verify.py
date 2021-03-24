@@ -51,7 +51,7 @@ class _InputOutputParser(argparse.ArgumentParser):
     def __init__(self):
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
-        self.add_argument('--dataset', action=_DatasetAction, choices=Dataset.getSupportedDatasets(),
+        self.add_argument('--dataset', action=_DatasetAction,
                           required=True, help='The source of data to pass through the pipeline.')
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')

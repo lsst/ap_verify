@@ -34,14 +34,15 @@ In depth
 
 .. _ap-verify-datasets-index:
 
-Existing datasets
-=================
+Supported datasets
+==================
 
-These datasets are also listed when running :option:`ap_verify.py -h`.
+These datasets are maintained by the ``ap_verify`` group.
+There may be other datasets :ref:`formatted<ap-verify-datasets-structure>` for use with ``ap_verify``.
 
-* `HiTS2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_hits2015/>`_
-* `CI-HiTS2015 (HiTS 2015 CI Subset) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
-* `CI-CosmosPDR2 (Cosmos DR2 ultradeep fields) <https://github.com/lsst/ap_verify_ci_cosmos_pdr2/>`_
+* `ap_verify_hits2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_hits2015/>`_
+* `ap_verify_ci_hits2015 (HiTS 2015 CI Subset) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
+* `ap_verify_ci_cosmos_pdr2 (Cosmos DR2 ultradeep fields) <https://github.com/lsst/ap_verify_ci_cosmos_pdr2/>`_
 
 ..
    TODO: switch to toctree once these docs included in pipelines.lsst.io

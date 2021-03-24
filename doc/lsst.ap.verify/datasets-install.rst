@@ -27,7 +27,7 @@ Installation procedure
 ======================
 
 Use the `LSST Software Build Tool <https://developer.lsst.io/stack/lsstsw.html>`_ to request the dataset by its package name.
-A :ref:`list of existing datasets <ap-verify-datasets-index>` is maintained as part of this documentation.
+A :ref:`list of supported datasets <ap-verify-datasets-index>` is maintained as part of this documentation.
 Because of their large size (typically hundreds of GB), datasets are *never* installed as a dependency of another package; they must be requested explicitly.
 
 For example, to install the `Cosmos PDR2 <https://github.com/lsst/ap_verify_ci_cosmos_pdr2/>`_ CI dataset,

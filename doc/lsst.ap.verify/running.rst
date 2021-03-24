@@ -13,17 +13,6 @@ While :command:`ap_verify.py` is not a :doc:`command-line task</modules/lsst.pip
 This page describes the most common options used to run ``ap_verify``.
 For more details, see the :doc:`command-line-reference` or run :option:`ap_verify.py -h`.
 
-.. _ap-verify-dataset-name:
-
-Datasets as input arguments
-===========================
-
-Since ``ap_verify`` begins with an uningested :doc:`dataset<datasets>`, the input argument is a dataset name rather than a repository.
-
-Datasets are identified by a name that gets mapped to an :doc:`installed eups-registered package <datasets-install>` containing the data.
-The mapping is :ref:`configurable<ap-verify-configuration-dataset>`.
-The dataset names are a placeholder for a future data repository versioning system, and may be replaced in a later version of ``ap_verify``.
-
 .. _ap-verify-run-output:
 
 How to run ap_verify in a new workspace (Gen 2 pipeline)
@@ -35,11 +24,11 @@ Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_veri
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-CosmosPDR2 --gen2 --id "visit=59150^59160 filter=HSC-G" --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --id "visit=59150^59160 filter=HSC-G" --output workspaces/cosmos/
 
 Here the inputs are:
 
-* :command:`CI-CosmosPDR2` is the ``ap_verify`` :ref:`dataset name <ap-verify-dataset-name>`,
+* :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets> to process,
 * :option:`--gen2` specifies to process the dataset using the Gen 2 pipeline framework,
 * :command:`visit=59150^59160 filter=HSC-G` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 
@@ -53,7 +42,7 @@ It's also possible to run an entire dataset by omitting the :option:`--id` argum
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-CosmosPDR2 --gen2 --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --output workspaces/cosmos/
 
 .. note::
 
@@ -71,11 +60,11 @@ Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_veri
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-CosmosPDR2 --gen3 --data-query "visit in (59150, 59160) and band='g'" --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 --data-query "visit in (59150, 59160) and band='g'" --output workspaces/cosmos/
 
 Here the inputs are:
 
-* :command:`CI-CosmosPDR2` is the ``ap_verify`` :ref:`dataset name <ap-verify-dataset-name>`,
+* :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
 * :option:`--gen3` specifies to process the dataset using the Gen 3 pipeline framework,
 * :command:`visit in (59150, 59160) and band='g'` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
 
@@ -89,7 +78,7 @@ It's also possible to run an entire dataset by omitting the :option:`--data-quer
 
 .. prompt:: bash
 
-   ap_verify.py --dataset CI-CosmosPDR2 --gen3 --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 --output workspaces/cosmos/
 
 .. note::
 
@@ -110,7 +99,7 @@ Using the `Cosmos PDR2`_ dataset as an example, one can run ``ingest_dataset`` i
 
 .. prompt:: bash
 
-   ingest_dataset.py --dataset CI-CosmosPDR2 --gen2 --output workspaces/cosmos/
+   ingest_dataset.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --output workspaces/cosmos/
 
 The :option:`--dataset`, :option:`--output`, :option:`--gen2`, :option:`--gen3`, and :option:`--processes` arguments behave the same way as for :command:`ap_verify.py`.
 Other options from :command:`ap_verify.py` are not available.

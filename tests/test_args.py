@@ -116,13 +116,6 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         parsed = self._parseString('--id ' + minArgs)
         self.assertEqual(parsed.dataIds, [])
 
-    def testBadDataset(self):
-        """Verify that a command line with an unregistered dataset is rejected.
-        """
-        args = '--dataset FooScope --output tests/output/foo --id "visit=54123"'
-        with self.assertRaises(SystemExit):
-            self._parseString(args)
-
     def testBadKeyMain(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
