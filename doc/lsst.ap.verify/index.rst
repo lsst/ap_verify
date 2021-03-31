@@ -26,7 +26,6 @@ Using lsst.ap.verify
    failsafe
    new-metrics
    command-line-reference
-   configuration
 
 .. _lsst.ap.verify-contributing:
 

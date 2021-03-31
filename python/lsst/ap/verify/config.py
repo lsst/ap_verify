@@ -24,6 +24,7 @@
 from lsst.daf.persistence import Policy
 
 
+# TODO: remove in DM-29042
 class Config:
     """Confuration manager for ``ap_verify``.
 

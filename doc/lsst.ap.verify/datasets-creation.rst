@@ -12,7 +12,6 @@ Packaging data as a dataset
 
 :doc:`datasets` is designed to be as generic as possible, and should be able to accommodate any collection of observations so long as the source observatory has an :ref:`observatory interface (obs) package<obs-framework>` in the LSST software stack.
 This page describes how to create and maintain a dataset.
-It does not include :ref:`configuring ap_verify to use the dataset<ap-verify-configuration-dataset>`.
 
 .. _ap-verify-datasets-creation-gitlfs:
 
@@ -78,12 +77,3 @@ The observatory package must be named in two files:
   If any other packages are required to process the data, they should have their own ``setupRequired`` lines.
 * :file:`repo/_mapper` must contain a single line with the name of the obs package's mapper class.
   For DECam data this is ``lsst.obs.decam.DecamMapper``.
-
-.. _ap-verify-datasets-creation-name:
-
-Registering a dataset name
-==========================
-
-In order to be recognized by :option:`ap_verify.py --dataset`, datasets must be registered in ``ap_verify``'s :ref:`configuration file<ap-verify-configuration-dataset>`.
-The line for the new dataset should be committed to the ``ap_verify`` Git repository.
-To avoid accidental downloads, datasets **should not** be registered as an EUPS dependency of ``ap_verify``, even an optional one.

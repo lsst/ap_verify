@@ -124,7 +124,7 @@ class IngestionTestSuite(DataTestCase):
         self._butler.return_value.get = mockGet
         self.addCleanup(butlerPatcher.stop)
 
-        self._dataset = Dataset(self.datasetKey)
+        self._dataset = Dataset(self.testDataset)
         # Fake Workspace because it's too hard to make a real one with a fake Butler
         self._workspace = unittest.mock.NonCallableMock(
             spec=WorkspaceGen2,
@@ -315,7 +315,7 @@ class IngestionTestSuiteGen3(DataTestCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.dataset = Dataset(cls.datasetKey)
+        cls.dataset = Dataset(cls.testDataset)
 
         cls.INSTRUMENT = cls.dataset.instrument.getName()
         cls.VISIT_ID = 204595

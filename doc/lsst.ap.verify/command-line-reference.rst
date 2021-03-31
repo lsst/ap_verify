@@ -77,16 +77,16 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    This option is identical to :option:`--id`, and will become the primary data ID argument as Gen 2 is retired.
    It is recommended over :option:`--id` for :option:`--gen3` runs.
 
-.. option:: --dataset <dataset_name>
+.. option:: --dataset <dataset_package>
 
-   **Input dataset designation.**
+   **Input dataset package.**
 
    The :doc:`input dataset <datasets>` is required for all ``ap_verify`` runs except when using :option:`--help`.
 
-   The argument is a unique name for the dataset, which can be associated with a repository in the :ref:`configuration file<ap-verify-configuration-dataset>`.
-   See :ref:`ap-verify-dataset-name` for more information on dataset names.
+   The argument is the name of the Git LFS repository containing the dataset to process.
+   The repository must be set up before running ``ap_verify``.
 
-   :ref:`Allowed names <ap-verify-datasets-index>` can be queried using the :option:`--help` argument.
+   This documentation includes a :ref:`list of supported datasets <ap-verify-datasets-index>`.
 
 .. option:: --dataset-metrics-config <filename>
 

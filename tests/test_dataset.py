@@ -43,23 +43,32 @@ class DatasetTestSuite(DataTestCase):
         cls.gen3Camera = 'LSSTCam-imSim'
 
     def setUp(self):
-        self._testbed = Dataset(DatasetTestSuite.datasetKey)
+        self._testbed = Dataset(DatasetTestSuite.testDataset)
 
     def testRepr(self):
         # Required to match constructor call
-        self.assertEqual(repr(self._testbed), "Dataset(" + repr(self.datasetKey) + ")")
+        self.assertEqual(repr(self._testbed), "Dataset(" + repr(self.testDataset) + ")")
 
+    # TODO: remove in DM-29042
     def testDatasets(self):
         """Verify that a Dataset knows its supported datasets.
         """
-        datasets = Dataset.getSupportedDatasets()
+        with self.assertWarns(FutureWarning):
+            datasets = Dataset.getSupportedDatasets()
         self.assertIn(DatasetTestSuite.datasetKey, datasets)  # assumed by other tests
 
+    # TODO: remove in DM-29042
+    def testOldDataset(self):
+        """Verify that Dataset construction warns on old-style dataset names.
+        """
+        with self.assertWarns(FutureWarning):
+            Dataset(DatasetTestSuite.datasetKey)
+
     def testBadDataset(self):
-        """Verify that Dataset construction fails gracefully on unsupported datasets.
+        """Verify that Dataset construction fails gracefully on nonexistent datasets.
         """
         with self.assertRaises(ValueError):
-            Dataset("TotallyBogusDataset")
+            Dataset("ap_verify_totally_bogus")
 
     def testDirectories(self):
         """Verify that a Dataset reports the desired directory structure.

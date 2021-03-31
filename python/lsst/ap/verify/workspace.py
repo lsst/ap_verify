@@ -27,6 +27,7 @@ import pathlib
 import re
 import stat
 
+import lsst.skymap
 import lsst.daf.persistence as dafPersist
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
@@ -323,13 +324,16 @@ class WorkspaceGen3(Workspace):
             try:
                 # Hard-code the collection names because it's hard to infer the inputs from the Butler
                 queryButler = dafButler.Butler(self.repo, writeable=True)  # writeable for _workButler
-                inputs = {"skymaps", "refcats"}
+                inputs = {
+                    lsst.skymap.BaseSkyMap.SKYMAP_RUN_COLLECTION_NAME,
+                }
                 for dimension in queryButler.registry.queryDataIds('instrument'):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
                     rawName = instrument.makeDefaultRawIngestRunName()
                     inputs.add(rawName)
                     self._ensureCollection(queryButler.registry, rawName, dafButler.CollectionType.RUN)
                     inputs.add(instrument.makeCalibrationCollectionName())
+                    inputs.add(instrument.makeRefCatCollectionName())
                 inputs.update(queryButler.registry.queryCollections(re.compile(r"templates/\w+")))
 
                 # Create an output chain here, so that workButler can see it.

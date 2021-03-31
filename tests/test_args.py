@@ -63,14 +63,14 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
     def testMissingIngest(self):
         """Verify that a command line consisting missing required arguments is rejected.
         """
-        args = '--dataset %s' % CommandLineTestSuite.datasetKey
+        args = '--dataset %s' % CommandLineTestSuite.testDataset
         with self.assertRaises(SystemExit):
             self._parseString(args, ap_verify._IngestOnlyParser())
 
     def testMinimumMain(self):
         """Verify that a command line consisting only of required arguments parses correctly.
         """
-        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.datasetKey
+        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.testDataset
         parsed = self._parseString(args)
         self.assertEqual(parsed.dataset.datasetRoot,
                          lsst.utils.getPackageDir(CommandLineTestSuite.testDataset))
@@ -80,7 +80,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
     def testMinimumIngest(self):
         """Verify that a command line consisting only of required arguments parses correctly.
         """
-        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.datasetKey
+        args = '--dataset %s --output tests/output/foo' % CommandLineTestSuite.testDataset
         parsed = self._parseString(args, ap_verify._IngestOnlyParser())
         self.assertEqual(parsed.dataset.datasetRoot,
                          lsst.utils.getPackageDir(CommandLineTestSuite.testDataset))
@@ -91,7 +91,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         --id parses correctly.
         """
         args = '--dataset %s --output tests/output/foo --id "visit=54123" --id "filter=x"' \
-            % CommandLineTestSuite.datasetKey
+            % CommandLineTestSuite.testDataset
         parsed = self._parseString(args)
         self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
 
@@ -99,14 +99,14 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         """Verify that a command line with both --id and --data-query parses correctly.
         """
         args = '--dataset %s --output tests/output/foo --id "visit=54123" -d "filter=x"' \
-            % CommandLineTestSuite.datasetKey
+            % CommandLineTestSuite.testDataset
         parsed = self._parseString(args)
         self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
 
     def testEmptyDataId(self):
         """Test that an --id argument may be not followed by a data ID.
         """
-        minArgs = f'--dataset {self.datasetKey} --output tests/output/foo'
+        minArgs = f'--dataset {self.testDataset} --output tests/output/foo'
 
         # Nothing after --id
         parsed = self._parseString(minArgs + ' --id')
@@ -116,18 +116,11 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         parsed = self._parseString('--id ' + minArgs)
         self.assertEqual(parsed.dataIds, [])
 
-    def testBadDataset(self):
-        """Verify that a command line with an unregistered dataset is rejected.
-        """
-        args = '--dataset FooScope --output tests/output/foo --id "visit=54123"'
-        with self.assertRaises(SystemExit):
-            self._parseString(args)
-
     def testBadKeyMain(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
         args = '--dataset %s --output tests/output/foo --id "visit=54123" --clobber' \
-            % CommandLineTestSuite.datasetKey
+            % CommandLineTestSuite.testDataset
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
@@ -135,7 +128,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         """Verify that a command line with unsupported arguments is rejected.
         """
         args = '--dataset %s --output tests/output/foo --id "visit=54123"' \
-            % CommandLineTestSuite.datasetKey
+            % CommandLineTestSuite.testDataset
         with self.assertRaises(SystemExit):
             self._parseString(args, ap_verify._IngestOnlyParser())
 
@@ -143,7 +136,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         """Verify that all combinations of --gen2 and --gen3 behave
         as expected.
         """
-        minArgs = f'--dataset {self.datasetKey} --output tests/output/foo '
+        minArgs = f'--dataset {self.testDataset} --output tests/output/foo '
 
         # Default currently Gen 2, will become Gen 3 later
         parsedDefault = self._parseString(minArgs)

@@ -1,5 +1,5 @@
 ---
-datasets:
+datasets:  # TODO: remove in DM-29042
     HiTS2015: ap_verify_hits2015
     CI-HiTS2015: ap_verify_ci_hits2015
     CI-CosmosPDR2: ap_verify_ci_cosmos_pdr2

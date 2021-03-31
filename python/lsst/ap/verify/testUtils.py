@@ -54,6 +54,7 @@ class DataTestCase(lsst.utils.tests.TestCase):
     datasetKey = 'test'
     """The ap_verify dataset name that would be used on the command line (`str`).
     """
+    # TODO: remove datasetKey in DM-29042
 
     @classmethod
     def setUpClass(cls):
@@ -70,4 +71,5 @@ class DataTestCase(lsst.utils.tests.TestCase):
         # Hack the config for testing purposes
         # Note that Config.instance is supposed to be immutable, so, depending on initialization order,
         # this modification may cause other tests to see inconsistent config values
+        # TODO: remove in DM-29042
         Config.instance._allInfo['datasets.' + cls.datasetKey] = cls.testDataset
