@@ -21,6 +21,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+__all__ = ["Workspace", "WorkspaceGen2", "WorkspaceGen3"]
+
 import abc
 import os
 import pathlib
