@@ -28,7 +28,7 @@ Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_veri
 
 Here the inputs are:
 
-* :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets> to process,
+* :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
 * :option:`--gen2` specifies to process the dataset using the Gen 2 pipeline framework,
 * :command:`visit=59150^59160 filter=HSC-G` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
 

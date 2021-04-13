@@ -102,8 +102,9 @@ def runApPipeGen2(workspace, parsedCmdLine, processes=1):
 
     Returns
     -------
-    apPipeReturn : `Struct`
-        The `Struct` returned from `~lsst.ap.pipe.ApPipeTask.parseAndRun` with
+    apPipeReturn : `lsst.pipe.base.Struct`
+        The `~lsst.pipe.base.Struct` returned from
+        `~lsst.ap.pipe.ApPipeTask.parseAndRun` with
         ``doReturnResults=False``. This object is valid even if
         `~lsst.ap.pipe.ApPipeTask` was never run.
     """

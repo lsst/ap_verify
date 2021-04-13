@@ -24,6 +24,8 @@
 """Common code for ap_verify unit tests.
 """
 
+__all__ = ["DataTestCase"]
+
 import unittest
 
 import lsst.utils.tests
