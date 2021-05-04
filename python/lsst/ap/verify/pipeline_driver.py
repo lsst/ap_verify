@@ -300,6 +300,9 @@ def _getConfigArgumentsGen3(workspace, parsed):
         "--config-file", "calibrate:" + os.path.join(workspace.configDir, "calibrate.py"),
         "--config-file", "imageDifference:" + os.path.join(workspace.configDir, "imageDifference.py"),
     ])
+    # TODO: this config should not be needed either after DM-26140
+    if os.path.exists(os.path.join(workspace.configDir, "isr.py")):
+        args.extend(["--config-file", "isr:" + os.path.join(workspace.configDir, "isr.py"), ])
     # TODO: reverse-engineering the instrument should not be needed after DM-26140
     # pipetask will crash if there is more than one instrument
     for idRecord in workspace.workButler.registry.queryDataIds("instrument").expanded():
