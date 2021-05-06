@@ -22,3 +22,7 @@ tasks:
         class: lsst.ip.diffim.metrics.NumberSciSourcesMetricTask
     fracDiaSourcesToSciSources:
         class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+    numDeblendedSciSources:
+        class: lsst.pipe.tasks.metrics.NumberDeblendedSourcesMetricTask
+    numDeblendChildSciSources:
+        class: lsst.pipe.tasks.metrics.NumberDeblendChildSourcesMetricTask

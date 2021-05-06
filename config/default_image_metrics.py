@@ -2,6 +2,7 @@ from itertools import chain
 from lsst.verify.tasks.commonMetrics import TimingMetricConfig, MemoryMetricConfig
 # Import these modules to ensure the metrics are registered
 import lsst.ip.diffim.metrics  # noqa: F401
+import lsst.pipe.tasks.metrics  # noqa: F401
 import lsst.ap.association.metrics  # noqa: F401
 
 metadataConfigs = ["numNewDiaObjects",
@@ -9,6 +10,7 @@ metadataConfigs = ["numNewDiaObjects",
                    "fracUpdatedDiaObjects"]
 config.measurers = ["timing", "memory",
                     "numSciSources", "fracDiaSourcesToSciSources",
+                    "numDeblendedSciSources", "numDeblendChildSciSources",
                     ] + metadataConfigs
 
 timingConfigs = {
