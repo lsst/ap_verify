@@ -79,13 +79,13 @@ tasks:
             connections.metric: DiaPipelineTime
             connections.labelName: diaPipe
             target: diaPipe.run
-    timing_diaPipe_diaSourceDpddifier:
+    timing_transformDiaSrcCat:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.package: ap_association
             connections.metric: MapDiaSourceTime
-            connections.labelName: diaPipe
-            target: diaPipe:diaSourceDpddifier.run
+            connections.labelName: transformDiaSrcCat
+            target: transformDiaSrcCat.run
     timing_diaPipe_diaCatalogLoader:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
