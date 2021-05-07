@@ -138,9 +138,9 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
         """
         minArgs = f'--dataset {self.testDataset} --output tests/output/foo '
 
-        # Default currently Gen 2, will become Gen 3 later
+        # Default is Gen 3
         parsedDefault = self._parseString(minArgs)
-        self.assertFalse(parsedDefault.useGen3)
+        self.assertTrue(parsedDefault.useGen3)
 
         parsedGen2 = self._parseString(minArgs + '--gen2')
         self.assertFalse(parsedGen2.useGen3)

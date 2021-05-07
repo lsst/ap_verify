@@ -59,10 +59,10 @@ class _InputOutputParser(argparse.ArgumentParser):
         gen23 = self.add_mutually_exclusive_group()
         # Because store_true and store_false use the same dest, add explicit
         # default to avoid ambiguity.
-        gen23.add_argument('--gen2', dest='useGen3', action='store_false', default=False,
+        gen23.add_argument('--gen2', dest='useGen3', action='store_false', default=True,
                            help='Handle the ap_verify dataset using the Gen 2 framework (default).')
-        gen23.add_argument('--gen3', dest='useGen3', action='store_true', default=False,
-                           help='Handle the ap_verify dataset using the Gen 3 framework.')
+        gen23.add_argument('--gen3', dest='useGen3', action='store_true', default=True,
+                           help='Handle the ap_verify dataset using the Gen 3 framework (default).')
 
 
 class _ProcessingParser(argparse.ArgumentParser):
