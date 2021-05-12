@@ -31,6 +31,7 @@ __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
 import re
+import warnings
 
 import lsst.log
 
@@ -91,6 +92,14 @@ class _ApVerifyParser(argparse.ArgumentParser):
             parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), MetricsParser()],
             add_help=True)
 
+    def parse_args(self, args=None, namespace=None):
+        namespace = super().parse_args(args, namespace)
+        # Code duplication; too hard to implement at shared _InputOutputParser level
+        if not namespace.useGen3:
+            warnings.warn("The --gen2 flag is deprecated; it will be removed after release 23.",
+                          category=FutureWarning)
+        return namespace
+
 
 class _IngestOnlyParser(argparse.ArgumentParser):
     """An argument parser for data needed by dataset ingestion.
@@ -108,6 +117,14 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             epilog='',
             parents=[_InputOutputParser(), _ProcessingParser()],
             add_help=True)
+
+    def parse_args(self, args=None, namespace=None):
+        namespace = super().parse_args(args, namespace)
+        # Code duplication; too hard to implement at shared _InputOutputParser level
+        if not namespace.useGen3:
+            warnings.warn("The --gen2 flag is deprecated; it will be removed after release 23.",
+                          category=FutureWarning)
+        return namespace
 
 
 class _FormattedType:
