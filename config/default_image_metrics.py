@@ -24,7 +24,7 @@ timingConfigs = {
     "apPipe:differencer:detection.run": "meas_algorithms.SourceDetectionTime",
     "apPipe:differencer:measurement.run": "ip_diffim.DipoleFitTime",
     "apPipe:diaPipe.run": "ap_association.DiaPipelineTime",
-    "apPipe:diaPipe:diaSourceDpddifier.run": "ap_association.MapDiaSourceTime",
+    "apPipe:transformDiaSrcCat.run": "ap_association.MapDiaSourceTime",
     "apPipe:diaPipe:diaCatalogLoader.run": "ap_association.LoadDiaCatalogsTime",
     "apPipe:diaPipe:associator.run": "ap_association.AssociationTime",
     "apPipe:diaPipe:diaForcedSource.run": "ap_association.DiaForcedSourceTime",
