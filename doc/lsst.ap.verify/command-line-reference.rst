@@ -56,26 +56,23 @@ Required arguments are :option:`--dataset` and :option:`--output`.
       specific database system being used. If the database has been written to
       by a previous run, clear it by hand before running with ``--clean-run``.
 
-.. option:: --id <dataId>
+.. option:: -d, --data-query, --id <dataId>
 
    **Butler data ID.**
 
    Specify data ID to process.
-   If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--id "visit=12345 ccd=1..6 filter=g"``.
-   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--id "visit=12345 and detector in (1..6) and band='g'"``.
-   Consider using :option:`--data-query` instead of ``--id`` for forward-compatibility and consistency with Gen 3 pipelines.
+   If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--data-query "visit=12345 ccd=1..6 filter=g"``.
+   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--data-query "visit=12345 and detector in (1..6) and band='g'"``.
 
    Multiple copies of this argument are allowed.
-   For compatibility with the syntax used by command line tasks, ``--id`` with no argument processes all data IDs.
+   For compatibility with the syntax used by command line tasks, this flag with no argument processes all data IDs.
 
    If this argument is omitted, then all data IDs in the dataset will be processed.
    
-.. option:: -d, --data-query <dataId>
+   .. warning::
 
-   **Butler data ID.**
-
-   This option is identical to :option:`--id`, and will become the primary data ID argument as Gen 2 is retired.
-   It is recommended over :option:`--id` for :option:`--gen3` runs.
+      The ``--id`` form of this argument is for consistency with Gen 2 command-line tasks, and is deprecated.
+      It will be removed after Science Pipelines release 23.
 
 .. option:: --dataset <dataset_package>
 
@@ -99,6 +96,10 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
+   .. warning::
+
+      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
+
 .. option:: --db, --db_url
 
    **Target Alert Production Database**
@@ -115,13 +116,11 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Choose Gen 2 or Gen 3 processing.**
 
    These optional flags run either the Gen 2 pipeline (`~lsst.ap.pipe.ApPipeTask`), or the Gen 3 pipeline (:file:`apPipe.yaml`).
-   If neither flag is provided, the Gen 2 pipeline will be run.
+   If neither flag is provided, the Gen 3 pipeline will be run.
 
-   .. note::
+   .. warning::
 
-      The current default is provided for backward-compatibility with old scripts that assumed Gen 2 processing.
-      The default will change to ``--gen3`` once Gen 3 processing is officially supported by the Science Pipelines, at which point Gen 2 support will be deprecated.
-      Until the default stabilizes, users should be explicit about which pipeline they wish to run.
+      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
 
 .. option:: -h, --help
 
@@ -147,6 +146,10 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    For the Gen 3 equivalent to this option, see :option:`--pipeline`.
    See also :doc:`new-metrics`.
 
+   .. warning::
+
+      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
+
 .. option:: --metrics-file <filename>
 
    **Output metrics file. (Gen 2 only)**
@@ -154,6 +157,10 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
    The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.
    If omitted, the output will go to files named after ``ap_verify.{dataId}.verify.json`` in the user's working directory.
+
+   .. warning::
+
+      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
 
 .. option:: --output <workspace_dir>
 

@@ -31,6 +31,7 @@ __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
 import re
+import warnings
 
 import lsst.log
 
@@ -59,10 +60,10 @@ class _InputOutputParser(argparse.ArgumentParser):
         gen23 = self.add_mutually_exclusive_group()
         # Because store_true and store_false use the same dest, add explicit
         # default to avoid ambiguity.
-        gen23.add_argument('--gen2', dest='useGen3', action='store_false', default=False,
+        gen23.add_argument('--gen2', dest='useGen3', action='store_false', default=True,
                            help='Handle the ap_verify dataset using the Gen 2 framework (default).')
-        gen23.add_argument('--gen3', dest='useGen3', action='store_true', default=False,
-                           help='Handle the ap_verify dataset using the Gen 3 framework.')
+        gen23.add_argument('--gen3', dest='useGen3', action='store_true', default=True,
+                           help='Handle the ap_verify dataset using the Gen 3 framework (default).')
 
 
 class _ProcessingParser(argparse.ArgumentParser):
@@ -91,6 +92,14 @@ class _ApVerifyParser(argparse.ArgumentParser):
             parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), MetricsParser()],
             add_help=True)
 
+    def parse_args(self, args=None, namespace=None):
+        namespace = super().parse_args(args, namespace)
+        # Code duplication; too hard to implement at shared _InputOutputParser level
+        if not namespace.useGen3:
+            warnings.warn("The --gen2 flag is deprecated; it will be removed after release 23.",
+                          category=FutureWarning)
+        return namespace
+
 
 class _IngestOnlyParser(argparse.ArgumentParser):
     """An argument parser for data needed by dataset ingestion.
@@ -108,6 +117,14 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             epilog='',
             parents=[_InputOutputParser(), _ProcessingParser()],
             add_help=True)
+
+    def parse_args(self, args=None, namespace=None):
+        namespace = super().parse_args(args, namespace)
+        # Code duplication; too hard to implement at shared _InputOutputParser level
+        if not namespace.useGen3:
+            warnings.warn("The --gen2 flag is deprecated; it will be removed after release 23.",
+                          category=FutureWarning)
+        return namespace
 
 
 class _FormattedType:
