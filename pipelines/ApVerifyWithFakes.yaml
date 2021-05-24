@@ -26,7 +26,6 @@ tasks:
     imageDifference:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
-            # Always prefer decorrelation; may eventually become ImageDifferenceTask default
             connections.fakesType: "fakes_"
     transformDiaSrcCat:
         class: lsst.ap.association.TransformDiaSourceCatalogTask
