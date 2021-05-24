@@ -28,6 +28,10 @@ tasks:
         config:
             # Always prefer decorrelation; may eventually become ImageDifferenceTask default
             connections.fakesType: "fakes_"
+    transformDiaSrcCat:
+        class: lsst.ap.association.TransformDiaSourceCatalogTask
+        config:
+            connections.fakesType: "fakes_"
     diaPipe:
         # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
