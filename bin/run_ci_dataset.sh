@@ -35,19 +35,21 @@ print_error() {
 
 usage() {
     print_error
-    print_error "Usage: $0 -d DATASET [-g NUM] [-h]"
+    print_error "Usage: $0 -d DATASET [-g NUM] [-p PATH] [-h]"
     print_error
     print_error "Specific options:"
     print_error "   -d          Dataset name"
     print_error "   -g          Middleware generation number (int)"
+    print_error "   -p          Pipeline to run (Gen 3 only)"
     print_error "   -h          show this message"
     exit 1
 }
 
-while getopts "d:g:h" option; do
+while getopts "d:g:p:h" option; do
     case "$option" in
         d)  DATASET="$OPTARG";;
         g)  GEN="$OPTARG";;
+        p)  PIPE="$OPTARG";;
         h)  usage;;
         *)  usage;;
     esac
@@ -59,6 +61,9 @@ if [[ -z "${DATASET}" ]]; then
 fi
 if [[ -n "${GEN}" ]]; then
     GEN="--gen${GEN}"
+fi
+if [[ -n "${PIPE}" ]]; then
+    PIPE="--pipeline ${PIPE}"
 fi
 shift $((OPTIND-1))
 
@@ -88,6 +93,7 @@ NUMPROC=${NUMPROC:-$((sys_proc < max_proc ? sys_proc : max_proc))}
 echo "Running ap_verify on ${DATASET} ${GEN}..."
 ap_verify.py --dataset "${DATASET}" \
     ${GEN} \
+    ${PIPE} \
     --output "${WORKSPACE}" \
     --processes "${NUMPROC}" \
     --metrics-file "${WORKSPACE}/ap_verify.{dataId}.verify.json" \
