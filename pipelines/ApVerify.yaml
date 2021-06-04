@@ -7,12 +7,32 @@ imports:
     - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
     - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
 tasks:
+    imageDifference:
+        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+        config:
+            coaddName: deep
+            getTemplate.coaddName: deep
+            connections.coaddName: deep
+            connections.coaddExposures: deepCoadd
+            connections.subtractedExposure: deepDiff_differenceExp
+            connections.warpedExposure: deepDiff_warpedExp
+    transformDiaSrcCat:
+        class: lsst.ap.association.TransformDiaSourceCatalogTask
+        config:
+            connections.coaddName: deep
+            connections.diaSourceSchema: deepDiff_diaSrc_schema
+            connections.diaSourceCat: deepDiff_diaSrc
+            connections.diffIm: deepDiff_differenceExp
+            connections.diaSourceTable: deepDiff_diaSrcTable
     diaPipe:
         # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
         config:
             apdb.isolation_level: READ_UNCOMMITTED
             doPackageAlerts: True
+            connections.coaddName: deep
+            connections.diaSourceTable: deepDiff_diaSrcTable
+            connections.associatedDiaSources: deepDiff_assocDiaSrcTable
 contracts:
     # Metric inputs must match pipeline outputs
     - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
