@@ -10,29 +10,44 @@ tasks:
     imageDifference:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
-            coaddName: deep
-            getTemplate.coaddName: deep
+            # All extant datasets use deep templates
+            # TODO: move to dataset configs in DM-26140
+            coaddName: deep              # Can be removed once ImageDifference no longer supports Gen 2
+            getTemplate.coaddName: deep  # Can be removed once ImageDifference no longer supports Gen 2
             connections.coaddName: deep
+            # TODO: redundant connection definitions workaround for DM-30210
             connections.coaddExposures: deepCoadd
+            connections.outputSchema: deepDiff_diaSrc_schema
             connections.subtractedExposure: deepDiff_differenceExp
+            connections.scoreExposure: deepDiff_scoreExp
             connections.warpedExposure: deepDiff_warpedExp
+            connections.matchedExposure: deepDiff_matchedExp
+            connections.diaSources: deepDiff_diaSrc
+            # TODO: end DM-30210 workaround
     transformDiaSrcCat:
         class: lsst.ap.association.TransformDiaSourceCatalogTask
         config:
+            # TODO: move to dataset configs in DM-26140
             connections.coaddName: deep
+            # TODO: redundant connection definitions workaround for DM-30210
             connections.diaSourceSchema: deepDiff_diaSrc_schema
             connections.diaSourceCat: deepDiff_diaSrc
             connections.diffIm: deepDiff_differenceExp
             connections.diaSourceTable: deepDiff_diaSrcTable
+            # TODO: end DM-30210 workaround
     diaPipe:
-        # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
         config:
             apdb.isolation_level: READ_UNCOMMITTED
             doPackageAlerts: True
+            # TODO: move to dataset configs in DM-26140
             connections.coaddName: deep
+            # TODO: redundant connection definitions workaround for DM-30210
             connections.diaSourceTable: deepDiff_diaSrcTable
+            connections.diffIm: deepDiff_differenceExp
+            connections.warpedExposure: deepDiff_warpedExp
             connections.associatedDiaSources: deepDiff_assocDiaSrcTable
+            # TODO: end DM-30210 workaround
 contracts:
     # Metric inputs must match pipeline outputs
     - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName

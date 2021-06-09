@@ -27,16 +27,44 @@ tasks:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
             connections.fakesType: "fakes_"
+            # TODO: redundant connection definitions workaround for DM-30210
+            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
+            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
+            connections.exposure: fakes_calexp
+            connections.coaddExposures: fakes_deepCoadd
+            connections.dcrCoadds: fakes_dcrCoadd
+            connections.outputSchema: fakes_deepDiff_diaSrc_schema
+            connections.subtractedExposure: fakes_deepDiff_differenceExp
+            connections.scoreExposure: fakes_deepDiff_scoreExp
+            connections.warpedExposure: fakes_deepDiff_warpedExp
+            connections.matchedExposure: fakes_deepDiff_matchedExp
+            connections.diaSources: fakes_deepDiff_diaSrc
+            # TODO: end DM-30210 workaround
     transformDiaSrcCat:
         class: lsst.ap.association.TransformDiaSourceCatalogTask
         config:
             connections.fakesType: "fakes_"
+            # TODO: redundant connection definitions workaround for DM-30210
+            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
+            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
+            connections.diaSourceSchema: fakes_deepDiff_diaSrc_schema
+            connections.diaSourceCat: fakes_deepDiff_diaSrc
+            connections.diffIm: fakes_deepDiff_differenceExp
+            connections.diaSourceTable: fakes_deepDiff_diaSrcTable
+            # TODO: end DM-30210 workaround
     diaPipe:
-        # TODO: how to prevent duplication with ApPipe definition?
         class: lsst.ap.association.DiaPipelineTask
         config:
             doWriteAssociatedSources: True
             connections.fakesType: "fakes_"
+            # TODO: redundant connection definitions workaround for DM-30210
+            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
+            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
+            connections.diaSourceTable: fakes_deepDiff_diaSrcTable
+            connections.diffIm: fakes_deepDiff_differenceExp
+            connections.warpedExposure: fakes_deepDiff_warpedExp
+            connections.associatedDiaSources: fakes_deepDiff_assocDiaSrc
+            # TODO: end DM-30210 workaround
     matchFakes:
         class: lsst.ap.pipe.matchApFakes.MatchApFakesTask
         config:
