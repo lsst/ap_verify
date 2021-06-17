@@ -332,7 +332,7 @@ def _getCollectionArguments(workspace, reuse):
     """
     # workspace.outputName is a chained collection containing all inputs
     args = ["--output", workspace.outputName,
-            "--clobber-partial-outputs",
+            "--clobber-outputs",
             ]
 
     registry = workspace.workButler.registry
