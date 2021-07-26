@@ -32,8 +32,7 @@ __all__ = ["ApPipeParser", "runApPipeGen2", "runApPipeGen3"]
 import argparse
 import os
 import re
-
-import click.testing
+import subprocess
 
 import lsst.log
 from lsst.utils import getPackageDir
@@ -153,12 +152,19 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         Command-line arguments, including all arguments supported by `ApPipeParser`.
     processes : `int`
         The number of processes with which to call the AP pipeline
+
+    Returns
+    -------
+    code : `int`
+        An error code that is zero if the pipeline ran without problems, or
+        nonzero if there were errors. The exact meaning of nonzereo values
+        is an implementation detail.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
 
     makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 
-    pipelineArgs = ["run",
+    pipelineArgs = ["pipetask", "run",
                     "--butler-config", workspace.repo,
                     "--pipeline", parsedCmdLine.pipeline,
                     ]
@@ -175,16 +181,12 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     pipelineArgs.extend(["--graph-fixup", "lsst.ap.verify.pipeline_driver._getExecOrder"])
 
     if not parsedCmdLine.skip_pipeline:
-        # CliRunner is an unsafe workaround for DM-26239
-        runner = click.testing.CliRunner()
+        # subprocess is an unsafe workaround for DM-26239
         # TODO: generalize this code in DM-26028
         # TODO: work off of workspace.workButler after DM-26239
-        results = runner.invoke(lsst.ctrl.mpexec.cli.pipetask.cli, pipelineArgs)
-        if results.exception:
-            raise RuntimeError("Pipeline failed.") from results.exception
-
+        results = subprocess.run(pipelineArgs, capture_output=False, shell=False, check=False)
         log.info('Pipeline complete.')
-        return results.exit_code
+        return results.returncode
     else:
         log.info('Skipping AP pipeline entirely.')
 
