@@ -152,6 +152,13 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         Command-line arguments, including all arguments supported by `ApPipeParser`.
     processes : `int`
         The number of processes with which to call the AP pipeline
+
+    Returns
+    -------
+    code : `int`
+        An error code that is zero if the pipeline ran without problems, or
+        nonzero if there were errors. The exact meaning of nonzereo values
+        is an implementation detail.
     """
     log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
 
