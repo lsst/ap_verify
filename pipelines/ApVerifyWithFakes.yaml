@@ -23,6 +23,28 @@ tasks:
         config:
             insertFakes.doSubSelectSources: True
             insertFakes.sourceSelectionColName: "isVisitSource"
+    # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
+    # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
+    imageDifferenceNoFakes:
+        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+        config:
+            doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
+            doSkySources: True
+            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
+            coaddName: deep              # Can be removed once ImageDifference no longer supports Gen 2
+            getTemplate.coaddName: deep  # Can be removed once ImageDifference no longer supports Gen 2
+            connections.coaddName: deep
+            # TODO: redundant connection definitions workaround for DM-30210
+            connections.exposure: calexp
+            connections.coaddExposures: deepCoadd
+            connections.dcrCoadds: dcrCoadd
+            connections.outputSchema: deepDiff_diaSrc_schema
+            connections.subtractedExposure: deepDiff_differenceExp
+            connections.scoreExposure: deepDiff_scoreExp
+            connections.warpedExposure: deepDiff_warpedExp
+            connections.matchedExposure: deepDiff_matchedExp
+            connections.diaSources: deepDiff_diaSrc
+            # TODO: end DM-30210 workaround
     imageDifference:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
@@ -52,6 +74,7 @@ tasks:
             connections.diffIm: fakes_deepDiff_differenceExp
             connections.diaSourceTable: fakes_deepDiff_diaSrcTable
             # TODO: end DM-30210 workaround
+    # Can't have separate with- and without-fakes runs for diaPipe, because there's only one APDB
     diaPipe:
         class: lsst.ap.association.DiaPipelineTask
         config:
