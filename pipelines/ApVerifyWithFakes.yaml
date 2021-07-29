@@ -4,6 +4,8 @@
 description: Fully instrumented AP pipeline with fakes
 imports:
     - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
+      exclude:
+          - fracDiaSourcesToSciSources  # Selectively turn off this task's contracts
     - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
 tasks:
     createFakes:
@@ -93,9 +95,8 @@ tasks:
         config:
             matchDistanceArcseconds: 0.1
     fracDiaSourcesToSciSources:
+        # Uses output of imageDifferenceNoFakes
         class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
-        config:
-            connections.fakesType: "fakes_"
 contracts:
     # Metric inputs must match pipeline outputs
     - createFakes.connections.fakesType == coaddFakes.connections.fakesType
@@ -113,3 +114,5 @@ contracts:
     - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
     - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
     - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
+    - imageDifferenceNoFakes.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
+    - imageDifferenceNoFakes.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType
