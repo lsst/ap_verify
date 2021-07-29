@@ -13,7 +13,6 @@ tasks:
         config:
             magMin: 20
             magMax: 26
-            fraction: 0
             fakeDensity: 2000
     coaddFakes:
         class: lsst.pipe.tasks.insertFakes.InsertFakesTask
@@ -21,7 +20,7 @@ tasks:
             doSubSelectSources: True
             sourceSelectionColName: "isTemplateSource"
     visitFakes:
-        class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithFakesTask
+        class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
         config:
             insertFakes.doSubSelectSources: True
             insertFakes.sourceSelectionColName: "isVisitSource"
@@ -91,7 +90,7 @@ tasks:
             connections.associatedDiaSources: fakes_deepDiff_assocDiaSrc
             # TODO: end DM-30210 workaround
     matchFakes:
-        class: lsst.pipe.tasks.matchFakes.MatchFakesTask
+        class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
         config:
             matchDistanceArcseconds: 0.1
     fracDiaSourcesToSciSources:
