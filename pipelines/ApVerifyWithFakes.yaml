@@ -97,6 +97,30 @@ tasks:
     fracDiaSourcesToSciSources:
         # Uses output of imageDifferenceNoFakes
         class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+    timing_imageDifference:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.labelName: imageDifferenceNoFakes
+    timing_imageDifference_astrometer:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.labelName: imageDifferenceNoFakes
+    timing_imageDifference_register:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.labelName: imageDifferenceNoFakes
+    timing_imageDifference_subtract:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.labelName: imageDifferenceNoFakes
+    timing_imageDifference_detection:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.labelName: imageDifferenceNoFakes
+    timing_imageDifference_measurement:
+        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+        config:
+            connections.labelName: imageDifferenceNoFakes
 contracts:
     # Metric inputs must match pipeline outputs
     - createFakes.connections.fakesType == coaddFakes.connections.fakesType
