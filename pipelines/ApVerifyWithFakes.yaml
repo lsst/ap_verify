@@ -18,12 +18,12 @@ tasks:
         class: lsst.pipe.tasks.insertFakes.InsertFakesTask
         config:
             doSubSelectSources: True
-            sourceSelectionColName: "isTemplateSource"
+            select_col: "isTemplateSource"
     visitFakes:
         class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
         config:
             insertFakes.doSubSelectSources: True
-            insertFakes.sourceSelectionColName: "isVisitSource"
+            insertFakes.select_col: "isVisitSource"
     # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
     # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
     imageDifferenceNoFakes:
