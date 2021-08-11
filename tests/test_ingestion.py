@@ -494,7 +494,7 @@ class IngestionTestSuiteGen3(DataTestCase):
         stream = pickle.dumps(self.task)
         copy = pickle.loads(stream)
         self.assertEqual(self.task.getFullName(), copy.getFullName())
-        self.assertEqual(self.task.log.getName(), copy.log.getName())
+        self.assertEqual(self.task.log.name, copy.log.name)
         # Equality for config ill-behaved; skip testing it
         self.assertEqual(self.task.dataset, copy.dataset)
         self.assertEqual(self.task.workspace, copy.workspace)
