@@ -100,26 +100,32 @@ tasks:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.labelName: imageDifferenceNoFakes
+            target: imageDifferenceNoFakes.run
     timing_imageDifference_astrometer:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.labelName: imageDifferenceNoFakes
+            target: imageDifferenceNoFakes:astrometer.loadAndMatch
     timing_imageDifference_register:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.labelName: imageDifferenceNoFakes
+            target: imageDifferenceNoFakes:register.run
     timing_imageDifference_subtract:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.labelName: imageDifferenceNoFakes
+            target: imageDifferenceNoFakes:subtract.subtractExposures
     timing_imageDifference_detection:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.labelName: imageDifferenceNoFakes
+            target: imageDifferenceNoFakes:detection.run
     timing_imageDifference_measurement:
         class: lsst.verify.tasks.commonMetrics.TimingMetricTask
         config:
             connections.labelName: imageDifferenceNoFakes
+            target: imageDifferenceNoFakes:measurement.run
 contracts:
     # Metric inputs must match pipeline outputs
     - createFakes.connections.fakesType == coaddFakes.connections.fakesType
