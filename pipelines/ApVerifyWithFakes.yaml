@@ -126,6 +126,31 @@ tasks:
         config:
             connections.labelName: imageDifferenceNoFakes
             target: imageDifferenceNoFakes:measurement.run
+subsets:
+    apPipe:
+        subset:
+            - isr
+            - characterizeImage
+            - calibrate
+            - imageDifferenceNoFakes
+        description: >
+            The AP pipeline without fakes. Only includes processing through
+            image differencing.
+    prepareFakes:
+        subset:
+            - createFakes
+            - coaddFakes
+        description: >
+            Creation of fake sources.
+    apPipeWithFakes:
+        subset:
+            - visitFakes    # characterizeImage and calibrate with fakes
+            - imageDifference
+            - transformDiaSrcCat
+            - diaPipe
+            - matchFakes
+        description: >
+            The AP pipeline with fakes. Requires apPipe and prepareFakes subsets.
 contracts:
     # Metric inputs must match pipeline outputs
     - createFakes.connections.fakesType == coaddFakes.connections.fakesType
