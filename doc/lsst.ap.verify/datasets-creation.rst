@@ -63,6 +63,9 @@ In particular, the default config ignores reference catalogs, so the config file
 Each :file:`config` directory may contain a task config file named :file:`apPipe.py`, specifying an `lsst.ap.pipe.ApPipeConfig`.
 The file contains pipeline flags specific to the dataset, such as the available reference catalogs (both their names and configuration) or the type of template provided to `~lsst.pipe.tasks.imageDifference.ImageDifferenceTask`.
 
+Each :file:`pipelines` directory should contain pipeline files corresponding to the pipelines in the :file:`ap_verify/pipelines` directory (at the time of writing, :file:`ApPipe.yaml`, :file:`ApVerify.yaml`, and :file:`ApVerifyWithFakes.yaml`).
+These files should incorporate the same dataset-specific configuration overrides as described above for :file:`apPipe.py`.
+
 Configuration settings specific to an instrument rather than a dataset should be handled with ordinary :ref:`configuration override files<command-line-task-config-howto-obs>`.
 
 .. _ap-verify-datasets-creation-obs:
