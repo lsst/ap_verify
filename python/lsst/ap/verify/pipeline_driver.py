@@ -35,7 +35,6 @@ import re
 import subprocess
 
 import lsst.log
-from lsst.utils import getPackageDir
 import lsst.pipe.base as pipeBase
 import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.ctrl.mpexec.cli.pipetask
@@ -51,8 +50,6 @@ class ApPipeParser(argparse.ArgumentParser):
     """
 
     def __init__(self):
-        defaultPipeline = os.path.join(getPackageDir("ap_verify"), "pipelines", "ApVerify.yaml")
-
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
         # namespace.dataIds will always be a list of 0 or more nonempty strings, regardless of inputs.
@@ -60,8 +57,9 @@ class ApPipeParser(argparse.ArgumentParser):
         self.add_argument('--id', '-d', '--data-query', dest='dataIds',
                           action=self.AppendOptional, nargs='?', default=[],
                           help='An identifier for the data to process.')
-        self.add_argument("-p", "--pipeline", default=defaultPipeline,
-                          help="A custom version of the ap_verify pipeline (e.g., with different metrics).")
+        self.add_argument("-p", "--pipeline", default=None,
+                          help="A custom version of the ap_verify pipeline (e.g., with different metrics). "
+                               "Defaults to the ApVerify.yaml within --dataset.")
         self.add_argument("--db", "--db_url", default=None,
                           help="A location for the AP database, formatted as if for ApdbConfig.db_url. "
                                "Defaults to an SQLite file in the --output directory.")
@@ -164,9 +162,10 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
 
     makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 
+    pipelineFile = _getPipelineFile(workspace, parsedCmdLine)
     pipelineArgs = ["pipetask", "run",
                     "--butler-config", workspace.repo,
-                    "--pipeline", parsedCmdLine.pipeline,
+                    "--pipeline", pipelineFile,
                     ]
     # TODO: collections should be determined exclusively by Workspace.workButler,
     # but I can't find a way to hook that up to the graph builder. So use the CLI
@@ -211,6 +210,32 @@ def _getExecOrder():
     # association (through DiaPipelineTask) in order of ascending visit number.
     return lsst.ctrl.mpexec.execFixupDataId.ExecFixupDataId(
         taskLabel="diaPipe", dimensions=["visit", ], reverse=False)
+
+
+def _getPipelineFile(workspace, parsed):
+    """Return the config options for running make_apdb.py on this workspace,
+    as command-line arguments.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        A Workspace whose pipeline directory may contain an ApVerify pipeline.
+    parsed : `argparse.Namespace`
+        Command-line arguments, including all arguments supported by `ApPipeParser`.
+
+    Returns
+    -------
+    pipeline : `str`
+        The location of the pipeline file to use for running ap_verify.
+    """
+    if parsed.pipeline:
+        return parsed.pipeline
+    else:
+        customPipeline = os.path.join(workspace.pipelineDir, "ApVerify.yaml")
+        if os.path.exists(customPipeline):
+            return customPipeline
+        else:
+            return os.path.join("${AP_VERIFY_DIR}", "pipelines", "ApVerify.yaml")
 
 
 def _getApdbArguments(workspace, parsed):

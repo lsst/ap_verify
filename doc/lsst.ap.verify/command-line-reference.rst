@@ -176,7 +176,8 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Custom ap_verify pipeline. (Gen 3 only)**
 
    A pipeline definition file containing a custom verification pipeline.
-   If omitted, :file:`pipelines/ApVerify.yaml` will be used.
+   This pipeline must be specialized as necessary for the instrument and dataset being processed.
+   If omitted, :file:`<dataset>/pipelines/ApVerify.yaml` will be used.
 
    The most common use for a custom pipeline is adding or removing metrics to be run along with the AP pipeline.
 
