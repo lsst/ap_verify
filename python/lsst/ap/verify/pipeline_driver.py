@@ -322,20 +322,7 @@ def _getConfigArgumentsGen3(workspace, parsed):
     args.extend([
         # Put output alerts into the workspace.
         "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,
-        "--config", "diaPipe:doPackageAlerts=True",
-        # TODO: the configs below should not be needed after DM-26140
-        "--config-file", "calibrate:" + os.path.join(workspace.configDir, "calibrate.py"),
-        "--config-file", "imageDifference:" + os.path.join(workspace.configDir, "imageDifference.py"),
     ])
-    # TODO: this config should not be needed either after DM-26140
-    if os.path.exists(os.path.join(workspace.configDir, "isr.py")):
-        args.extend(["--config-file", "isr:" + os.path.join(workspace.configDir, "isr.py"), ])
-    # TODO: reverse-engineering the instrument should not be needed after DM-26140
-    # pipetask will crash if there is more than one instrument
-    for idRecord in workspace.workButler.registry.queryDataIds("instrument").expanded():
-        className = idRecord.records["instrument"].class_name
-        args.extend(["--instrument", className])
-
     return args
 
 

@@ -183,7 +183,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    .. note::
 
-      At present, ap_verify assumes that the provided pipeline is some superset of the AP pipeline.
-      It will likely crash if any AP tasks are missing.
+      At present, ap_verify assumes that the provided pipeline includes the ``diaPipe`` task from the AP pipeline, and configures it on the fly.
+      It will likely crash if this task is missing.
 
    For the Gen 2 equivalent to this option, see :option:`--dataset-metrics-config` and :option:`--image-metrics-config`.
