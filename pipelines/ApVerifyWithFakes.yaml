@@ -31,49 +31,32 @@ tasks:
         config:
             doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
             doSkySources: True
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            coaddName: deep              # Can be removed once ImageDifference no longer supports Gen 2
-            getTemplate.coaddName: deep  # Can be removed once ImageDifference no longer supports Gen 2
-            connections.coaddName: deep
-            # TODO: redundant connection definitions workaround for DM-30210
-            connections.exposure: calexp
-            connections.coaddExposures: deepCoadd
-            connections.dcrCoadds: dcrCoadd
-            connections.outputSchema: deepDiff_diaSrc_schema
-            connections.subtractedExposure: deepDiff_differenceExp
-            connections.scoreExposure: deepDiff_scoreExp
-            connections.warpedExposure: deepDiff_warpedExp
-            connections.matchedExposure: deepDiff_matchedExp
-            connections.diaSources: deepDiff_diaSrc
-            # TODO: end DM-30210 workaround
     imageDifference:
         class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
         config:
             connections.fakesType: "fakes_"
             # TODO: redundant connection definitions workaround for DM-30210
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
+            connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
             connections.exposure: fakes_calexp
-            connections.coaddExposures: fakes_deepCoadd
+            connections.coaddExposures: fakes_goodSeeingCoadd
             connections.dcrCoadds: fakes_dcrCoadd
-            connections.outputSchema: fakes_deepDiff_diaSrc_schema
-            connections.subtractedExposure: fakes_deepDiff_differenceExp
-            connections.scoreExposure: fakes_deepDiff_scoreExp
-            connections.warpedExposure: fakes_deepDiff_warpedExp
-            connections.matchedExposure: fakes_deepDiff_matchedExp
-            connections.diaSources: fakes_deepDiff_diaSrc
+            connections.outputSchema: fakes_goodSeeingDiff_diaSrc_schema
+            connections.subtractedExposure: fakes_goodSeeingDiff_differenceExp
+            connections.scoreExposure: fakes_goodSeeingDiff_scoreExp
+            connections.warpedExposure: fakes_goodSeeingDiff_warpedExp
+            connections.matchedExposure: fakes_goodSeeingDiff_matchedExp
+            connections.diaSources: fakes_goodSeeingDiff_diaSrc
             # TODO: end DM-30210 workaround
     transformDiaSrcCat:
         class: lsst.ap.association.TransformDiaSourceCatalogTask
         config:
             connections.fakesType: "fakes_"
             # TODO: redundant connection definitions workaround for DM-30210
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
-            connections.diaSourceSchema: fakes_deepDiff_diaSrc_schema
-            connections.diaSourceCat: fakes_deepDiff_diaSrc
-            connections.diffIm: fakes_deepDiff_differenceExp
-            connections.diaSourceTable: fakes_deepDiff_diaSrcTable
+            connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
+            connections.diaSourceSchema: fakes_goodSeeingDiff_diaSrc_schema
+            connections.diaSourceCat: fakes_goodSeeingDiff_diaSrc
+            connections.diffIm: fakes_goodSeeingDiff_differenceExp
+            connections.diaSourceTable: fakes_goodSeeingDiff_diaSrcTable
             # TODO: end DM-30210 workaround
     # Can't have separate with- and without-fakes runs for diaPipe, because there's only one APDB
     diaPipe:
@@ -82,12 +65,11 @@ tasks:
             doWriteAssociatedSources: True
             connections.fakesType: "fakes_"
             # TODO: redundant connection definitions workaround for DM-30210
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
-            connections.diaSourceTable: fakes_deepDiff_diaSrcTable
-            connections.diffIm: fakes_deepDiff_differenceExp
-            connections.warpedExposure: fakes_deepDiff_warpedExp
-            connections.associatedDiaSources: fakes_deepDiff_assocDiaSrc
+            connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
+            connections.diaSourceTable: fakes_goodSeeingDiff_diaSrcTable
+            connections.diffIm: fakes_goodSeeingDiff_differenceExp
+            connections.warpedExposure: fakes_goodSeeingDiff_warpedExp
+            connections.associatedDiaSources: fakes_goodSeeingDiff_assocDiaSrc
             # TODO: end DM-30210 workaround
     matchFakes:
         class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
