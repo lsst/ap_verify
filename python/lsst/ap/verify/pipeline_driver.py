@@ -167,10 +167,31 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
                     "--butler-config", workspace.repo,
                     "--pipeline", pipelineFile,
                     ]
-    # TODO: collections should be determined exclusively by Workspace.workButler,
-    # but I can't find a way to hook that up to the graph builder. So use the CLI
-    # for now and revisit once DM-26239 is done.
-    pipelineArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
+    # TODO: workaround for inability to generate crosstalk sources in main
+    # processing pipeline (DM-31492).
+    instruments = {id["instrument"] for id in workspace.workButler.registry.queryDataIds("instrument")}
+    if "DECam" in instruments:
+        crosstalkPipeline = "${AP_PIPE_DIR}/pipelines/DarkEnergyCamera/RunIsrForCrosstalkSources.yaml"
+        crosstalkArgs = ["pipetask", "run",
+                         "--butler-config", workspace.repo,
+                         "--pipeline", crosstalkPipeline,
+                         ]
+        crosstalkArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
+        if parsedCmdLine.dataIds:
+            for singleId in parsedCmdLine.dataIds:
+                crosstalkArgs.extend(["--data-query", singleId])
+        crosstalkArgs.extend(["--processes", str(processes)])
+        crosstalkArgs.extend(["--register-dataset-types"])
+        subprocess.run(crosstalkArgs, capture_output=False, shell=False, check=False)
+
+        # Force same output run for crosstalk and main processing.
+        pipelineArgs.extend(_getCollectionArguments(workspace, reuse=True))
+    else:
+        # TODO: collections should be determined exclusively by Workspace.workButler,
+        # but I can't find a way to hook that up to the graph builder. So use the CLI
+        # for now and revisit once DM-26239 is done.
+        pipelineArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
+
     pipelineArgs.extend(_getConfigArgumentsGen3(workspace, parsedCmdLine))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
@@ -350,6 +371,13 @@ def _getCollectionArguments(workspace, reuse):
             ]
 
     registry = workspace.workButler.registry
+    # Should refresh registry to see crosstalk run from DM-31492, but this
+    # currently leads to a bug involving --skip-existing. The only downside of
+    # the cached registry is that, with two runs for DECam datasets, a rerun of
+    # ap_verify will re-run crosstalk sources in the second run. Using
+    # skip-existing-in would work around that, but would lead to a worse bug in
+    # the case that the user is alternating runs with and without --clean-run.
+    # registry.refresh()
     oldRuns = list(registry.queryCollections(re.compile(workspace.outputName + r"/\d+T\d+Z")))
     if reuse and oldRuns:
         args.extend(["--extend-run", "--skip-existing"])
