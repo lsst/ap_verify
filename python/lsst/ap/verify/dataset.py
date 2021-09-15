@@ -31,7 +31,6 @@ from deprecated.sphinx import deprecated
 import lsst.daf.persistence as dafPersistence
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
-import lsst.pex.exceptions as pexExcept
 from lsst.utils import getPackageDir
 
 from .config import Config
@@ -76,7 +75,7 @@ class Dataset:
 
         try:
             self._dataRootDir = getPackageDir(datasetPackage)
-        except pexExcept.NotFoundError as e:
+        except LookupError as e:
             error = f"Cannot find the {datasetPackage} package; is it set up?"
             raise ValueError(error) from e
         else:
