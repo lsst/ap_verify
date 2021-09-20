@@ -30,7 +30,6 @@ import unittest
 
 import lsst.utils.tests
 
-import lsst.pex.exceptions as pexExcept
 from lsst.ap.verify.config import Config
 
 
@@ -62,7 +61,7 @@ class DataTestCase(lsst.utils.tests.TestCase):
     def setUpClass(cls):
         try:
             lsst.utils.getPackageDir(cls.testDataset)
-        except pexExcept.NotFoundError:
+        except LookupError:
             raise unittest.SkipTest(f'{cls.testDataset} not set up')
         if cls.obsPackage:
             try:
