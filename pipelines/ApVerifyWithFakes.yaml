@@ -3,152 +3,152 @@
 
 description: Fully instrumented AP pipeline with fakes
 imports:
-    - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
-      exclude:
-          - fracDiaSourcesToSciSources  # Selectively turn off this task's contracts
-    - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
+    exclude:
+      - fracDiaSourcesToSciSources  # Selectively turn off this task's contracts
+  - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
 tasks:
-    createFakes:
-        class: lsst.ap.pipe.createApFakes.CreateRandomApFakesTask
-        config:
-            magMin: 20
-            magMax: 26
-            fakeDensity: 2000
-    coaddFakes:
-        class: lsst.pipe.tasks.insertFakes.InsertFakesTask
-        config:
-            doSubSelectSources: True
-            select_col: "isTemplateSource"
-    visitFakes:
-        class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
-        config:
-            insertFakes.doSubSelectSources: True
-            insertFakes.select_col: "isVisitSource"
-    # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
-    # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
-    imageDifferenceNoFakes:
-        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
-        config:
-            doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
-            doSkySources: True
-    imageDifference:
-        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
-        config:
-            connections.fakesType: "fakes_"
-            # TODO: redundant connection definitions workaround for DM-30210
-            connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
-            connections.exposure: fakes_calexp
-            connections.coaddExposures: fakes_goodSeeingCoadd
-            connections.dcrCoadds: fakes_dcrCoadd
-            connections.outputSchema: fakes_goodSeeingDiff_diaSrc_schema
-            connections.subtractedExposure: fakes_goodSeeingDiff_differenceExp
-            connections.scoreExposure: fakes_goodSeeingDiff_scoreExp
-            connections.warpedExposure: fakes_goodSeeingDiff_warpedExp
-            connections.matchedExposure: fakes_goodSeeingDiff_matchedExp
-            connections.diaSources: fakes_goodSeeingDiff_diaSrc
-            # TODO: end DM-30210 workaround
-    transformDiaSrcCat:
-        class: lsst.ap.association.TransformDiaSourceCatalogTask
-        config:
-            connections.fakesType: "fakes_"
-            # TODO: redundant connection definitions workaround for DM-30210
-            connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
-            connections.diaSourceSchema: fakes_goodSeeingDiff_diaSrc_schema
-            connections.diaSourceCat: fakes_goodSeeingDiff_diaSrc
-            connections.diffIm: fakes_goodSeeingDiff_differenceExp
-            connections.diaSourceTable: fakes_goodSeeingDiff_diaSrcTable
-            # TODO: end DM-30210 workaround
-    # Can't have separate with- and without-fakes runs for diaPipe, because there's only one APDB
-    diaPipe:
-        class: lsst.ap.association.DiaPipelineTask
-        config:
-            doWriteAssociatedSources: True
-            connections.fakesType: "fakes_"
-            # TODO: redundant connection definitions workaround for DM-30210
-            connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
-            connections.diaSourceTable: fakes_goodSeeingDiff_diaSrcTable
-            connections.diffIm: fakes_goodSeeingDiff_differenceExp
-            connections.warpedExposure: fakes_goodSeeingDiff_warpedExp
-            connections.associatedDiaSources: fakes_goodSeeingDiff_assocDiaSrc
-            # TODO: end DM-30210 workaround
-    matchFakes:
-        class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
-        config:
-            matchDistanceArcseconds: 0.1
-    fracDiaSourcesToSciSources:
-        # Uses output of imageDifferenceNoFakes
-        class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
-    timing_imageDifference:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes.run
-    timing_imageDifference_astrometer:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:astrometer.loadAndMatch
-    timing_imageDifference_register:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:register.run
-    timing_imageDifference_subtract:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:subtract.subtractExposures
-    timing_imageDifference_detection:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:detection.run
-    timing_imageDifference_measurement:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:measurement.run
+  createFakes:
+    class: lsst.ap.pipe.createApFakes.CreateRandomApFakesTask
+    config:
+      magMin: 20
+      magMax: 26
+      fakeDensity: 2000
+  coaddFakes:
+    class: lsst.pipe.tasks.insertFakes.InsertFakesTask
+    config:
+      doSubSelectSources: True
+      select_col: "isTemplateSource"
+  visitFakes:
+    class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
+    config:
+      insertFakes.doSubSelectSources: True
+      insertFakes.select_col: "isVisitSource"
+  # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
+  # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
+  imageDifferenceNoFakes:
+    class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+    config:
+      doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
+      doSkySources: True
+  imageDifference:
+    class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+    config:
+      connections.fakesType: "fakes_"
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
+      connections.exposure: fakes_calexp
+      connections.coaddExposures: fakes_goodSeeingCoadd
+      connections.dcrCoadds: fakes_dcrCoadd
+      connections.outputSchema: fakes_goodSeeingDiff_diaSrc_schema
+      connections.subtractedExposure: fakes_goodSeeingDiff_differenceExp
+      connections.scoreExposure: fakes_goodSeeingDiff_scoreExp
+      connections.warpedExposure: fakes_goodSeeingDiff_warpedExp
+      connections.matchedExposure: fakes_goodSeeingDiff_matchedExp
+      connections.diaSources: fakes_goodSeeingDiff_diaSrc
+      # TODO: end DM-30210 workaround
+  transformDiaSrcCat:
+    class: lsst.ap.association.TransformDiaSourceCatalogTask
+    config:
+      connections.fakesType: "fakes_"
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
+      connections.diaSourceSchema: fakes_goodSeeingDiff_diaSrc_schema
+      connections.diaSourceCat: fakes_goodSeeingDiff_diaSrc
+      connections.diffIm: fakes_goodSeeingDiff_differenceExp
+      connections.diaSourceTable: fakes_goodSeeingDiff_diaSrcTable
+      # TODO: end DM-30210 workaround
+  # Can't have separate with- and without-fakes runs for diaPipe, because there's only one APDB
+  diaPipe:
+    class: lsst.ap.association.DiaPipelineTask
+    config:
+      doWriteAssociatedSources: True
+      connections.fakesType: "fakes_"
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddName: goodSeeing  # For file-level consistency; hardcoded values force "goodSeeing" anyway
+      connections.diaSourceTable: fakes_goodSeeingDiff_diaSrcTable
+      connections.diffIm: fakes_goodSeeingDiff_differenceExp
+      connections.warpedExposure: fakes_goodSeeingDiff_warpedExp
+      connections.associatedDiaSources: fakes_goodSeeingDiff_assocDiaSrc
+      # TODO: end DM-30210 workaround
+  matchFakes:
+    class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
+    config:
+      matchDistanceArcseconds: 0.1
+  fracDiaSourcesToSciSources:
+    # Uses output of imageDifferenceNoFakes
+    class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+  timing_imageDifference:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes.run
+  timing_imageDifference_astrometer:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:astrometer.loadAndMatch
+  timing_imageDifference_register:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:register.run
+  timing_imageDifference_subtract:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:subtract.subtractExposures
+  timing_imageDifference_detection:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:detection.run
+  timing_imageDifference_measurement:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:measurement.run
 subsets:
-    apPipe:
-        subset:
-            - isr
-            - characterizeImage
-            - calibrate
-            - imageDifferenceNoFakes
-        description: >
-            The AP pipeline without fakes. Only includes processing through
-            image differencing.
-    prepareFakes:
-        subset:
-            - createFakes
-            - coaddFakes
-        description: >
-            Creation of fake sources.
-    apPipeWithFakes:
-        subset:
-            - visitFakes    # characterizeImage and calibrate with fakes
-            - imageDifference
-            - transformDiaSrcCat
-            - diaPipe
-            - matchFakes
-        description: >
-            The AP pipeline with fakes. Requires apPipe and prepareFakes subsets.
+  apPipe:
+    subset:
+      - isr
+      - characterizeImage
+      - calibrate
+      - imageDifferenceNoFakes
+    description: >
+      The AP pipeline without fakes. Only includes processing through
+      image differencing.
+  prepareFakes:
+    subset:
+      - createFakes
+      - coaddFakes
+    description: >
+      Creation of fake sources.
+  apPipeWithFakes:
+    subset:
+      - visitFakes    # characterizeImage and calibrate with fakes
+      - imageDifference
+      - transformDiaSrcCat
+      - diaPipe
+      - matchFakes
+    description: >
+      The AP pipeline with fakes. Requires apPipe and prepareFakes subsets.
 contracts:
-    # Metric inputs must match pipeline outputs
-    - createFakes.connections.fakesType == coaddFakes.connections.fakesType
-    - createFakes.connections.fakesType == visitFakes.connections.fakesType
-    - createFakes.connections.fakesType == imageDifference.connections.fakesType
-    - createFakes.connections.fakesType == diaPipe.connections.fakesType
-    - createFakes.connections.fakesType == matchFakes.connections.fakesType
-    - createFakes.connections.fakesType == apFakesCompletenessMag20t22.connections.fakesType
-    - createFakes.connections.fakesType == apFakesCompletenessMag22t24.connections.fakesType
-    - createFakes.connections.fakesType == apFakesCompletenessMag24t26.connections.fakesType
-    - coaddFakes.connections.coaddName == visitFakes.connections.coaddName
-    - coaddFakes.connections.coaddName == imageDifference.connections.coaddName
-    - coaddFakes.connections.coaddName == diaPipe.connections.coaddName
-    - coaddFakes.connections.coaddName == matchFakes.connections.coaddName
-    - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
-    - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
-    - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
-    - imageDifferenceNoFakes.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
-    - imageDifferenceNoFakes.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType
+  # Metric inputs must match pipeline outputs
+  - createFakes.connections.fakesType == coaddFakes.connections.fakesType
+  - createFakes.connections.fakesType == visitFakes.connections.fakesType
+  - createFakes.connections.fakesType == imageDifference.connections.fakesType
+  - createFakes.connections.fakesType == diaPipe.connections.fakesType
+  - createFakes.connections.fakesType == matchFakes.connections.fakesType
+  - createFakes.connections.fakesType == apFakesCompletenessMag20t22.connections.fakesType
+  - createFakes.connections.fakesType == apFakesCompletenessMag22t24.connections.fakesType
+  - createFakes.connections.fakesType == apFakesCompletenessMag24t26.connections.fakesType
+  - coaddFakes.connections.coaddName == visitFakes.connections.coaddName
+  - coaddFakes.connections.coaddName == imageDifference.connections.coaddName
+  - coaddFakes.connections.coaddName == diaPipe.connections.coaddName
+  - coaddFakes.connections.coaddName == matchFakes.connections.coaddName
+  - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
+  - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
+  - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
+  - imageDifferenceNoFakes.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
+  - imageDifferenceNoFakes.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType

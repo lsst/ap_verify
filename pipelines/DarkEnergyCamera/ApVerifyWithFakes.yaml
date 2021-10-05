@@ -7,10 +7,10 @@
 instrument: lsst.obs.decam.DarkEnergyCamera
 description: Fully instrumented AP pipeline with fakes, specialized for DECam
 imports:
-    - location: $AP_VERIFY_DIR/pipelines/ApVerifyWithFakes.yaml
-    # Can't use $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ApPipe.yaml here because
-    # ApVerifyWithFakes changes task labels in order to set up parallel fakes
-    # and non-fakes pipelines.
+  - location: $AP_VERIFY_DIR/pipelines/ApVerifyWithFakes.yaml
+  # Can't use $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ApPipe.yaml here because
+  # ApVerifyWithFakes changes task labels in order to set up parallel fakes
+  # and non-fakes pipelines.
 tasks:
   isr:
     class: lsst.ip.isr.IsrTask

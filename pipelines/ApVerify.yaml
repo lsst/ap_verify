@@ -3,15 +3,15 @@
 
 description: Fully instrumented AP pipeline
 imports:
-    - location: $AP_PIPE_DIR/pipelines/ApPipe.yaml
-    - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
-    - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
+  - location: $AP_PIPE_DIR/pipelines/ApPipe.yaml
+  - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
+  - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
 tasks:
-    diaPipe:
-        class: lsst.ap.association.DiaPipelineTask
-        config:
-            doPackageAlerts: True
+  diaPipe:
+    class: lsst.ap.association.DiaPipelineTask
+    config:
+      doPackageAlerts: True
 contracts:
-    # Metric inputs must match pipeline outputs
-    - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
-    - imageDifference.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType
+  # Metric inputs must match pipeline outputs
+  - imageDifference.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
+  - imageDifference.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType
