@@ -85,6 +85,11 @@ It's also possible to run an entire dataset by omitting the :option:`--data-quer
    Because the science pipelines are still being converted to Gen 3, Gen 3 processing may not be supported for all ap_verify datasets.
    See the individual dataset's documentation for more details.
 
+.. warning::
+
+    Some datasets require particular data queries in order to successfully run through the pipeline, due to missing data or other limitations.
+    Check the ``README.md`` in each dataset's main directory for what additional arguments might be necessary.
+
 
 .. _ap-verify-run-ingest:
 
