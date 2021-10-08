@@ -3,145 +3,201 @@
 
 description: Fully instrumented AP pipeline with fakes
 imports:
-    - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
-      exclude:
-          - fracDiaSourcesToSciSources  # Selectively turn off this task's contracts
-    - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
+    exclude:
+      - fracDiaSourcesToSciSources  # Selectively turn off this task's contracts
+  - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
+parameters:
+  fakesType: fakes_
+  # TODO: redundant connection definitions workaround for DM-30210
+  fakesInput: fakes_fakeSourceCat
+  fakesPvi: fakes_calexp
+  fakesTemplate: fakes_goodSeeingCoadd
+  fakesDcrTemplate: fakes_dcrCoadd
+  fakesDiaSrcCat: fakes_goodSeeingDiff_diaSrc
+  fakesDiaSrcSchema: fakes_goodSeeingDiff_diaSrc_schema
+  fakesDiaSrcParquet: fakes_goodSeeingDiff_diaSrcTable
+  fakesDiff: fakes_goodSeeingDiff_differenceExp
+  fakesDiffScore: fakes_goodSeeingDiff_scoreExp
+  fakesDiffWarp: fakes_goodSeeingDiff_warpedExp
+  fakesDiffMatch: fakes_goodSeeingDiff_matchedExp
+  fakesAssocSrc: fakes_goodSeeingDiff_assocDiaSrc
+  fakesMatchedSrc: fakes_goodSeeingDiff_matchDiaSrc
+  # TODO: end DM-30210 workaround
 tasks:
-    createFakes:
-        class: lsst.ap.pipe.createApFakes.CreateRandomApFakesTask
-        config:
-            magMin: 20
-            magMax: 26
-            fakeDensity: 2000
-    coaddFakes:
-        class: lsst.pipe.tasks.insertFakes.InsertFakesTask
-        config:
-            doSubSelectSources: True
-            select_col: "isTemplateSource"
-    visitFakes:
-        class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
-        config:
-            insertFakes.doSubSelectSources: True
-            insertFakes.select_col: "isVisitSource"
-    # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
-    # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
-    imageDifferenceNoFakes:
-        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
-        config:
-            doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
-            doSkySources: True
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            coaddName: deep              # Can be removed once ImageDifference no longer supports Gen 2
-            getTemplate.coaddName: deep  # Can be removed once ImageDifference no longer supports Gen 2
-            connections.coaddName: deep
-            # TODO: redundant connection definitions workaround for DM-30210
-            connections.exposure: calexp
-            connections.coaddExposures: deepCoadd
-            connections.dcrCoadds: dcrCoadd
-            connections.outputSchema: deepDiff_diaSrc_schema
-            connections.subtractedExposure: deepDiff_differenceExp
-            connections.scoreExposure: deepDiff_scoreExp
-            connections.warpedExposure: deepDiff_warpedExp
-            connections.matchedExposure: deepDiff_matchedExp
-            connections.diaSources: deepDiff_diaSrc
-            # TODO: end DM-30210 workaround
-    imageDifference:
-        class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
-        config:
-            connections.fakesType: "fakes_"
-            # TODO: redundant connection definitions workaround for DM-30210
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
-            connections.exposure: fakes_calexp
-            connections.coaddExposures: fakes_deepCoadd
-            connections.dcrCoadds: fakes_dcrCoadd
-            connections.outputSchema: fakes_deepDiff_diaSrc_schema
-            connections.subtractedExposure: fakes_deepDiff_differenceExp
-            connections.scoreExposure: fakes_deepDiff_scoreExp
-            connections.warpedExposure: fakes_deepDiff_warpedExp
-            connections.matchedExposure: fakes_deepDiff_matchedExp
-            connections.diaSources: fakes_deepDiff_diaSrc
-            # TODO: end DM-30210 workaround
-    transformDiaSrcCat:
-        class: lsst.ap.association.TransformDiaSourceCatalogTask
-        config:
-            connections.fakesType: "fakes_"
-            # TODO: redundant connection definitions workaround for DM-30210
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
-            connections.diaSourceSchema: fakes_deepDiff_diaSrc_schema
-            connections.diaSourceCat: fakes_deepDiff_diaSrc
-            connections.diffIm: fakes_deepDiff_differenceExp
-            connections.diaSourceTable: fakes_deepDiff_diaSrcTable
-            # TODO: end DM-30210 workaround
-    # Can't have separate with- and without-fakes runs for diaPipe, because there's only one APDB
-    diaPipe:
-        class: lsst.ap.association.DiaPipelineTask
-        config:
-            doWriteAssociatedSources: True
-            connections.fakesType: "fakes_"
-            # TODO: redundant connection definitions workaround for DM-30210
-            # TODO: move hardcoding of "deep" to dataset configs in DM-26140
-            connections.coaddName: deep  # For file-level consistency; hardcoded values force "deep" anyway
-            connections.diaSourceTable: fakes_deepDiff_diaSrcTable
-            connections.diffIm: fakes_deepDiff_differenceExp
-            connections.warpedExposure: fakes_deepDiff_warpedExp
-            connections.associatedDiaSources: fakes_deepDiff_assocDiaSrc
-            # TODO: end DM-30210 workaround
-    matchFakes:
-        class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
-        config:
-            matchDistanceArcseconds: 0.1
-    fracDiaSourcesToSciSources:
-        # Uses output of imageDifferenceNoFakes
-        class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
-    timing_imageDifference:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes.run
-    timing_imageDifference_astrometer:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:astrometer.loadAndMatch
-    timing_imageDifference_register:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:register.run
-    timing_imageDifference_subtract:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:subtract.subtractExposures
-    timing_imageDifference_detection:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:detection.run
-    timing_imageDifference_measurement:
-        class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-        config:
-            connections.labelName: imageDifferenceNoFakes
-            target: imageDifferenceNoFakes:measurement.run
+  createFakes:
+    class: lsst.ap.pipe.createApFakes.CreateRandomApFakesTask
+    config:
+      magMin: 20
+      magMax: 26
+      fakeDensity: 2000
+      connections.fakesType: parameters.fakesType
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.fakeCat: parameters.fakesInput
+      # TODO: end DM-30210 workaround
+  coaddFakes:
+    class: lsst.pipe.tasks.insertFakes.InsertFakesTask
+    config:
+      doSubSelectSources: True
+      select_col: "isTemplateSource"
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.image: parameters.template
+      connections.fakeCat: parameters.fakesInput
+      connections.imageWithFakes: parameters.fakesTemplate
+      # TODO: end DM-30210 workaround
+  visitFakes:
+    class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
+    config:
+      insertFakes.doSubSelectSources: True
+      insertFakes.select_col: "isVisitSource"
+  # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
+  # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
+  imageDifferenceNoFakes:
+    class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+    config:
+      doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
+      doSkySources: True
+      coaddName: parameters.coaddName
+      getTemplate.coaddName: parameters.coaddName
+      connections.coaddName: parameters.coaddName
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddExposures: parameters.template
+      connections.dcrCoadds: dcrCoadd
+      connections.outputSchema: parameters.diaSrcSchema
+      connections.subtractedExposure: parameters.diff
+      connections.scoreExposure: parameters.diffScore
+      connections.warpedExposure: parameters.diffWarp
+      connections.matchedExposure: parameters.diffMatch
+      connections.diaSources: parameters.diaSrcCat
+      # TODO: end DM-30210 workaround
+  imageDifference:
+    class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+    config:
+      connections.fakesType: parameters.fakesType
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddName: parameters.coaddName
+      connections.exposure: parameters.fakesPvi
+      connections.coaddExposures: parameters.fakesTemplate
+      connections.dcrCoadds: fakesDcrTemplate
+      connections.outputSchema: parameters.fakesDiaSrcSchema
+      connections.subtractedExposure: parameters.fakesDiff
+      connections.scoreExposure: parameters.fakesDiffScore
+      connections.warpedExposure: parameters.fakesDiffWarp
+      connections.matchedExposure: parameters.fakesDiffMatch
+      connections.diaSources: parameters.fakesDiaSrcCat
+      # TODO: end DM-30210 workaround
+  transformDiaSrcCat:
+    class: lsst.ap.association.TransformDiaSourceCatalogTask
+    config:
+      connections.fakesType: parameters.fakesType
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddName: parameters.coaddName
+      connections.diaSourceSchema: parameters.fakesDiaSrcSchema
+      connections.diaSourceCat: parameters.fakesDiaSrcCat
+      connections.diffIm: parameters.fakesDiff
+      connections.diaSourceTable: parameters.fakesDiaSrcParquet
+      # TODO: end DM-30210 workaround
+  # Can't have separate with- and without-fakes runs for diaPipe, because there's only one APDB
+  diaPipe:
+    class: lsst.ap.association.DiaPipelineTask
+    config:
+      doWriteAssociatedSources: True
+      connections.fakesType: parameters.fakesType
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddName: parameters.coaddName
+      connections.diaSourceTable: parameters.fakesDiaSrcParquet
+      connections.diffIm: parameters.fakesDiff
+      connections.warpedExposure: parameters.fakesDiffWarp
+      connections.associatedDiaSources: parameters.fakesAssocSrc
+      # TODO: end DM-30210 workaround
+  matchFakes:
+    class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
+    config:
+      matchDistanceArcseconds: 0.1
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.fakeCat: parameters.fakesInput
+      connections.diffIm: parameters.fakesDiff
+      connections.associatedDiaSources: parameters.fakesAssocSrc
+      connections.matchedDiaSources: parameters.fakesMatchedSrc
+      # TODO: end DM-30210 workaround
+  fracDiaSourcesToSciSources:
+    # Uses output of imageDifferenceNoFakes
+    class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+  timing_imageDifference:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes.run
+  timing_imageDifference_astrometer:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:astrometer.loadAndMatch
+  timing_imageDifference_register:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:register.run
+  timing_imageDifference_subtract:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:subtract.subtractExposures
+  timing_imageDifference_detection:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:detection.run
+  timing_imageDifference_measurement:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: imageDifferenceNoFakes
+      target: imageDifferenceNoFakes:measurement.run
+subsets:
+  apPipe:
+    subset:
+      - isr
+      - characterizeImage
+      - calibrate
+      - imageDifferenceNoFakes
+    description: >
+      The AP pipeline without fakes. Only includes processing through
+      image differencing.
+  prepareFakes:
+    subset:
+      - createFakes
+      - coaddFakes
+    description: >
+      Creation of fake sources.
+  apPipeWithFakes:
+    subset:
+      - visitFakes    # characterizeImage and calibrate with fakes
+      - imageDifference
+      - transformDiaSrcCat
+      - diaPipe
+      - matchFakes
+    description: >
+      The AP pipeline with fakes. Requires apPipe and prepareFakes subsets.
 contracts:
-    # Metric inputs must match pipeline outputs
-    - createFakes.connections.fakesType == coaddFakes.connections.fakesType
-    - createFakes.connections.fakesType == visitFakes.connections.fakesType
-    - createFakes.connections.fakesType == imageDifference.connections.fakesType
-    - createFakes.connections.fakesType == diaPipe.connections.fakesType
-    - createFakes.connections.fakesType == matchFakes.connections.fakesType
-    - createFakes.connections.fakesType == apFakesCompletenessMag20t22.connections.fakesType
-    - createFakes.connections.fakesType == apFakesCompletenessMag22t24.connections.fakesType
-    - createFakes.connections.fakesType == apFakesCompletenessMag24t26.connections.fakesType
-    - coaddFakes.connections.coaddName == visitFakes.connections.coaddName
-    - coaddFakes.connections.coaddName == imageDifference.connections.coaddName
-    - coaddFakes.connections.coaddName == diaPipe.connections.coaddName
-    - coaddFakes.connections.coaddName == matchFakes.connections.coaddName
-    - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
-    - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
-    - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
-    - imageDifferenceNoFakes.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
-    - imageDifferenceNoFakes.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType
+  # Metric inputs must match pipeline outputs
+  - createFakes.connections.fakesType == coaddFakes.connections.fakesType
+  - createFakes.connections.fakesType == visitFakes.connections.fakesType
+  - createFakes.connections.fakesType == imageDifference.connections.fakesType
+  - createFakes.connections.fakesType == diaPipe.connections.fakesType
+  - createFakes.connections.fakesType == matchFakes.connections.fakesType
+  - createFakes.connections.fakesType == apFakesCompletenessMag20t22.connections.fakesType
+  - createFakes.connections.fakesType == apFakesCompletenessMag22t24.connections.fakesType
+  - createFakes.connections.fakesType == apFakesCompletenessMag24t26.connections.fakesType
+  - coaddFakes.connections.coaddName == visitFakes.connections.coaddName
+  - coaddFakes.connections.coaddName == imageDifference.connections.coaddName
+  - coaddFakes.connections.coaddName == diaPipe.connections.coaddName
+  - coaddFakes.connections.coaddName == matchFakes.connections.coaddName
+  - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
+  - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
+  - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
+  - imageDifferenceNoFakes.connections.coaddName == fracDiaSourcesToSciSources.connections.coaddName
+  - imageDifferenceNoFakes.connections.fakesType == fracDiaSourcesToSciSources.connections.fakesType

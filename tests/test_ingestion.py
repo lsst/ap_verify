@@ -458,6 +458,8 @@ class IngestionTestSuiteGen3(DataTestCase):
         self.assertTrue(os.path.exists(self.workspace.configDir))
         # Only testdata file that *must* be supported in the future
         self.assertTrue(os.path.exists(os.path.join(self.workspace.configDir, "datasetIngest.py")))
+        self.assertTrue(os.path.exists(self.workspace.pipelineDir))
+        self.assertTrue(os.path.exists(os.path.join(self.workspace.pipelineDir, "ApVerify.yaml")))
 
     def testFindMatchingFiles(self):
         """Test that _findMatchingFiles finds the desired files.

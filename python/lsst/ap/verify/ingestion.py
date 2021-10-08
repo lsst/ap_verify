@@ -583,15 +583,20 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         ingested data.
 
         After this method returns, the config directory in the workspace
-        contains all config files from the ap_verify dataset.
+        contains all config files from the ap_verify dataset, and the
+        pipelines directory in the workspace contains all pipeline files
+        from the dataset.
         """
-        if os.listdir(self.workspace.configDir):
+        if os.listdir(self.workspace.pipelineDir):
             self.log.info("Configs already copied, skipping...")
         else:
             self.log.info("Storing data-specific configs...")
             for configFile in _findMatchingFiles(self.dataset.configLocation, ['*.py']):
                 shutil.copy2(configFile, self.workspace.configDir)
-            self.log.info("Configs are now stored in {0}".format(self.workspace.configDir))
+            self.log.info("Configs are now stored in %s.", self.workspace.configDir)
+            for pipelineFile in _findMatchingFiles(self.dataset.pipelineLocation, ['*.yaml']):
+                shutil.copy2(pipelineFile, self.workspace.pipelineDir)
+            self.log.info("Configs are now stored in %s.", self.workspace.pipelineDir)
 
 
 def ingestDataset(dataset, workspace):

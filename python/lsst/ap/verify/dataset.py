@@ -173,6 +173,13 @@ class Dataset:
         return os.path.join(self.datasetRoot, 'config')
 
     @property
+    def pipelineLocation(self):
+        """The directory containing pipelines that can be used to process the
+        data in Gen 3 (`str`, read-only).
+        """
+        return os.path.join(self.datasetRoot, 'pipelines')
+
+    @property
     def obsPackage(self):
         """The name of the obs package associated with this data (`str`, read-only).
         """

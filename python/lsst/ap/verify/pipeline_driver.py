@@ -35,7 +35,6 @@ import re
 import subprocess
 
 import lsst.log
-from lsst.utils import getPackageDir
 import lsst.pipe.base as pipeBase
 import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.ctrl.mpexec.cli.pipetask
@@ -51,8 +50,6 @@ class ApPipeParser(argparse.ArgumentParser):
     """
 
     def __init__(self):
-        defaultPipeline = os.path.join(getPackageDir("ap_verify"), "pipelines", "ApVerify.yaml")
-
         # Help and documentation will be handled by main program's parser
         argparse.ArgumentParser.__init__(self, add_help=False)
         # namespace.dataIds will always be a list of 0 or more nonempty strings, regardless of inputs.
@@ -60,8 +57,9 @@ class ApPipeParser(argparse.ArgumentParser):
         self.add_argument('--id', '-d', '--data-query', dest='dataIds',
                           action=self.AppendOptional, nargs='?', default=[],
                           help='An identifier for the data to process.')
-        self.add_argument("-p", "--pipeline", default=defaultPipeline,
-                          help="A custom version of the ap_verify pipeline (e.g., with different metrics).")
+        self.add_argument("-p", "--pipeline", default=None,
+                          help="A custom version of the ap_verify pipeline (e.g., with different metrics). "
+                               "Defaults to the ApVerify.yaml within --dataset.")
         self.add_argument("--db", "--db_url", default=None,
                           help="A location for the AP database, formatted as if for ApdbConfig.db_url. "
                                "Defaults to an SQLite file in the --output directory.")
@@ -164,14 +162,36 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
 
     makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 
+    pipelineFile = _getPipelineFile(workspace, parsedCmdLine)
     pipelineArgs = ["pipetask", "run",
                     "--butler-config", workspace.repo,
-                    "--pipeline", parsedCmdLine.pipeline,
+                    "--pipeline", pipelineFile,
                     ]
-    # TODO: collections should be determined exclusively by Workspace.workButler,
-    # but I can't find a way to hook that up to the graph builder. So use the CLI
-    # for now and revisit once DM-26239 is done.
-    pipelineArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
+    # TODO: workaround for inability to generate crosstalk sources in main
+    # processing pipeline (DM-31492).
+    instruments = {id["instrument"] for id in workspace.workButler.registry.queryDataIds("instrument")}
+    if "DECam" in instruments:
+        crosstalkPipeline = "${AP_PIPE_DIR}/pipelines/DarkEnergyCamera/RunIsrForCrosstalkSources.yaml"
+        crosstalkArgs = ["pipetask", "run",
+                         "--butler-config", workspace.repo,
+                         "--pipeline", crosstalkPipeline,
+                         ]
+        crosstalkArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
+        if parsedCmdLine.dataIds:
+            for singleId in parsedCmdLine.dataIds:
+                crosstalkArgs.extend(["--data-query", singleId])
+        crosstalkArgs.extend(["--processes", str(processes)])
+        crosstalkArgs.extend(["--register-dataset-types"])
+        subprocess.run(crosstalkArgs, capture_output=False, shell=False, check=False)
+
+        # Force same output run for crosstalk and main processing.
+        pipelineArgs.extend(_getCollectionArguments(workspace, reuse=True))
+    else:
+        # TODO: collections should be determined exclusively by Workspace.workButler,
+        # but I can't find a way to hook that up to the graph builder. So use the CLI
+        # for now and revisit once DM-26239 is done.
+        pipelineArgs.extend(_getCollectionArguments(workspace, reuse=(not parsedCmdLine.clean_run)))
+
     pipelineArgs.extend(_getConfigArgumentsGen3(workspace, parsedCmdLine))
     if parsedCmdLine.dataIds:
         for singleId in parsedCmdLine.dataIds:
@@ -211,6 +231,32 @@ def _getExecOrder():
     # association (through DiaPipelineTask) in order of ascending visit number.
     return lsst.ctrl.mpexec.execFixupDataId.ExecFixupDataId(
         taskLabel="diaPipe", dimensions=["visit", ], reverse=False)
+
+
+def _getPipelineFile(workspace, parsed):
+    """Return the config options for running make_apdb.py on this workspace,
+    as command-line arguments.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        A Workspace whose pipeline directory may contain an ApVerify pipeline.
+    parsed : `argparse.Namespace`
+        Command-line arguments, including all arguments supported by `ApPipeParser`.
+
+    Returns
+    -------
+    pipeline : `str`
+        The location of the pipeline file to use for running ap_verify.
+    """
+    if parsed.pipeline:
+        return parsed.pipeline
+    else:
+        customPipeline = os.path.join(workspace.pipelineDir, "ApVerify.yaml")
+        if os.path.exists(customPipeline):
+            return customPipeline
+        else:
+            return os.path.join("${AP_VERIFY_DIR}", "pipelines", "ApVerify.yaml")
 
 
 def _getApdbArguments(workspace, parsed):
@@ -297,20 +343,7 @@ def _getConfigArgumentsGen3(workspace, parsed):
     args.extend([
         # Put output alerts into the workspace.
         "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,
-        "--config", "diaPipe:doPackageAlerts=True",
-        # TODO: the configs below should not be needed after DM-26140
-        "--config-file", "calibrate:" + os.path.join(workspace.configDir, "calibrate.py"),
-        "--config-file", "imageDifference:" + os.path.join(workspace.configDir, "imageDifference.py"),
     ])
-    # TODO: this config should not be needed either after DM-26140
-    if os.path.exists(os.path.join(workspace.configDir, "isr.py")):
-        args.extend(["--config-file", "isr:" + os.path.join(workspace.configDir, "isr.py"), ])
-    # TODO: reverse-engineering the instrument should not be needed after DM-26140
-    # pipetask will crash if there is more than one instrument
-    for idRecord in workspace.workButler.registry.queryDataIds("instrument").expanded():
-        className = idRecord.records["instrument"].class_name
-        args.extend(["--instrument", className])
-
     return args
 
 
@@ -338,6 +371,13 @@ def _getCollectionArguments(workspace, reuse):
             ]
 
     registry = workspace.workButler.registry
+    # Should refresh registry to see crosstalk run from DM-31492, but this
+    # currently leads to a bug involving --skip-existing. The only downside of
+    # the cached registry is that, with two runs for DECam datasets, a rerun of
+    # ap_verify will re-run crosstalk sources in the second run. Using
+    # skip-existing-in would work around that, but would lead to a worse bug in
+    # the case that the user is alternating runs with and without --clean-run.
+    # registry.refresh()
     oldRuns = list(registry.queryCollections(re.compile(workspace.outputName + r"/\d+T\d+Z")))
     if reuse and oldRuns:
         args.extend(["--extend-run", "--skip-existing"])

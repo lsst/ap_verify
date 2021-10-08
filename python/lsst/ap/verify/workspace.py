@@ -274,6 +274,7 @@ class WorkspaceGen3(Workspace):
         super().__init__(location)
 
         self.mkdir(self.repo)
+        self.mkdir(self.pipelineDir)
 
         # Gen 3 name of the output
         self.outputName = "ap_verify-output"
@@ -288,6 +289,13 @@ class WorkspaceGen3(Workspace):
         (`str`, read-only).
         """
         return os.path.join(self._location, 'repo')
+
+    @property
+    def pipelineDir(self):
+        """The absolute location of a directory containing custom pipeline
+        files for use with the data (`str`, read-only).
+        """
+        return os.path.join(self._location, 'pipelines')
 
     @property
     def dbLocation(self):

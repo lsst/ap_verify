@@ -1,0 +1,10 @@
+# Gen 3 pipeline for ap_verify
+# This concatenates various lsst.verify metrics to an AP pipeline
+
+instrument: lsst.obs.subaru.HyperSuprimeCam
+description: Fully instrumented AP pipeline with fakes, specialized for HSC
+imports:
+  - location: $AP_VERIFY_DIR/pipelines/ApVerifyWithFakes.yaml
+  # Can't use $AP_PIPE_DIR/pipelines/HyperSuprimeCam/ApPipe.yaml here because
+  # ApVerifyWithFakes changes task labels in order to set up parallel fakes
+  # and non-fakes pipelines.

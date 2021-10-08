@@ -196,6 +196,7 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
         root = os.path.abspath(os.path.realpath(self._testWorkspace))
         self.assertEqual(self._testbed.workDir, root)
         self._assertInDir(self._testbed.configDir, root)
+        self._assertInDir(self._testbed.pipelineDir, root)
         # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
         self._assertInDir(url2pathname(self._testbed.repo), root)
 
