@@ -16,6 +16,14 @@ tasks:
     class: lsst.ap.association.metrics.FractionUpdatedDiaObjectsMetricTask
     config:
       connections.labelName: diaPipe
+  numTotalSolarSystemObjects:
+    class: lsst.ap.association.metrics.NumberSolarSystemObjectsMetricTask
+    config:
+      connections.labelName: diaPipe
+  numAssociatedSsObjects:
+    class: lsst.ap.association.metrics.NumberAssociatedSolarSystemObjectsMetricTask
+    config:
+      connections.labelName: diaPipe
   totalUnassociatedDiaObjects:
     class: lsst.ap.association.metrics.TotalUnassociatedDiaObjectsMetricTask
   numSciSources:
