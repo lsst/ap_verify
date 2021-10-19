@@ -24,13 +24,14 @@ Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_veri
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --id "visit=59150^59160 filter=HSC-G" --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --id "visit=59150^59160 filter=HSC-G" -j4 --output workspaces/cosmos/
 
 Here the inputs are:
 
 * :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
 * :option:`--gen2` specifies to process the dataset using the Gen 2 pipeline framework,
 * :command:`visit=59150^59160 filter=HSC-G` is the :ref:`dataId<command-line-task-dataid-howto-about-dataid-keys>` to process,
+* :option:`-j` causes the ingest and processing pipelines to use 4 processes: choose a value appropriate for your machine; the system does not automatically determine how many parallel processes to use.
 
 while the output is:
 
@@ -42,7 +43,7 @@ It's also possible to run an entire dataset by omitting the :option:`--id` argum
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 -j4 --output workspaces/cosmos/
 
 .. note::
 
@@ -60,13 +61,14 @@ Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_veri
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 --data-query "visit in (59150, 59160) and band='g'" --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 --data-query "visit in (59150, 59160) and band='g'" -j4 --output workspaces/cosmos/
 
 Here the inputs are:
 
 * :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
 * :option:`--gen3` specifies to process the dataset using the Gen 3 pipeline framework,
 * :command:`visit in (59150, 59160) and band='g'` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
+* :option:`-j` causes the ingest and processing pipelines to use 4 processes: choose a value appropriate for your machine; the system does not automatically determine how many parallel processes to use.
 
 while the output is:
 
@@ -78,12 +80,17 @@ It's also possible to run an entire dataset by omitting the :option:`--data-quer
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 -j4 --output workspaces/cosmos/
 
 .. note::
 
    Because the science pipelines are still being converted to Gen 3, Gen 3 processing may not be supported for all ap_verify datasets.
    See the individual dataset's documentation for more details.
+
+.. warning::
+
+    Some datasets require particular data queries in order to successfully run through the pipeline, due to missing data or other limitations.
+    Check the ``README.md`` in each dataset's main directory for what additional arguments might be necessary.
 
 
 .. _ap-verify-run-ingest:
@@ -99,9 +106,9 @@ Using the `Cosmos PDR2`_ dataset as an example, one can run ``ingest_dataset`` i
 
 .. prompt:: bash
 
-   ingest_dataset.py --dataset ap_verify_ci_cosmos_pdr2 --gen2 --output workspaces/cosmos/
+   ingest_dataset.py --dataset ap_verify_ci_cosmos_pdr2 --gen3 -j4 --output workspaces/cosmos/
 
-The :option:`--dataset`, :option:`--output`, :option:`--gen2`, :option:`--gen3`, and :option:`--processes` arguments behave the same way as for :command:`ap_verify.py`.
+The :option:`--dataset`, :option:`--output`, :option:`--gen2`, :option:`--gen3`, :option:`-j` (does not apply to :option:`--gen2`), and :option:`--processes` arguments behave the same way as for :command:`ap_verify.py`.
 Other options from :command:`ap_verify.py` are not available.
 
 .. _ap-verify-results:
