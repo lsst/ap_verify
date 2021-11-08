@@ -41,6 +41,8 @@ from .metrics import MetricsParser, computeMetrics
 from .pipeline_driver import ApPipeParser, runApPipeGen2, runApPipeGen3
 from .workspace import WorkspaceGen2, WorkspaceGen3
 
+_LOG = lsst.log.Log.getLogger(__name__)
+
 
 class _InputOutputParser(argparse.ArgumentParser):
     """An argument parser for program-wide input and output.
@@ -188,7 +190,7 @@ def runApVerify(cmdLine=None):
         or 127 if the task runner framework failed.
     """
     lsst.log.configure()
-    log = lsst.log.Log.getLogger('ap.verify.ap_verify.main')
+    log = _LOG.getChild('main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _ApVerifyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
@@ -245,7 +247,7 @@ def runIngestion(cmdLine=None):
         Python code. If `None`, `sys.argv` will be used.
     """
     lsst.log.configure()
-    log = lsst.log.Log.getLogger('ap.verify.ap_verify.ingest')
+    log = _LOG.getChild('ingest')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _IngestOnlyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)

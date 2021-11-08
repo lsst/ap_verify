@@ -48,6 +48,8 @@ from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
 from lsst.pipe.tasks.ingestCuratedCalibs import IngestCuratedCalibsTask
 
+_LOG = lsst.log.Log.getLogger(__name__)
+
 
 class DatasetIngestConfig(pexConfig.Config):
     """Settings and defaults for `DatasetIngestTask`.
@@ -615,7 +617,7 @@ def ingestDataset(dataset, workspace):
         ``obs`` package).
     """
     # TODO: generalize to support arbitrary URIs (DM-11482)
-    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
+    log = _LOG.getChild("ingestDataset")
 
     ingester = DatasetIngestTask(config=_getConfig(DatasetIngestTask, dataset))
     ingester.run(dataset, workspace)
@@ -637,7 +639,7 @@ def ingestDatasetGen3(dataset, workspace, processes=1):
     processes : `int`
         The number processes to use to ingest.
     """
-    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
+    log = _LOG.getChild("ingestDataset")
 
     ingester = Gen3DatasetIngestTask(dataset, workspace, config=_getConfig(Gen3DatasetIngestTask, dataset))
     ingester.run(processes=processes)
