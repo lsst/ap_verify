@@ -32,6 +32,8 @@ __all__ = ["runApVerify", "runIngestion"]
 import argparse
 import re
 import warnings
+import sys
+import logging
 
 import lsst.log
 
@@ -41,7 +43,17 @@ from .metrics import MetricsParser, computeMetrics
 from .pipeline_driver import ApPipeParser, runApPipeGen2, runApPipeGen3
 from .workspace import WorkspaceGen2, WorkspaceGen3
 
-_LOG = lsst.log.Log.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
+
+
+def _configure_logger():
+    """Configure Python logging.
+
+    Does basic Python logging configuration and
+    forwards LSST logger to Python logging.
+    """
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    lsst.log.configure_pylog_MDC("DEBUG", MDC_class=None)
 
 
 class _InputOutputParser(argparse.ArgumentParser):
@@ -189,7 +201,7 @@ def runApVerify(cmdLine=None):
         The number of data IDs that were not successfully processed, up to 127,
         or 127 if the task runner framework failed.
     """
-    lsst.log.configure()
+    _configure_logger()
     log = _LOG.getChild('main')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _ApVerifyParser().parse_args(args=cmdLine)
@@ -246,7 +258,7 @@ def runIngestion(cmdLine=None):
         an optional command line used to execute `runIngestion` from other
         Python code. If `None`, `sys.argv` will be used.
     """
-    lsst.log.configure()
+    _configure_logger()
     log = _LOG.getChild('ingest')
     # TODO: what is LSST's policy on exceptions escaping into main()?
     args = _IngestOnlyParser().parse_args(args=cmdLine)

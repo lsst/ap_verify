@@ -33,15 +33,15 @@ import argparse
 import os
 import re
 import subprocess
+import logging
 
-import lsst.log
 import lsst.pipe.base as pipeBase
 import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.ctrl.mpexec.cli.pipetask
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
 
-_LOG = lsst.log.Log.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class ApPipeParser(argparse.ArgumentParser):

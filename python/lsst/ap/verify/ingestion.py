@@ -36,9 +36,9 @@ import shutil
 import tarfile
 from glob import glob
 import sqlite3
+import logging
 
 import lsst.utils
-import lsst.log
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
@@ -48,7 +48,7 @@ from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
 from lsst.pipe.tasks.ingestCuratedCalibs import IngestCuratedCalibsTask
 
-_LOG = lsst.log.Log.getLogger(__name__)
+_LOG = logging.getLogger(__name__)
 
 
 class DatasetIngestConfig(pexConfig.Config):
