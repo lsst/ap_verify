@@ -33,13 +33,15 @@ import argparse
 import os
 import re
 import subprocess
+import logging
 
-import lsst.log
 import lsst.pipe.base as pipeBase
 import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.ctrl.mpexec.cli.pipetask
 import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
+
+_LOG = logging.getLogger(__name__)
 
 
 class ApPipeParser(argparse.ArgumentParser):
@@ -105,7 +107,7 @@ def runApPipeGen2(workspace, parsedCmdLine, processes=1):
         ``doReturnResults=False``. This object is valid even if
         `~lsst.ap.pipe.ApPipeTask` was never run.
     """
-    log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen2')
+    log = _LOG.getChild('runApPipeGen2')
 
     makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 
@@ -158,7 +160,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         nonzero if there were errors. The exact meaning of nonzereo values
         is an implementation detail.
     """
-    log = lsst.log.Log.getLogger('ap.verify.pipeline_driver.runApPipeGen3')
+    log = _LOG.getChild('runApPipeGen3')
 
     makeApdb(_getApdbArguments(workspace, parsedCmdLine))
 

@@ -36,9 +36,9 @@ import shutil
 import tarfile
 from glob import glob
 import sqlite3
+import logging
 
 import lsst.utils
-import lsst.log
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
@@ -47,6 +47,8 @@ import lsst.obs.base
 from lsst.pipe.tasks.ingest import IngestTask
 from lsst.pipe.tasks.ingestCalibs import IngestCalibsTask
 from lsst.pipe.tasks.ingestCuratedCalibs import IngestCuratedCalibsTask
+
+_LOG = logging.getLogger(__name__)
 
 
 class DatasetIngestConfig(pexConfig.Config):
@@ -615,7 +617,7 @@ def ingestDataset(dataset, workspace):
         ``obs`` package).
     """
     # TODO: generalize to support arbitrary URIs (DM-11482)
-    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
+    log = _LOG.getChild("ingestDataset")
 
     ingester = DatasetIngestTask(config=_getConfig(DatasetIngestTask, dataset))
     ingester.run(dataset, workspace)
@@ -637,7 +639,7 @@ def ingestDatasetGen3(dataset, workspace, processes=1):
     processes : `int`
         The number processes to use to ingest.
     """
-    log = lsst.log.Log.getLogger("ap.verify.ingestion.ingestDataset")
+    log = _LOG.getChild("ingestDataset")
 
     ingester = Gen3DatasetIngestTask(dataset, workspace, config=_getConfig(Gen3DatasetIngestTask, dataset))
     ingester.run(processes=processes)
