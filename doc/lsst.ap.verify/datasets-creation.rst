@@ -40,6 +40,10 @@ Organizing the data
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
 
+Datasets should contain a :file:`scripts` directory with scripts for (re)generatating and maintaining the contents of the dataset.
+This allows the dataset, particularly calibs and templates, to be updated with pipeline improvements.
+The :file:`scripts` directory is not formally part of the dataset framework, and its exact contents are up to the maintainer.
+
 .. _ap-verify-datasets-creation-docs:
 
 Documenting datasets
