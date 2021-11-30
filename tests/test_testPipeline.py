@@ -30,10 +30,11 @@ import lsst.geom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
+import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
-    MockCalibrateTask
+    MockCalibrateTask, MockImageDifferenceTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -56,18 +57,36 @@ class MockTaskTestSuite(unittest.TestCase):
         VISIT = 42
         CCD = 101
         HTM = 42
+        SKYMAP = "TreasureMap"
+        TRACT = 28
+        PATCH = 4
+        BAND = 'k'
+        PHYSICAL = 'k2022'
+        SUB_FILTER = 9
         # Mock instrument by hand, because some tasks care about parameters
         instrumentRecord = cls.repo.registry.dimensions["instrument"].RecordClass(
             name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128)
         cls.repo.registry.syncDimensionData("instrument", instrumentRecord)
+        butlerTests.addDataIdValue(cls.repo, "physical_filter", PHYSICAL, band=BAND)
+        butlerTests.addDataIdValue(cls.repo, "subfilter", SUB_FILTER)
         butlerTests.addDataIdValue(cls.repo, "exposure", VISIT)
         butlerTests.addDataIdValue(cls.repo, "visit", VISIT)
         butlerTests.addDataIdValue(cls.repo, "detector", CCD)
+        butlerTests.addDataIdValue(cls.repo, "skymap", SKYMAP)
+        butlerTests.addDataIdValue(cls.repo, "tract", TRACT)
+        butlerTests.addDataIdValue(cls.repo, "patch", PATCH)
 
         cls.exposureId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
         cls.visitId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD})
+        cls.skymapId = cls.repo.registry.expandDataId({"skymap": SKYMAP})
+        cls.skymapVisitId = cls.repo.registry.expandDataId(
+            {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD, "skymap": SKYMAP})
+        cls.patchId = cls.repo.registry.expandDataId(
+            {"skymap": SKYMAP, "tract": TRACT, "patch": PATCH, "band": BAND})
+        cls.subfilterId = cls.repo.registry.expandDataId(
+            {"skymap": SKYMAP, "tract": TRACT, "patch": PATCH, "band": BAND, "subfilter": SUB_FILTER})
         cls.htmId = cls.repo.registry.expandDataId({"htm7": HTM})
 
         butlerTests.addDatasetType(cls.repo, "postISRCCD", cls.exposureId.keys(), "Exposure")
@@ -80,6 +99,15 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "calexpBackground", cls.visitId.keys(), "Background")
         butlerTests.addDatasetType(cls.repo, "srcMatch", cls.visitId.keys(), "Catalog")
         butlerTests.addDatasetType(cls.repo, "srcMatchFull", cls.visitId.keys(), "Catalog")
+        butlerTests.addDatasetType(cls.repo, lsst.skymap.BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
+                                   cls.skymapId.keys(), "SkyMap")
+        butlerTests.addDatasetType(cls.repo, "deepCoadd", cls.patchId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "dcrCoadd", cls.subfilterId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_differenceExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_scoreExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_warpedExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrc", cls.visitId.keys(), "SourceCatalog")
 
     def setUp(self):
         super().setUp()
@@ -135,6 +163,31 @@ class MockTaskTestSuite(unittest.TestCase):
              "outputBackground": self.visitId,
              "matches": self.visitId,
              "matchesDenormalized": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockImageDifferenceTask(self):
+        task = MockImageDifferenceTask()
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(afwImage.ExposureF(), templateExposure=afwImage.ExposureF())
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        skymap = lsst.skymap.DiscreteSkyMap(lsst.skymap.DiscreteSkyMapConfig())
+        self.butler.put(skymap, lsst.skymap.BaseSkyMap.SKYMAP_DATASET_TYPE_NAME, self.skymapId)
+        self.butler.put(afwImage.ExposureF(), "deepCoadd", self.patchId)
+        self.butler.put(afwImage.ExposureF(), "dcrCoadd", self.subfilterId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.skymapVisitId,
+            {"exposure": self.visitId,
+             "skyMap": self.skymapId,
+             "coaddExposures": [self.patchId],
+             "dcrCoadds": [self.subfilterId],
+             "subtractedExposure": self.visitId,
+             "scoreExposure": self.visitId,
+             "warpedExposure": self.visitId,
+             "matchedExposure": self.visitId,
+             "diaSources": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
