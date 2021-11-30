@@ -25,6 +25,8 @@ import shutil
 import tempfile
 import unittest
 
+import pandas
+
 import lsst.utils.tests
 import lsst.geom
 import lsst.afw.image as afwImage
@@ -34,7 +36,8 @@ import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
-    MockCalibrateTask, MockImageDifferenceTask, MockTransformDiaSourceCatalogTask
+    MockCalibrateTask, MockImageDifferenceTask, MockTransformDiaSourceCatalogTask, \
+    MockDiaPipelineTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -80,6 +83,8 @@ class MockTaskTestSuite(unittest.TestCase):
             {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
         cls.visitId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD})
+        cls.visitOnlyId = cls.repo.registry.expandDataId(
+            {"instrument": INSTRUMENT, "visit": VISIT})
         cls.skymapId = cls.repo.registry.expandDataId({"skymap": SKYMAP})
         cls.skymapVisitId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD, "skymap": SKYMAP})
@@ -109,6 +114,9 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrc", cls.visitId.keys(), "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrcTable", cls.visitId.keys(), "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "visitSsObjects", cls.visitOnlyId.keys(), "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "apdb_marker", cls.visitId.keys(), "Config")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_associDiaSrc", cls.visitId.keys(), "DataFrame")
 
     def setUp(self):
         super().setUp()
@@ -205,6 +213,30 @@ class MockTaskTestSuite(unittest.TestCase):
             {"diaSourceCat": self.visitId,
              "diffIm": self.visitId,
              "diaSourceTable": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockDiaPipelineTask(self):
+        task = MockDiaPipelineTask()
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(pandas.DataFrame(), pandas.DataFrame(), afwImage.ExposureF(),
+                          afwImage.ExposureF(), afwImage.ExposureF(), 42, 'k')
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(pandas.DataFrame(), "deepDiff_diaSrcTable", self.visitId)
+        self.butler.put(pandas.DataFrame(), "visitSsObjects", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_warpedExp", self.visitId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"diaSourceTable": self.visitId,
+             "solarSystemObjectTable": self.visitId,
+             "diffIm": self.visitId,
+             "exposure": self.visitId,
+             "warpedExposure": self.visitId,
+             "apdbMarker": self.visitId,
+             "associatedDiaSources": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 

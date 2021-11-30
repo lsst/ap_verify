@@ -40,7 +40,7 @@ from lsst.ip.isr import IsrTaskConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.pipe.tasks.imageDifference import ImageDifferenceConfig
-from lsst.ap.association import TransformDiaSourceCatalogConfig
+from lsst.ap.association import TransformDiaSourceCatalogConfig, DiaPipelineConfig
 
 
 class MockIsrTask(PipelineTask):
@@ -395,4 +395,68 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
                 Catalog of DiaSources (`pandas.DataFrame`).
         """
         return Struct(diaSourceTable=pandas.DataFrame(),
+                      )
+
+
+class MockDiaPipelineTask(PipelineTask):
+    """A do-nothing substitute for DiaPipelineTask.
+    """
+    ConfigClass = DiaPipelineConfig
+    _DefaultName = "notDiaPipe"
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        expId, expBits = butlerQC.quantum.dataId.pack("visit_detector",
+                                                      returnMaxBits=True)
+        inputs["ccdExposureIdBits"] = expBits
+        inputs["band"] = butlerQC.quantum.dataId["band"]
+        if not self.config.doSolarSystemAssociation:
+            inputs["solarSystemObjectTable"] = None
+
+        outputs = self.run(**inputs)
+
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self,
+            diaSourceTable,
+            solarSystemObjectTable,
+            diffIm,
+            exposure,
+            warpedExposure,
+            ccdExposureIdBits,
+            band):
+        """Produce DiaSource and DiaObject outputs with no processing.
+
+        Parameters
+        ----------
+        diaSourceTable : `pandas.DataFrame`
+            Newly detected DiaSources.
+        solarSystemObjectTable : `pandas.DataFrame`
+            Expected solar system objects in the field of view.
+        diffIm : `lsst.afw.image.ExposureF`
+            Difference image exposure in which the sources in ``diaSourceCat``
+            were detected.
+        exposure : `lsst.afw.image.ExposureF`
+            Calibrated exposure differenced with a template to create
+            ``diffIm``.
+        warpedExposure : `lsst.afw.image.ExposureF`
+            Template exposure used to create diffIm.
+        ccdExposureIdBits : `int`
+            Number of bits used for a unique ``ccdVisitId``.
+        band : `str`
+            The band in which the new DiaSources were detected.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            Results struct with components:
+
+            ``apdbMarker``
+                Marker dataset to store in the Butler indicating that this
+                ccdVisit has completed successfully (`lsst.dax.apdb.ApdbConfig`).
+            ``associatedDiaSources``
+                Catalog of newly associated DiaSources (`pandas.DataFrame`).
+        """
+        return Struct(apdbMarker=self.config.apdb.value,
+                      associatedDiaSources=pandas.DataFrame(),
                       )
