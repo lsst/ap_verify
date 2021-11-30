@@ -28,6 +28,7 @@ __all__ = []
 
 
 import numpy as np
+import pandas
 
 import lsst.geom as geom
 import lsst.afw.image as afwImage
@@ -39,6 +40,7 @@ from lsst.ip.isr import IsrTaskConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.pipe.tasks.imageDifference import ImageDifferenceConfig
+from lsst.ap.association import TransformDiaSourceCatalogConfig
 
 
 class MockIsrTask(PipelineTask):
@@ -346,3 +348,51 @@ class MockImageDifferenceTask(PipelineTask):
             diaSources=afwTable.SourceCatalog(),
             selectSources=afwTable.SourceCatalog(),
         )
+
+
+class MockTransformDiaSourceCatalogTask(PipelineTask):
+    """A do-nothing substitute for TransformDiaSourceCatalogTask.
+    """
+    ConfigClass = TransformDiaSourceCatalogConfig
+    _DefaultName = "notTransformDiaSourceCatalog"
+
+    def __init__(self, initInputs, **kwargs):
+        super().__init__(**kwargs)
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        expId, expBits = butlerQC.quantum.dataId.pack("visit_detector",
+                                                      returnMaxBits=True)
+        inputs["ccdVisitId"] = expId
+        inputs["band"] = butlerQC.quantum.dataId["band"]
+
+        outputs = self.run(**inputs)
+
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self, diaSourceCat, diffIm, band, ccdVisitId, funcs=None):
+        """Produce transformation outputs with no processing.
+
+        Parameters
+        ----------
+        diaSourceCat : `lsst.afw.table.SourceCatalog`
+            The catalog to transform.
+        diffIm : `lsst.afw.image.Exposure`
+            An image, to provide supplementary information.
+        band : `str`
+            The band in which the sources were observed.
+        ccdVisitId : `int`
+            The exposure ID in which the sources were observed.
+        funcs
+            Unused.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            Results struct with components:
+
+            ``diaSourceTable``
+                Catalog of DiaSources (`pandas.DataFrame`).
+        """
+        return Struct(diaSourceTable=pandas.DataFrame(),
+                      )

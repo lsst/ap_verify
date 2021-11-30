@@ -34,7 +34,7 @@ import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
-    MockCalibrateTask, MockImageDifferenceTask
+    MockCalibrateTask, MockImageDifferenceTask, MockTransformDiaSourceCatalogTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -108,6 +108,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_warpedExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrc", cls.visitId.keys(), "SourceCatalog")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrcTable", cls.visitId.keys(), "DataFrame")
 
     def setUp(self):
         super().setUp()
@@ -188,6 +189,22 @@ class MockTaskTestSuite(unittest.TestCase):
              "warpedExposure": self.visitId,
              "matchedExposure": self.visitId,
              "diaSources": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockTransformDiaSourceCatalogTask(self):
+        task = MockTransformDiaSourceCatalogTask(initInputs=afwTable.SourceCatalog())
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k', 42)
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwTable.SourceCatalog(), "deepDiff_diaSrc", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"diaSourceCat": self.visitId,
+             "diffIm": self.visitId,
+             "diaSourceTable": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
