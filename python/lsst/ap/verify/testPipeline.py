@@ -37,6 +37,7 @@ import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
+from lsst.pipe.tasks.calibrate import CalibrateConfig
 
 
 class MockIsrTask(PipelineTask):
@@ -190,4 +191,77 @@ class MockCharacterizeImageTask(PipelineTask):
                       sourceCat=afwTable.SourceCatalog(),
                       backgroundModel=afwMath.BackgroundList(bg),
                       psfCellSet=afwMath.SpatialCellSet(exposure.getBBox(), 10),
+                      )
+
+
+class MockCalibrateTask(PipelineTask):
+    """A do-nothing substitute for CalibrateTask.
+    """
+    ConfigClass = CalibrateConfig
+    _DefaultName = "notCalibrate"
+
+    def __init__(self, butler=None, astromRefObjLoader=None,
+                 photoRefObjLoader=None, icSourceSchema=None,
+                 initInputs=None, **kwargs):
+        super().__init__(**kwargs)
+        self.outputSchema = afwTable.SourceCatalog()
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        inputs['exposureIdInfo'] = obsBase.ExposureIdInfo.fromDataId(
+            butlerQC.quantum.dataId, "visit_detector")
+
+        if self.config.doAstrometry:
+            inputs.pop('astromRefCat')
+        if self.config.doPhotoCal:
+            inputs.pop('photoRefCat')
+
+        outputs = self.run(**inputs)
+
+        if self.config.doWriteMatches and self.config.doAstrometry:
+            normalizedMatches = afwTable.packMatches(outputs.astromMatches)
+            if self.config.doWriteMatchesDenormalized:
+                outputs.matchesDenormalized = outputs.astromMatches
+            outputs.matches = normalizedMatches
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self, exposure, exposureIdInfo=None, background=None,
+            icSourceCat=None):
+        """Produce calibration outputs with no processing.
+
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.Exposure`
+            Exposure to calibrate.
+        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`
+            ID info for exposure.
+        background : `lsst.afw.math.BackgroundList`
+            Background model already subtracted from exposure.
+        icSourceCat : `lsst.afw.table.SourceCatalog`
+             A SourceCatalog from CharacterizeImageTask from which we can copy some fields.
+
+        Returns
+        -------
+        result : `lsst.pipe.base.Struct`
+            Struct containing these fields:
+
+            ``outputExposure``
+                Calibrated science exposure with refined WCS and PhotoCalib
+                (`lsst.afw.image.Exposure`).
+            ``outputBackground``
+                Model of background subtracted from exposure
+                (`lsst.afw.math.BackgroundList`).
+            ``outputCat``
+                Catalog of measured sources (`lsst.afw.table.SourceCatalog`).
+            ``astromMatches``
+                List of source/refObj matches from the astrometry solver
+                (`list` [`lsst.afw.table.ReferenceMatch`]).
+        """
+        # Can't persist empty BackgroundList; DM-33714
+        bg = afwMath.BackgroundMI(geom.Box2I(geom.Point2I(0, 0), geom.Point2I(16, 16)),
+                                  afwImage.MaskedImageF(16, 16))
+        return Struct(outputExposure=exposure,
+                      outputBackground=afwMath.BackgroundList(bg),
+                      outputCat=afwTable.SourceCatalog(),
+                      astromMatches=[],
                       )

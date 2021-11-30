@@ -26,10 +26,14 @@ import tempfile
 import unittest
 
 import lsst.utils.tests
+import lsst.geom
 import lsst.afw.image as afwImage
+import lsst.afw.math as afwMath
+import lsst.afw.table as afwTable
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
-from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask
+from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
+    MockCalibrateTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -51,6 +55,7 @@ class MockTaskTestSuite(unittest.TestCase):
         INSTRUMENT = "notACam"
         VISIT = 42
         CCD = 101
+        HTM = 42
         # Mock instrument by hand, because some tasks care about parameters
         instrumentRecord = cls.repo.registry.dimensions["instrument"].RecordClass(
             name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128)
@@ -63,11 +68,18 @@ class MockTaskTestSuite(unittest.TestCase):
             {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
         cls.visitId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD})
+        cls.htmId = cls.repo.registry.expandDataId({"htm7": HTM})
 
         butlerTests.addDatasetType(cls.repo, "postISRCCD", cls.exposureId.keys(), "Exposure")
         butlerTests.addDatasetType(cls.repo, "icExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "icSrc", cls.visitId.keys(), "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "icExpBackground", cls.visitId.keys(), "Background")
+        butlerTests.addDatasetType(cls.repo, "cal_ref_cat", cls.htmId.keys(), "SimpleCatalog")
+        butlerTests.addDatasetType(cls.repo, "calexp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "src", cls.visitId.keys(), "SourceCatalog")
+        butlerTests.addDatasetType(cls.repo, "calexpBackground", cls.visitId.keys(), "Background")
+        butlerTests.addDatasetType(cls.repo, "srcMatch", cls.visitId.keys(), "Catalog")
+        butlerTests.addDatasetType(cls.repo, "srcMatchFull", cls.visitId.keys(), "Catalog")
 
     def setUp(self):
         super().setUp()
@@ -98,6 +110,31 @@ class MockTaskTestSuite(unittest.TestCase):
              "characterized": self.visitId,
              "sourceCat": self.visitId,
              "backgroundModel": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockCalibrateTask(self):
+        task = MockCalibrateTask()
+        pipelineTests.assertValidInitOutput(task)
+        # Even the real CalibrateTask won't pass assertValidOutput, because for
+        # some reason the outputs are injected in runQuantum rather than run.
+
+        self.butler.put(afwImage.ExposureF(), "icExp", self.visitId)
+        self.butler.put(afwMath.BackgroundList(), "icExpBackground", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "icSrc", self.visitId)
+        self.butler.put(afwTable.SimpleCatalog(), "cal_ref_cat", self.htmId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"exposure": self.visitId,
+             "background": self.visitId,
+             "icSourceCat": self.visitId,
+             "astromRefCat": [self.htmId],
+             "photoRefCat": [self.htmId],
+             "outputExposure": self.visitId,
+             "outputCat": self.visitId,
+             "outputBackground": self.visitId,
+             "matches": self.visitId,
+             "matchesDenormalized": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
