@@ -21,12 +21,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import shutil
+import tempfile
 import unittest
 
 import lsst.utils.tests
 import lsst.afw.image as afwImage
+import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
-from lsst.ap.verify.testPipeline import MockIsrTask
+from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -37,6 +40,39 @@ class MockTaskTestSuite(unittest.TestCase):
     classes, and therefore out-of-date mocks won't match their connections.
     """
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        repoDir = tempfile.mkdtemp()
+        cls.addClassCleanup(shutil.rmtree, repoDir, ignore_errors=True)
+        cls.repo = butlerTests.makeTestRepo(repoDir)
+
+        INSTRUMENT = "notACam"
+        VISIT = 42
+        CCD = 101
+        # Mock instrument by hand, because some tasks care about parameters
+        instrumentRecord = cls.repo.registry.dimensions["instrument"].RecordClass(
+            name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128)
+        cls.repo.registry.syncDimensionData("instrument", instrumentRecord)
+        butlerTests.addDataIdValue(cls.repo, "exposure", VISIT)
+        butlerTests.addDataIdValue(cls.repo, "visit", VISIT)
+        butlerTests.addDataIdValue(cls.repo, "detector", CCD)
+
+        cls.exposureId = cls.repo.registry.expandDataId(
+            {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
+        cls.visitId = cls.repo.registry.expandDataId(
+            {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD})
+
+        butlerTests.addDatasetType(cls.repo, "postISRCCD", cls.exposureId.keys(), "Exposure")
+        butlerTests.addDatasetType(cls.repo, "icExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "icSrc", cls.visitId.keys(), "SourceCatalog")
+        butlerTests.addDatasetType(cls.repo, "icExpBackground", cls.visitId.keys(), "Background")
+
+    def setUp(self):
+        super().setUp()
+        self.butler = butlerTests.makeTestCollection(self.repo, uniqueId=self.id())
+
     def testMockIsr(self):
         # Testing MockIsrTask is tricky because the real ISR has an unstable
         # interface with dozens of potential inputs, too many to pass through
@@ -45,9 +81,25 @@ class MockTaskTestSuite(unittest.TestCase):
         # testing ap_verify's interaction with the AP pipeline.
         task = MockIsrTask()
         pipelineTests.assertValidInitOutput(task)
-        # Skip runTestQuantum
         result = task.run(afwImage.ExposureF())
         pipelineTests.assertValidOutput(task, result)
+        # Skip runTestQuantum
+
+    def testMockCharacterizeImageTask(self):
+        task = MockCharacterizeImageTask()
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(afwImage.ExposureF())
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwImage.ExposureF(), "postISRCCD", self.exposureId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"exposure": self.exposureId,
+             "characterized": self.visitId,
+             "sourceCat": self.visitId,
+             "backgroundModel": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

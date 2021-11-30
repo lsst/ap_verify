@@ -29,9 +29,14 @@ __all__ = []
 
 import numpy as np
 
+import lsst.geom as geom
 import lsst.afw.image as afwImage
+import lsst.afw.math as afwMath
+import lsst.afw.table as afwTable
+import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
+from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 
 
 class MockIsrTask(PipelineTask):
@@ -131,4 +136,58 @@ class MockIsrTask(PipelineTask):
                       outputExposure=afwImage.ExposureF(),
                       ossThumb=np.empty((1, 1)),
                       flattenedThumb=np.empty((1, 1)),
+                      )
+
+
+class MockCharacterizeImageTask(PipelineTask):
+    """A do-nothing substitute for CharacterizeImageTask.
+    """
+    ConfigClass = CharacterizeImageConfig
+    _DefaultName = "notCharacterizeImage"
+
+    def __init__(self, butler=None, refObjLoader=None, schema=None, **kwargs):
+        super().__init__(**kwargs)
+        self.outputSchema = afwTable.SourceCatalog()
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        if 'exposureIdInfo' not in inputs.keys():
+            inputs['exposureIdInfo'] = obsBase.ExposureIdInfo.fromDataId(
+                butlerQC.quantum.dataId, "visit_detector")
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self, exposure, exposureIdInfo=None, background=None):
+        """Produce characterization outputs with no processing.
+
+        Parameters
+        ----------
+        exposure : `lsst.afw.image.Exposure`
+            Exposure to characterize.
+        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`
+            ID info for exposure.
+        background : `lsst.afw.math.BackgroundList`
+            Initial model of background already subtracted from exposure.
+
+        Returns
+        -------
+        result : `lsst.pipe.base.Struct`
+            Struct containing these fields:
+
+            ``characterized``
+                Characterized exposure (`lsst.afw.image.Exposure`).
+            ``sourceCat``
+                Detected sources (`lsst.afw.table.SourceCatalog`).
+            ``backgroundModel``
+                Model of background subtracted from exposure (`lsst.afw.math.BackgroundList`)
+            ``psfCellSet``
+                Spatial cells of PSF candidates (`lsst.afw.math.SpatialCellSet`)
+        """
+        # Can't persist empty BackgroundList; DM-33714
+        bg = afwMath.BackgroundMI(geom.Box2I(geom.Point2I(0, 0), geom.Point2I(16, 16)),
+                                  afwImage.MaskedImageF(16, 16))
+        return Struct(characterized=exposure,
+                      sourceCat=afwTable.SourceCatalog(),
+                      backgroundModel=afwMath.BackgroundList(bg),
+                      psfCellSet=afwMath.SpatialCellSet(exposure.getBBox(), 10),
                       )
