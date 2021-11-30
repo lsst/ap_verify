@@ -31,11 +31,18 @@ Organizing the data
 
 * The :file:`raw` and :file:`calib` directories contain science and calibration data, respectively.
   The directories may have any internal structure.
-* The :file:`templates` directory contains an :ref:`LSST Butler repository<butler>` containing processed images usable as templates.
+* The :file:`templates` directory contains a :ref:`Gen 2 LSST Butler repository<butler>` containing processed images usable as templates.
   Template files must be ``TemplateCoadd`` files produced by a compatible version of the LSST science pipeline.
 * The :file:`refcats` directory contains one or more tar files, each containing one astrometric or photometric reference catalog in HTM shard format.
+* The :file:`preloaded` directory contains a :ref:`Gen 3 LSST Butler repository<lsst.daf.butler-using>` with calibration data, templates, refcats, and any other files needed for processing science data.
+  If the dataset supports both Gen 2 and Gen 3 processing, the contents of :file:`preloaded` should be equivalent to those of :file:`calib`, :file:`templates`, and :file:`refcats` (and may link to them to save space).
+  It must not contain science data, which belongs only in :file:`raw`.
 
 The templates and reference catalogs need not be all-sky, but should cover the combined footprint of all the raw images.
+
+Datasets should contain a :file:`scripts` directory with scripts for (re)generatating and maintaining the contents of the dataset.
+This allows the dataset, particularly calibs and templates, to be updated with pipeline improvements.
+The :file:`scripts` directory is not formally part of the dataset framework, and its exact contents are up to the maintainer.
 
 .. _ap-verify-datasets-creation-docs:
 
