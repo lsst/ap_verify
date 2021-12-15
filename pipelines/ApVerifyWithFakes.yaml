@@ -47,7 +47,7 @@ tasks:
       connections.fakeCat: parameters.fakesInput
       connections.imageWithFakes: parameters.fakesTemplate
       # TODO: end DM-30210 workaround
-  visitFakes:
+  singleFrameWithFakes:
     class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
     config:
       insertFakes.doSubSelectSources: True
@@ -112,14 +112,14 @@ tasks:
       connections.warpedExposure: parameters.fakesDiffWarp
       connections.associatedDiaSources: parameters.fakesAssocSrc
       # TODO: end DM-30210 workaround
-  matchFakes:
+  fakesMatcher:
     class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
     config:
       matchDistanceArcseconds: 0.1
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
       # TODO: redundant connection definitions workaround for DM-30210
-      connections.fakeCat: parameters.fakesInput
+      connections.fakeCats: parameters.fakesInput
       connections.diffIm: parameters.fakesDiff
       connections.associatedDiaSources: parameters.fakesAssocSrc
       connections.matchedDiaSources: parameters.fakesMatchedSrc
@@ -175,27 +175,27 @@ subsets:
       Creation of fake sources.
   apPipeWithFakes:
     subset:
-      - visitFakes    # characterizeImage and calibrate with fakes
+      - singleFrameWithFakes    # characterizeImage and calibrate with fakes
       - imageDifference
       - transformDiaSrcCat
       - diaPipe
-      - matchFakes
+      - fakesMatcher
     description: >
       The AP pipeline with fakes. Requires apPipe and prepareFakes subsets.
 contracts:
   # Metric inputs must match pipeline outputs
   - createFakes.connections.fakesType == coaddFakes.connections.fakesType
-  - createFakes.connections.fakesType == visitFakes.connections.fakesType
+  - createFakes.connections.fakesType == singleFrameWithFakes.connections.fakesType
   - createFakes.connections.fakesType == imageDifference.connections.fakesType
   - createFakes.connections.fakesType == diaPipe.connections.fakesType
-  - createFakes.connections.fakesType == matchFakes.connections.fakesType
+  - createFakes.connections.fakesType == fakesMatcher.connections.fakesType
   - createFakes.connections.fakesType == apFakesCompletenessMag20t22.connections.fakesType
   - createFakes.connections.fakesType == apFakesCompletenessMag22t24.connections.fakesType
   - createFakes.connections.fakesType == apFakesCompletenessMag24t26.connections.fakesType
-  - coaddFakes.connections.coaddName == visitFakes.connections.coaddName
+  - coaddFakes.connections.coaddName == singleFrameWithFakes.connections.coaddName
   - coaddFakes.connections.coaddName == imageDifference.connections.coaddName
   - coaddFakes.connections.coaddName == diaPipe.connections.coaddName
-  - coaddFakes.connections.coaddName == matchFakes.connections.coaddName
+  - coaddFakes.connections.coaddName == fakesMatcher.connections.coaddName
   - coaddFakes.connections.coaddName == apFakesCompletenessMag20t22.connections.coaddName
   - coaddFakes.connections.coaddName == apFakesCompletenessMag22t24.connections.coaddName
   - coaddFakes.connections.coaddName == apFakesCompletenessMag24t26.connections.coaddName
