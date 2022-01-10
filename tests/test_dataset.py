@@ -60,9 +60,6 @@ class DatasetTestSuite(DataTestCase):
         """
         root = self._testbed.datasetRoot
         self.assertEqual(self._testbed.rawLocation, os.path.join(root, 'raw'))
-        self.assertEqual(self._testbed.calibLocation, os.path.join(root, 'calib'))
-        self.assertEqual(self._testbed.templateLocation, os.path.join(root, 'templates'))
-        self.assertEqual(self._testbed.refcatsLocation, os.path.join(root, 'refcats'))
 
     def testObsPackage(self):
         """Verify that a Dataset knows its associated obs package and camera.
@@ -70,48 +67,6 @@ class DatasetTestSuite(DataTestCase):
         self.assertEqual(self._testbed.obsPackage, DatasetTestSuite.obsPackage)
         self.assertEqual(self._testbed.camera, DatasetTestSuite.camera)
         self.assertEqual(self._testbed.instrument.getName(), DatasetTestSuite.gen3Camera)
-
-    def testOutput(self):
-        """Verify that a Dataset can create an output repository as desired.
-        """
-        testDir = tempfile.mkdtemp()
-        outputDir = os.path.join(testDir, 'goodOut')
-        calibRepoDir = outputDir
-
-        try:
-            self._testbed.makeCompatibleRepo(outputDir, calibRepoDir)
-            self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
-            self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')) or
-                            os.path.exists(os.path.join(outputDir, 'repositoryCfg.yaml')),
-                            'Output directory must have a _mapper or repositoryCfg.yaml file.')
-        finally:
-            if os.path.exists(testDir):
-                shutil.rmtree(testDir, ignore_errors=True)
-
-    def testExistingOutput(self):
-        """Verify that a Dataset can handle pre-existing output directories,
-        including directories made by external code.
-        """
-        testDir = tempfile.mkdtemp()
-        outputDir = os.path.join(testDir, 'badOut')
-        calibRepoDir = outputDir
-
-        try:
-            os.makedirs(outputDir)
-            output = os.path.join(outputDir, 'foo.txt')
-            with open(output, 'w') as dummy:
-                dummy.write('This is a test!')
-
-            self._testbed.makeCompatibleRepo(outputDir, calibRepoDir)
-            self.assertTrue(os.path.exists(outputDir), 'Output directory must exist.')
-            self.assertTrue(os.listdir(outputDir), 'Output directory must not be empty.')
-            self.assertTrue(os.path.exists(os.path.join(outputDir, '_mapper')) or
-                            os.path.exists(os.path.join(outputDir, 'repositoryCfg.yaml')),
-                            'Output directory must have a _mapper or repositoryCfg.yaml file.')
-        finally:
-            if os.path.exists(testDir):
-                shutil.rmtree(testDir, ignore_errors=True)
 
     def _checkOutputGen3(self, repo):
         """Perform various integrity checks on a repository.

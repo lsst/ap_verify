@@ -23,7 +23,6 @@ Using lsst.ap.verify
 
    running
    datasets
-   failsafe
    new-metrics
    command-line-reference
 

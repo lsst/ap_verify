@@ -86,5 +86,4 @@ Further reading
 
 - :doc:`datasets-install`
 - :doc:`new-metrics`
-- :doc:`failsafe`
 - :doc:`command-line-reference`

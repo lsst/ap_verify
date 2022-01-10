@@ -29,106 +29,7 @@ from urllib.request import url2pathname
 
 import lsst.utils.tests
 import lsst.daf.butler
-from lsst.ap.verify.workspace import WorkspaceGen2, WorkspaceGen3
-
-
-class WorkspaceGen2TestSuite(lsst.utils.tests.TestCase):
-
-    def setUp(self):
-        # Use realpath to avoid link problems
-        self._testWorkspace = os.path.realpath(tempfile.mkdtemp())
-        self._testbed = WorkspaceGen2(self._testWorkspace)
-
-    def tearDown(self):
-        shutil.rmtree(self._testWorkspace, ignore_errors=True)
-
-    def testRepr(self):
-        # Required to match constructor call
-        self.assertEqual(repr(self._testbed), "WorkspaceGen2(" + repr(self._testWorkspace) + ")")
-
-    def testEq(self):
-        copied = WorkspaceGen2(self._testWorkspace)
-        self.assertEqual(self._testbed, copied)
-
-        alternate = WorkspaceGen3(self._testWorkspace)
-        self.assertNotEqual(self._testbed, alternate)
-        self.assertNotEqual(copied, alternate)
-
-        with tempfile.TemporaryDirectory() as temp:
-            different = WorkspaceGen2(temp)
-            self.assertNotEqual(self._testbed, different)
-            self.assertNotEqual(copied, different)
-
-    def _assertInDir(self, path, baseDir):
-        """Test that ``path`` is a subpath of ``baseDir``.
-        """
-        _canonPath = os.path.abspath(os.path.realpath(path))
-        _canonDir = os.path.abspath(os.path.realpath(baseDir))
-        ancestor = os.path.commonprefix([_canonPath, _canonDir])
-        self.assertEqual(ancestor, _canonDir)
-
-    def _assertNotInDir(self, path, baseDir):
-        """Test that ``path`` is not a subpath of ``baseDir``.
-        """
-        _canonPath = os.path.abspath(os.path.realpath(path))
-        _canonDir = os.path.abspath(os.path.realpath(baseDir))
-        ancestor = os.path.commonprefix([_canonPath, _canonDir])
-        self.assertNotEqual(ancestor, _canonDir)
-
-    def testMakeDir(self):
-        """Verify that a Workspace creates the workspace directory if it does not exist.
-        """
-        newPath = '_temp2'  # can't use mkdtemp because creation is what we're testing
-        shutil.rmtree(newPath, ignore_errors=True)
-        self.assertFalse(os.path.exists(newPath), 'Workspace directory must not exist before test.')
-
-        try:
-            WorkspaceGen2(newPath)
-            self.assertTrue(os.path.exists(newPath), 'Workspace directory must exist.')
-        finally:
-            shutil.rmtree(newPath, ignore_errors=True)
-
-    @staticmethod
-    def _allRepos(workspace):
-        """An iterator over all repos exposed by a WorkspaceGen2.
-        """
-        yield workspace.dataRepo
-        yield workspace.calibRepo
-        yield workspace.templateRepo
-        yield workspace.outputRepo
-
-    def testDirectories(self):
-        """Verify that a WorkspaceGen2 creates repositories in the target directory.
-
-        The exact repository locations are not tested, as they are likely to change.
-        """
-        # Workspace should report all paths as absolute
-        root = os.path.abspath(os.path.realpath(self._testWorkspace))
-        self.assertEqual(self._testbed.workDir, root)
-        self._assertInDir(self._testbed.configDir, root)
-        for repo in self._allRepos(self._testbed):
-            # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
-            self._assertInDir(url2pathname(repo), root)
-
-    def testDatabase(self):
-        """Verify that a WorkspaceGen2 requests a database file in the target
-        directory, but not in any repository.
-        """
-        root = self._testWorkspace
-        self._assertInDir(self._testbed.dbLocation, root)
-        for repo in self._allRepos(self._testbed):
-            # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
-            self._assertNotInDir(self._testbed.dbLocation, url2pathname(repo))
-
-    def testAlerts(self):
-        """Verify that a WorkspaceGen2 requests an alert dump in the target
-        directory, but not in any repository.
-        """
-        root = self._testWorkspace
-        self._assertInDir(self._testbed.alertLocation, root)
-        for repo in self._allRepos(self._testbed):
-            # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
-            self._assertNotInDir(self._testbed.alertLocation, url2pathname(repo))
+from lsst.ap.verify.workspace import WorkspaceGen3
 
 
 class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
@@ -148,10 +49,6 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
     def testEq(self):
         copied = WorkspaceGen3(self._testWorkspace)
         self.assertEqual(self._testbed, copied)
-
-        alternate = WorkspaceGen2(self._testWorkspace)
-        self.assertNotEqual(self._testbed, alternate)
-        self.assertNotEqual(copied, alternate)
 
         with tempfile.TemporaryDirectory() as temp:
             different = WorkspaceGen3(temp)

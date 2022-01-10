@@ -30,6 +30,5 @@ Further reading
 ===============
 
 - :doc:`running`
-- :doc:`failsafe`
 - :lsst-task:`lsst.verify.gen2tasks.MetricTask`
 - :lsst-task:`lsst.verify.gen2tasks.MetricsControllerTask`

@@ -91,25 +91,6 @@ class Dataset:
         return os.path.join(self.datasetRoot, 'raw')
 
     @property
-    def calibLocation(self):
-        """The directory containing the calibration data (`str`, read-only).
-        """
-        return os.path.join(self.datasetRoot, 'calib')
-
-    @property
-    def refcatsLocation(self):
-        """The directory containing external astrometric and photometric
-        reference catalogs (`str`, read-only).
-        """
-        return os.path.join(self.datasetRoot, 'refcats')
-
-    @property
-    def templateLocation(self):
-        """The directory containing the image subtraction templates (`str`, read-only).
-        """
-        return os.path.join(self.datasetRoot, 'templates')
-
-    @property
     def configLocation(self):
         """The directory containing configs that can be used to process the data (`str`, read-only).
         """
@@ -180,13 +161,6 @@ class Dataset:
             raise RuntimeError('Could not find dataset at ' + self.datasetRoot)
         if not os.path.exists(self.rawLocation):
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing data directory')
-        if not os.path.exists(self.calibLocation):
-            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing calibration directory')
-        # Template and refcat directories might not be subdirectories of self.datasetRoot
-        if not os.path.exists(self.templateLocation):
-            raise RuntimeError('Dataset is missing template directory at ' + self.templateLocation)
-        if not os.path.exists(self.refcatsLocation):
-            raise RuntimeError('Dataset is missing reference catalog directory at ' + self.refcatsLocation)
         if not os.path.exists(self._stubInputRepo):
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing stub repo')
         if not _isRepo(self._stubInputRepo):
@@ -203,28 +177,6 @@ class Dataset:
         """A string representation that can be used to reconstruct the dataset.
         """
         return f"Dataset({self._id!r})"
-
-    def makeCompatibleRepo(self, repoDir, calibRepoDir):
-        """Set up a directory as a Gen 2 repository compatible with this ap_verify dataset.
-
-        If the directory already exists, any files required by the dataset will
-        be added if absent; otherwise the directory will remain unchanged.
-
-        Parameters
-        ----------
-        repoDir : `str`
-            The directory where the output repository will be created.
-        calibRepoDir : `str`
-            The directory where the output calibration repository will be created.
-        """
-        mapperArgs = {'mapperArgs': {'calibRoot': calibRepoDir}}
-        if _isRepo(self.templateLocation):
-            # Stub repo is not a parent because can't mix v1 and v2 repositories in parents list
-            dafPersistence.Butler(inputs=[{"root": self.templateLocation, "mode": "r"}],
-                                  outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
-        else:
-            dafPersistence.Butler(inputs=[{"root": self._stubInputRepo, "mode": "r"}],
-                                  outputs=[{"root": repoDir, "mode": "rw", **mapperArgs}])
 
     def makeCompatibleRepoGen3(self, repoDir):
         """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.

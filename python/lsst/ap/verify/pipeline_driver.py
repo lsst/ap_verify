@@ -27,7 +27,7 @@ This module handles calling `ap_pipe` and converting any information
 as needed.
 """
 
-__all__ = ["ApPipeParser", "runApPipeGen2", "runApPipeGen3"]
+__all__ = ["ApPipeParser", "runApPipeGen3"]
 
 import argparse
 import os
@@ -35,10 +35,8 @@ import re
 import subprocess
 import logging
 
-import lsst.pipe.base as pipeBase
 import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.ctrl.mpexec.cli.pipetask
-import lsst.ap.pipe as apPipe
 from lsst.ap.pipe.make_apdb import makeApdb
 
 _LOG = logging.getLogger(__name__)
@@ -85,60 +83,6 @@ class ApPipeParser(argparse.ArgumentParser):
                     allValues.append(values)
                 except AttributeError:
                     setattr(namespace, self.dest, [values])
-
-
-def runApPipeGen2(workspace, parsedCmdLine, processes=1):
-    """Run `ap_pipe` on this object's dataset.
-
-    Parameters
-    ----------
-    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
-        The abstract location containing input and output repositories.
-    parsedCmdLine : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `ApPipeParser`.
-    processes : `int`
-        The number of processes with which to call the AP pipeline
-
-    Returns
-    -------
-    apPipeReturn : `lsst.pipe.base.Struct`
-        The `~lsst.pipe.base.Struct` returned from
-        `~lsst.ap.pipe.ApPipeTask.parseAndRun` with
-        ``doReturnResults=False``. This object is valid even if
-        `~lsst.ap.pipe.ApPipeTask` was never run.
-    """
-    log = _LOG.getChild('runApPipeGen2')
-
-    makeApdb(_getApdbArguments(workspace, parsedCmdLine))
-
-    pipelineArgs = [workspace.dataRepo,
-                    "--output", workspace.outputRepo,
-                    "--calib", workspace.calibRepo,
-                    "--template", workspace.templateRepo]
-    pipelineArgs.extend(_getConfigArguments(workspace, parsedCmdLine))
-    if parsedCmdLine.dataIds:
-        for singleId in parsedCmdLine.dataIds:
-            pipelineArgs.extend(["--id", *singleId.split(" ")])
-    else:
-        pipelineArgs.extend(["--id"])
-    pipelineArgs.extend(["--processes", str(processes)])
-    pipelineArgs.extend(["--noExit"])
-
-    if not parsedCmdLine.skip_pipeline:
-        results = apPipe.ApPipeTask.parseAndRun(pipelineArgs)
-        log.info('Pipeline complete')
-    else:
-        log.info('Skipping AP pipeline entirely.')
-        apPipeParser = apPipe.ApPipeTask._makeArgumentParser()
-        apPipeParsed = apPipeParser.parse_args(config=apPipe.ApPipeTask.ConfigClass(), args=pipelineArgs)
-        results = pipeBase.Struct(
-            argumentParser=apPipeParser,
-            parsedCmd=apPipeParsed,
-            taskRunner=apPipe.ApPipeTask.RunnerClass(TaskClass=apPipe.ApPipeTask, parsedCmd=apPipeParsed),
-            resultList=[],
-        )
-
-    return results
 
 
 def runApPipeGen3(workspace, parsedCmdLine, processes=1):
@@ -286,38 +230,6 @@ def _getApdbArguments(workspace, parsed):
     # Same special-case check as ApdbConfig.validate()
     if parsed.db.startswith("sqlite"):
         args.extend(["--config", "isolation_level=READ_UNCOMMITTED"])
-
-    return args
-
-
-def _getConfigArguments(workspace, parsed):
-    """Return the config options for running ApPipeTask on this workspace, as
-    command-line arguments.
-
-    Parameters
-    ----------
-    workspace : `lsst.ap.verify.workspace.WorkspaceGen2`
-        A Workspace whose config directory may contain an
-        `~lsst.ap.pipe.ApPipeTask` config.
-    parsed : `argparse.Namespace`
-        Command-line arguments, including all arguments supported by `ApPipeParser`.
-
-    Returns
-    -------
-    args : `list` of `str`
-        Command-line arguments calling ``--config`` or ``--configfile``,
-        following the conventions of `sys.argv`.
-    """
-    overrideFile = apPipe.ApPipeTask._DefaultName + ".py"
-    overridePath = os.path.join(workspace.configDir, overrideFile)
-
-    args = ["--configfile", overridePath]
-    # Translate APDB-only arguments to work as a sub-config
-    args.extend([("diaPipe.apdb." + arg if arg != "--config" else arg)
-                 for arg in _getApdbArguments(workspace, parsed)])
-    # Put output alerts into the workspace.
-    args.extend(["--config", "diaPipe.alertPackager.alertWriteLocation=" + workspace.alertLocation])
-    args.extend(["--config", "diaPipe.doPackageAlerts=True"])
 
     return args
 

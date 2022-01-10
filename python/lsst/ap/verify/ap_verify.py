@@ -30,7 +30,6 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
-import re
 import sys
 import logging
 
@@ -115,36 +114,6 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             add_help=True)
 
 
-class _FormattedType:
-    """An argparse type converter that requires strings in a particular format.
-
-    Leaves the input as a string if it matches, else raises `argparse.ArgumentTypeError`.
-
-    Parameters
-    ----------
-    fmt : `str`
-        A regular expression that values must satisfy to be accepted. The *entire* string must match the
-        expression in order to pass.
-    msg : `str`
-        An error string to display for invalid values. The first "%s" shall be filled with the
-        invalid argument.
-    """
-    def __init__(self, fmt, msg='"%s" does not have the expected format.'):
-        fullFormat = fmt
-        if not fullFormat.startswith('^'):
-            fullFormat = '^' + fullFormat
-        if not fullFormat.endswith('$'):
-            fullFormat += '$'
-        self._format = re.compile(fullFormat)
-        self._message = msg
-
-    def __call__(self, value):
-        if self._format.match(value):
-            return value
-        else:
-            raise argparse.ArgumentTypeError(self._message % value)
-
-
 class _DatasetAction(argparse.Action):
     """A converter for dataset arguments.
 
@@ -186,30 +155,6 @@ def runApVerify(cmdLine=None):
     log.info('Running pipeline...')
     # Gen 3 pipeline includes both AP and metrics
     return runApPipeGen3(workspace, args, processes=args.processes)
-
-
-def _getCmdLineExitStatus(resultList):
-    """Return the exit status following the conventions of
-    :ref:`running a CmdLineTask from the command line
-    <command-line-task-argument-reference>`.
-
-    Parameters
-    ----------
-    resultList : `list` [`Struct`] or `None`
-        A list of `Struct`, as returned by `ApPipeTask.parseAndRun`. Each
-        element must contain at least an ``exitStatus`` member.
-
-    Returns
-    -------
-    exitStatus : `int`
-        The number of failed runs in ``resultList``, up to 127, or 127 if
-        ``resultList`` is `None`.
-    """
-    if resultList:
-        # ApPipeTaskRunner does not override default results handling, exitStatus always defined
-        return min(127, sum(((res.exitStatus != 0) for res in resultList)))
-    else:
-        return 127
 
 
 def runIngestion(cmdLine=None):
