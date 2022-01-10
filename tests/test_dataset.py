@@ -49,14 +49,6 @@ class DatasetTestSuite(DataTestCase):
         # Required to match constructor call
         self.assertEqual(repr(self._testbed), "Dataset(" + repr(self.testDataset) + ")")
 
-    # TODO: remove in DM-29042
-    def testDatasets(self):
-        """Verify that a Dataset knows its supported datasets.
-        """
-        with self.assertWarns(FutureWarning):
-            datasets = Dataset.getSupportedDatasets()
-        self.assertIn(DatasetTestSuite.datasetKey, datasets)  # assumed by other tests
-
     def testBadDataset(self):
         """Verify that Dataset construction fails gracefully on nonexistent datasets.
         """

@@ -25,14 +25,10 @@ __all__ = ["Dataset"]
 
 import os
 
-from deprecated.sphinx import deprecated
-
 import lsst.daf.persistence as dafPersistence
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
 from lsst.utils import getPackageDir
-
-from .config import Config
 
 
 class Dataset:
@@ -80,46 +76,6 @@ class Dataset:
         """
         # No initialization required at present
         pass
-
-    # TODO: remove in DM-29042
-    @staticmethod
-    @deprecated(reason="The concept of 'supported' datasets is deprecated. This "
-                       "method will be removed after v24.0.", version="v22.0", category=FutureWarning)
-    def getSupportedDatasets():
-        """The ap_verify dataset IDs that can be passed to this class's constructor.
-
-        Returns
-        -------
-        datasets : `set` of `str`
-            the set of IDs that will be accepted
-
-        Raises
-        ------
-        IoError
-            Raised if the config file does not exist or is not readable
-        RuntimeError
-            Raised if the config file exists, but does not contain the expected data
-        """
-        return Dataset._getDatasetInfo().keys()
-
-    # TODO: remove in DM-29042
-    @staticmethod
-    def _getDatasetInfo():
-        """Return external data on supported ap_verify datasets.
-
-        If an exception is raised, the program state shall be unchanged.
-
-        Returns
-        -------
-        datasetToPackage : `dict`-like
-            a map from dataset IDs to package names.
-
-        Raises
-        ------
-        RuntimeError
-            Raised if the config file exists, but does not contain the expected data
-        """
-        return Config.instance['datasets']
 
     @property
     def datasetRoot(self):
