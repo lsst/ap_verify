@@ -57,13 +57,6 @@ class DatasetTestSuite(DataTestCase):
             datasets = Dataset.getSupportedDatasets()
         self.assertIn(DatasetTestSuite.datasetKey, datasets)  # assumed by other tests
 
-    # TODO: remove in DM-29042
-    def testOldDataset(self):
-        """Verify that Dataset construction warns on old-style dataset names.
-        """
-        with self.assertWarns(FutureWarning):
-            Dataset(DatasetTestSuite.datasetKey)
-
     def testBadDataset(self):
         """Verify that Dataset construction fails gracefully on nonexistent datasets.
         """

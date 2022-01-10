@@ -24,7 +24,6 @@
 __all__ = ["Dataset"]
 
 import os
-import warnings
 
 from deprecated.sphinx import deprecated
 
@@ -60,28 +59,16 @@ class Dataset:
 
     def __init__(self, datasetId):
         self._id = datasetId
-        # daf.persistence.Policy's behavior on missing keys is apparently undefined
-        # test for __getattr__ *either* raising KeyError or returning None
-        try:
-            datasetPackage = self._getDatasetInfo()[datasetId]
-            if datasetPackage is None:
-                raise KeyError
-            else:
-                warnings.warn(f"The {datasetId} name is deprecated, and will be removed after v24.0. "
-                              f"Use {datasetPackage} instead.", category=FutureWarning)
-        except KeyError:
-            # if datasetId not known, assume it's a package name
-            datasetPackage = datasetId
 
         try:
-            self._dataRootDir = getPackageDir(datasetPackage)
+            self._dataRootDir = getPackageDir(datasetId)
         except LookupError as e:
-            error = f"Cannot find the {datasetPackage} package; is it set up?"
+            error = f"Cannot find the {datasetId} package; is it set up?"
             raise ValueError(error) from e
         else:
             self._validatePackage()
 
-        self._initPackage(datasetPackage)
+        self._initPackage(datasetId)
 
     def _initPackage(self, name):
         """Prepare the package backing this ap_verify dataset.
