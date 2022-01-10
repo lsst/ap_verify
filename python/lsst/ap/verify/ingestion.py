@@ -273,20 +273,8 @@ def _getConfig(task, dataset):
     config : ``task.ConfigClass``
         The config for running ``task`` on ``dataset``.
     """
-    # Can't use dataset.instrument.applyConfigOverrides for this, because the
-    # dataset might not have Gen 3 support.
-    overrideFile = task._DefaultName + ".py"
-    packageDir = lsst.utils.getPackageDir(dataset.obsPackage)
-
     config = task.ConfigClass()
-    for path in [
-        os.path.join(packageDir, 'config'),
-        os.path.join(packageDir, 'config', dataset.camera),
-        dataset.configLocation,
-    ]:
-        overridePath = os.path.join(path, overrideFile)
-        if os.path.exists(overridePath):
-            config.load(overridePath)
+    dataset.instrument.applyConfigOverrides(task._DefaultName, config)
     return config
 
 

@@ -25,7 +25,6 @@ __all__ = ["Dataset"]
 
 import os
 
-import lsst.daf.persistence as dafPersistence
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
 from lsst.utils import getPackageDir
@@ -104,18 +103,6 @@ class Dataset:
         return os.path.join(self.datasetRoot, 'pipelines')
 
     @property
-    def obsPackage(self):
-        """The name of the obs package associated with this data (`str`, read-only).
-        """
-        return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getPackageName()
-
-    @property
-    def camera(self):
-        """The name of the Gen 2 camera associated with this data (`str`, read-only).
-        """
-        return dafPersistence.Butler.getMapperClass(self._stubInputRepo).getCameraName()
-
-    @property
     def instrument(self):
         """The Gen 3 instrument associated with this data (`lsst.obs.base.Instrument`, read-only).
         """
@@ -125,12 +112,6 @@ class Dataset:
             raise RuntimeError(f"Dataset does not have exactly one instrument; got {instruments}.")
         else:
             return obsBase.Instrument.fromName(instruments[0]["instrument"], butler.registry)
-
-    @property
-    def _stubInputRepo(self):
-        """The directory containing the data set's input stub (`str`, read-only).
-        """
-        return os.path.join(self.datasetRoot, 'repo')
 
     @property
     def _preloadedRepo(self):
@@ -161,10 +142,6 @@ class Dataset:
             raise RuntimeError('Could not find dataset at ' + self.datasetRoot)
         if not os.path.exists(self.rawLocation):
             raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing data directory')
-        if not os.path.exists(self._stubInputRepo):
-            raise RuntimeError('Dataset at ' + self.datasetRoot + 'is missing stub repo')
-        if not _isRepo(self._stubInputRepo):
-            raise RuntimeError('Stub repo at ' + self._stubInputRepo + 'is missing mapper file')
 
     def __eq__(self, other):
         """Test that two Dataset objects are equal.

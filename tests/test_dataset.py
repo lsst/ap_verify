@@ -64,8 +64,6 @@ class DatasetTestSuite(DataTestCase):
     def testObsPackage(self):
         """Verify that a Dataset knows its associated obs package and camera.
         """
-        self.assertEqual(self._testbed.obsPackage, DatasetTestSuite.obsPackage)
-        self.assertEqual(self._testbed.camera, DatasetTestSuite.camera)
         self.assertEqual(self._testbed.instrument.getName(), DatasetTestSuite.gen3Camera)
 
     def _checkOutputGen3(self, repo):
