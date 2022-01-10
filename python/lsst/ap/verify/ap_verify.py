@@ -31,17 +31,16 @@ __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
 import re
-import warnings
 import sys
 import logging
 
 import lsst.log
 
 from .dataset import Dataset
-from .ingestion import ingestDataset, ingestDatasetGen3
-from .metrics import MetricsParser, computeMetrics
-from .pipeline_driver import ApPipeParser, runApPipeGen2, runApPipeGen3
-from .workspace import WorkspaceGen2, WorkspaceGen3
+from .ingestion import ingestDatasetGen3
+from .metrics import MetricsParser
+from .pipeline_driver import ApPipeParser, runApPipeGen3
+from .workspace import WorkspaceGen3
 
 _LOG = logging.getLogger(__name__)
 
@@ -71,14 +70,6 @@ class _InputOutputParser(argparse.ArgumentParser):
         self.add_argument('--output', required=True,
                           help='The location of the workspace to use for pipeline repositories.')
 
-        gen23 = self.add_mutually_exclusive_group()
-        # Because store_true and store_false use the same dest, add explicit
-        # default to avoid ambiguity.
-        gen23.add_argument('--gen2', dest='useGen3', action='store_false', default=True,
-                           help='Handle the ap_verify dataset using the Gen 2 framework (default).')
-        gen23.add_argument('--gen3', dest='useGen3', action='store_true', default=True,
-                           help='Handle the ap_verify dataset using the Gen 3 framework (default).')
-
 
 class _ProcessingParser(argparse.ArgumentParser):
     """An argument parser for general run-time characteristics.
@@ -106,14 +97,6 @@ class _ApVerifyParser(argparse.ArgumentParser):
             parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), MetricsParser()],
             add_help=True)
 
-    def parse_args(self, args=None, namespace=None):
-        namespace = super().parse_args(args, namespace)
-        # Code duplication; too hard to implement at shared _InputOutputParser level
-        if not namespace.useGen3:
-            warnings.warn("The --gen2 flag is deprecated; it will be removed after release 23.",
-                          category=FutureWarning)
-        return namespace
-
 
 class _IngestOnlyParser(argparse.ArgumentParser):
     """An argument parser for data needed by dataset ingestion.
@@ -122,23 +105,14 @@ class _IngestOnlyParser(argparse.ArgumentParser):
     def __init__(self):
         argparse.ArgumentParser.__init__(
             self,
-            description='Ingests an ap_verify dataset into a pair of Butler repositories. '
-            'The program will create repository(ies) appropriate for --gen2 or --gen3 '
-            'in subdirectories of <OUTPUT>. '
+            description='Ingests an ap_verify dataset into a repository. '
+            'The program will create a repository in the ``repo`` subdirectory of <OUTPUT>. '
             'These repositories may be used directly by ap_verify.py by '
             'passing the same --output argument, or by other programs that accept '
             'Butler repositories as input.',
             epilog='',
             parents=[_InputOutputParser(), _ProcessingParser()],
             add_help=True)
-
-    def parse_args(self, args=None, namespace=None):
-        namespace = super().parse_args(args, namespace)
-        # Code duplication; too hard to implement at shared _InputOutputParser level
-        if not namespace.useGen3:
-            warnings.warn("The --gen2 flag is deprecated; it will be removed after release 23.",
-                          category=FutureWarning)
-        return namespace
 
 
 class _FormattedType:
@@ -207,19 +181,11 @@ def runApVerify(cmdLine=None):
     args = _ApVerifyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
 
-    if args.useGen3:
-        workspace = WorkspaceGen3(args.output)
-        ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
-        log.info('Running pipeline...')
-        # Gen 3 pipeline includes both AP and metrics
-        return runApPipeGen3(workspace, args, processes=args.processes)
-    else:
-        workspace = WorkspaceGen2(args.output)
-        ingestDataset(args.dataset, workspace)
-        log.info('Running pipeline...')
-        apPipeResults = runApPipeGen2(workspace, args, processes=args.processes)
-        computeMetrics(workspace, apPipeResults.parsedCmd.id, args)
-        return _getCmdLineExitStatus(apPipeResults.resultList)
+    workspace = WorkspaceGen3(args.output)
+    ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
+    log.info('Running pipeline...')
+    # Gen 3 pipeline includes both AP and metrics
+    return runApPipeGen3(workspace, args, processes=args.processes)
 
 
 def _getCmdLineExitStatus(resultList):
@@ -264,9 +230,5 @@ def runIngestion(cmdLine=None):
     args = _IngestOnlyParser().parse_args(args=cmdLine)
     log.debug('Command-line arguments: %s', args)
 
-    if args.useGen3:
-        workspace = WorkspaceGen3(args.output)
-        ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
-    else:
-        workspace = WorkspaceGen2(args.output)
-        ingestDataset(args.dataset, workspace)
+    workspace = WorkspaceGen3(args.output)
+    ingestDatasetGen3(args.dataset, workspace, processes=args.processes)

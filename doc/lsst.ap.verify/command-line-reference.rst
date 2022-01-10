@@ -22,7 +22,7 @@ The basic call signature of :command:`ap_verify.py` is:
 
    ap_verify.py --dataset DATASET --output WORKSPACE
 
-These two arguments are mandatory, all others are optional (though use of either :option:`--gen2` or :option:`--gen3` is highly recommended).
+These two arguments are mandatory, all others are optional.
 
 .. _ap-verify-cmd-return:
 
@@ -30,9 +30,8 @@ Status code
 ===========
 
 :command:`ap_verify.py` returns 0 on success, and a non-zero value if there were any processing problems.
-In :option:`--gen2` mode, the status code is the number of data IDs that could not be processed, like for :ref:`command-line tasks <command-line-task-argument-reference>`.
 
-With both :option:`--gen2` and :option:`--gen3`, an uncaught exception may cause :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead of the above.
+An uncaught exception may cause :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead of the above.
 
 .. _ap-verify-cmd-args:
 
@@ -61,8 +60,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Butler data ID.**
 
    Specify data ID to process.
-   If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--data-query "visit=12345 ccd=1..6 filter=g"``.
-   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--data-query "visit=12345 and detector in (1..6) and band='g'"``.
+   This should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--data-query "visit=12345 and detector in (1..6) and band='g'"``.
 
    Multiple copies of this argument are allowed.
    For compatibility with the syntax used by command line tasks, this flag with no argument processes all data IDs.
@@ -110,18 +108,6 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    If this argument is omitted, ``ap_verify`` creates an SQLite database inside the directory indicated by :option:`--output`.
 
-.. option:: --gen2
-.. option:: --gen3
-
-   **Choose Gen 2 or Gen 3 processing.**
-
-   These optional flags run either the Gen 2 pipeline (`~lsst.ap.pipe.ApPipeTask`), or the Gen 3 pipeline (:file:`apPipe.yaml`).
-   If neither flag is provided, the Gen 3 pipeline will be run.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
 .. option:: -h, --help
 
    **Print help.**
@@ -133,7 +119,6 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Number of processes to use.**
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
-   In Gen 3 mode, data ingestion may also be parallelized.
    
 .. option:: --image-metrics-config <filename>
 
@@ -168,7 +153,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    The output argument is required for all ``ap_verify`` runs except when using :option:`--help`.
 
-   The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
+   The workspace will be created if it does not exist, and will contain the repository required for processing the data.
    The path may be absolute or relative to the current working directory.
 
 .. option:: -p, --pipeline <filename>

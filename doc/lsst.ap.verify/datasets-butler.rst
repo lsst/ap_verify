@@ -14,6 +14,6 @@ The ingestion step creates a valid repository that is then used by the rest of t
 A secondary benefit of this approach is that dataset maintainers do not need to manually ensure that the Git repository associated with a dataset remains a valid Butler repository despite changes to the dataset.
 The dataset format merely requires that files be segregated into science and calibration directories, a much looser integrity constraint.
 
-While datasets are not Butler repositories themselves, the dataset format includes a directory, :file:`repo`, that serves as a template for :ref:`repositories created by ap_verify.py <ap-verify-run-output>`.
+While datasets are not Butler repositories themselves, the dataset format includes a directory, :file:`repo`, that serves as a template for :ref:`repositories created by ap_verify.py <ap-verify-run-output-gen3>`.
 This template helps ensure that all repositories based on the dataset will be properly set up, in particular that any observatory-specific settings will be applied.
 :file:`repo` is never modified by ``ap_verify``; all repositories created by the pipeline must be located elsewhere, whether or not they are backed by the file system.
