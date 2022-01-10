@@ -183,37 +183,8 @@ class IngestionTestSuiteGen3(DataTestCase):
         """
         self.task._copyConfigs()
         self.assertTrue(os.path.exists(self.workspace.configDir))
-        # Only testdata file that *must* be supported in the future
-        self.assertTrue(os.path.exists(os.path.join(self.workspace.configDir, "datasetIngest.py")))
         self.assertTrue(os.path.exists(self.workspace.pipelineDir))
         self.assertTrue(os.path.exists(os.path.join(self.workspace.pipelineDir, "ApVerify.yaml")))
-
-    def testFindMatchingFiles(self):
-        """Test that _findMatchingFiles finds the desired files.
-        """
-        testDir = self.dataset.datasetRoot
-        allFiles = {os.path.join(testDir, 'calib', f) for f in
-                    {'bias-R11-S01-det037_2022-01-01.fits.gz',
-                     'flat_i-R11-S01-det037_2022-08-06.fits.gz',
-                     }}
-
-        self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['*.fits.gz']), allFiles
-        )
-        self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['*_i-*']),
-            {os.path.join(testDir, 'calib', f) for f in
-             {'bias-R11-S01-det037_2022-01-01.fits.gz'}}
-        )
-        self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['*R11-S01*']),
-            set()
-        )
-        # Exclude filters should not match directories
-        self.assertSetEqual(
-            ingestion._findMatchingFiles(testDir, ['*.fits.gz'], exclude=['calib']),
-            allFiles
-        )
 
     def testPickling(self):
         """Test that a Gen3DatasetIngestTask can be pickled correctly.
