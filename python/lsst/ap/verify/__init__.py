@@ -3,7 +3,6 @@ from .dataset import *
 from .workspace import *
 from .ingestion import *
 from .pipeline_driver import *
-from .metrics import *
 from .ap_verify import *
 
 import pkgutil, lsstimport

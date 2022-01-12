@@ -1,7 +1,6 @@
 
 setupRequired(utils)
 setupRequired(afw)
-setupRequired(daf_persistence)
 setupRequired(verify)
 setupRequired(ap_pipe)
 setupRequired(ctrl_mpexec)

@@ -37,7 +37,6 @@ import lsst.log
 
 from .dataset import Dataset
 from .ingestion import ingestDatasetGen3
-from .metrics import MetricsParser
 from .pipeline_driver import ApPipeParser, runApPipeGen3
 from .workspace import WorkspaceGen3
 
@@ -93,7 +92,7 @@ class _ApVerifyParser(argparse.ArgumentParser):
             self,
             description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
             epilog='',
-            parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), MetricsParser()],
+            parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), ],
             add_help=True)
 
 

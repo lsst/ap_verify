@@ -42,7 +42,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: --clean-run
 
-   **Rerun ap_verify in a clean Gen 3 run even if the workspace already exists. (Gen 3 only)**
+   **Rerun ap_verify in a clean Gen 3 run even if the workspace already exists.**
 
    By default, when ``ap_verify`` is run multiple times with the same :option:`--output` workspace, the previous run collection is reused to avoid repeating processing.
    If this is undesirable (e.g., experimental config changes), this flag creates a new run, and the pipeline is run from the beginning.
@@ -83,21 +83,6 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    This documentation includes a :ref:`list of supported datasets <ap-verify-datasets-index>`.
 
-.. option:: --dataset-metrics-config <filename>
-
-   **Input dataset-level metrics config. (Gen 2 only)**
-
-   A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
-   If this argument is omitted, :file:`config/default_dataset_metrics.py` will be used.
-
-   Use :option:`--image-metrics-config` to configure image-level metrics instead.
-   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
-   See also :doc:`new-metrics`.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
 .. option:: --db, --db_url
 
    **Target Alert Production Database**
@@ -120,33 +105,6 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
    
-.. option:: --image-metrics-config <filename>
-
-   **Input image-level metrics config. (Gen 2 only)**
-
-   A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
-   If this argument is omitted, :file:`config/default_image_metrics.py` will be used.
-
-   Use :option:`--dataset-metrics-config` to configure dataset-level metrics instead.
-   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
-   See also :doc:`new-metrics`.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
-.. option:: --metrics-file <filename>
-
-   **Output metrics file. (Gen 2 only)**
-
-   The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
-   The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.
-   If omitted, the output will go to files named after ``ap_verify.{dataId}.verify.json`` in the user's working directory.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
 .. option:: --output <workspace_dir>
 
    **Output and intermediate product path.**
@@ -158,7 +116,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: -p, --pipeline <filename>
 
-   **Custom ap_verify pipeline. (Gen 3 only)**
+   **Custom ap_verify pipeline.**
 
    A pipeline definition file containing a custom verification pipeline.
    This pipeline must be specialized as necessary for the instrument and dataset being processed.
@@ -170,5 +128,3 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
       At present, ap_verify assumes that the provided pipeline includes the ``diaPipe`` task from the AP pipeline, and configures it on the fly.
       It will likely crash if this task is missing.
-
-   For the Gen 2 equivalent to this option, see :option:`--dataset-metrics-config` and :option:`--image-metrics-config`.
