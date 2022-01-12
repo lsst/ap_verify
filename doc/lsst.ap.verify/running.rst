@@ -55,7 +55,7 @@ It's also possible to run an entire dataset by omitting the :option:`--data-quer
 How to run ingestion by itself
 ==============================
 
-``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that :doc:`ingests datasets into repositories <datasets-butler>` but does not run the pipeline on them.
+``ap_verify`` includes a separate program, :command:`ingest_dataset.py`, that ingests datasets into repositories but does not run the pipeline on them.
 This is useful if the data need special processing or as a precursor to massive processing runs.
 Running :command:`ap_verify.py` with the same arguments as a previous run of :command:`ingest_dataset.py` will automatically skip ingestion.
 
