@@ -24,16 +24,11 @@
 __all__ = ["Dataset"]
 
 import os
-import warnings
-
-from deprecated.sphinx import deprecated
 
 import lsst.daf.persistence as dafPersistence
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
 from lsst.utils import getPackageDir
-
-from .config import Config
 
 
 class Dataset:
@@ -60,28 +55,16 @@ class Dataset:
 
     def __init__(self, datasetId):
         self._id = datasetId
-        # daf.persistence.Policy's behavior on missing keys is apparently undefined
-        # test for __getattr__ *either* raising KeyError or returning None
-        try:
-            datasetPackage = self._getDatasetInfo()[datasetId]
-            if datasetPackage is None:
-                raise KeyError
-            else:
-                warnings.warn(f"The {datasetId} name is deprecated, and will be removed after v24.0. "
-                              f"Use {datasetPackage} instead.", category=FutureWarning)
-        except KeyError:
-            # if datasetId not known, assume it's a package name
-            datasetPackage = datasetId
 
         try:
-            self._dataRootDir = getPackageDir(datasetPackage)
+            self._dataRootDir = getPackageDir(datasetId)
         except LookupError as e:
-            error = f"Cannot find the {datasetPackage} package; is it set up?"
+            error = f"Cannot find the {datasetId} package; is it set up?"
             raise ValueError(error) from e
         else:
             self._validatePackage()
 
-        self._initPackage(datasetPackage)
+        self._initPackage(datasetId)
 
     def _initPackage(self, name):
         """Prepare the package backing this ap_verify dataset.
@@ -93,46 +76,6 @@ class Dataset:
         """
         # No initialization required at present
         pass
-
-    # TODO: remove in DM-29042
-    @staticmethod
-    @deprecated(reason="The concept of 'supported' datasets is deprecated. This "
-                       "method will be removed after v24.0.", version="v22.0", category=FutureWarning)
-    def getSupportedDatasets():
-        """The ap_verify dataset IDs that can be passed to this class's constructor.
-
-        Returns
-        -------
-        datasets : `set` of `str`
-            the set of IDs that will be accepted
-
-        Raises
-        ------
-        IoError
-            Raised if the config file does not exist or is not readable
-        RuntimeError
-            Raised if the config file exists, but does not contain the expected data
-        """
-        return Dataset._getDatasetInfo().keys()
-
-    # TODO: remove in DM-29042
-    @staticmethod
-    def _getDatasetInfo():
-        """Return external data on supported ap_verify datasets.
-
-        If an exception is raised, the program state shall be unchanged.
-
-        Returns
-        -------
-        datasetToPackage : `dict`-like
-            a map from dataset IDs to package names.
-
-        Raises
-        ------
-        RuntimeError
-            Raised if the config file exists, but does not contain the expected data
-        """
-        return Config.instance['datasets']
 
     @property
     def datasetRoot(self):

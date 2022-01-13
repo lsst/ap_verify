@@ -30,8 +30,6 @@ import unittest
 
 import lsst.utils.tests
 
-from lsst.ap.verify.config import Config
-
 
 class DataTestCase(lsst.utils.tests.TestCase):
     """Unit test class for tests that need to use the Dataset framework.
@@ -52,10 +50,6 @@ class DataTestCase(lsst.utils.tests.TestCase):
     Set to `None` if ``testDataset`` loads its own dependencies (not
     recommended for test datasets).
     """
-    datasetKey = 'test'
-    """The ap_verify dataset name that would be used on the command line (`str`).
-    """
-    # TODO: remove datasetKey in DM-29042
 
     @classmethod
     def setUpClass(cls):
@@ -68,9 +62,3 @@ class DataTestCase(lsst.utils.tests.TestCase):
                 lsst.utils.getPackageDir(cls.obsPackage)
             except LookupError:
                 raise unittest.SkipTest(f'{cls.obsPackage} not set up; needed for {cls.testDataset}')
-
-        # Hack the config for testing purposes
-        # Note that Config.instance is supposed to be immutable, so, depending on initialization order,
-        # this modification may cause other tests to see inconsistent config values
-        # TODO: remove in DM-29042
-        Config.instance._allInfo['datasets.' + cls.datasetKey] = cls.testDataset
