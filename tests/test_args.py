@@ -56,7 +56,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
     def testMissingMain(self):
         """Verify that a command line consisting missing required arguments is rejected.
         """
-        args = '--id "visit=54123" --output tests/output/foo'
+        args = '--data-query "visit=54123" --output tests/output/foo'
         with self.assertRaises(SystemExit):
             self._parseString(args)
 
@@ -88,38 +88,30 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
 
     def testDataId(self):
         """Verify that a command line consisting only of required arguments and
-        --id parses correctly.
+        --data-query parses correctly.
         """
-        args = '--dataset %s --output tests/output/foo --id "visit=54123" --id "filter=x"' \
-            % CommandLineTestSuite.testDataset
-        parsed = self._parseString(args)
-        self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
-
-    def testMixedDataId(self):
-        """Verify that a command line with both --id and --data-query parses correctly.
-        """
-        args = '--dataset %s --output tests/output/foo --id "visit=54123" -d "filter=x"' \
+        args = '--dataset %s --output tests/output/foo --data-query "visit=54123" --data-query "filter=x"' \
             % CommandLineTestSuite.testDataset
         parsed = self._parseString(args)
         self.assertEqual(parsed.dataIds, ["visit=54123", "filter=x"])
 
     def testEmptyDataId(self):
-        """Test that an --id argument may be not followed by a data ID.
+        """Test that an --data-query argument must be followed by a data ID.
         """
         minArgs = f'--dataset {self.testDataset} --output tests/output/foo'
 
-        # Nothing after --id
-        parsed = self._parseString(minArgs + ' --id')
-        self.assertEqual(parsed.dataIds, [])
+        # Nothing after --data-query
+        with self.assertRaises(SystemExit):
+            self._parseString(minArgs + ' --data-query')
 
-        # --dataset immediately after --id
-        parsed = self._parseString('--id ' + minArgs)
-        self.assertEqual(parsed.dataIds, [])
+        # --dataset immediately after --data-query
+        with self.assertRaises(SystemExit):
+            self._parseString('--data-query ' + minArgs)
 
     def testBadKeyMain(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
-        args = '--dataset %s --output tests/output/foo --id "visit=54123" --clobber' \
+        args = '--dataset %s --output tests/output/foo --data-query "visit=54123" --clobber' \
             % CommandLineTestSuite.testDataset
         with self.assertRaises(SystemExit):
             self._parseString(args)
@@ -127,7 +119,7 @@ class CommandLineTestSuite(lsst.ap.verify.testUtils.DataTestCase):
     def testBadKeyIngest(self):
         """Verify that a command line with unsupported arguments is rejected.
         """
-        args = '--dataset %s --output tests/output/foo --id "visit=54123"' \
+        args = '--dataset %s --output tests/output/foo --data-query "visit=54123"' \
             % CommandLineTestSuite.testDataset
         with self.assertRaises(SystemExit):
             self._parseString(args, ap_verify._IngestOnlyParser())

@@ -9,7 +9,6 @@ Running ap_verify from the command line
 #######################################
 
 :command:`ap_verify.py` is a Python script designed to be run on both developer machines and verification servers.
-While :command:`ap_verify.py` is not a :doc:`command-line task</modules/lsst.pipe.base/index>`, the command-line interface is designed to resemble that of command-line tasks where practical.
 This page describes the most common options used to run ``ap_verify``.
 For more details, see the :doc:`command-line-reference` or run :option:`ap_verify.py -h`.
 

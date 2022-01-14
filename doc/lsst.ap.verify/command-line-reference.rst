@@ -55,7 +55,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
       specific database system being used. If the database has been written to
       by a previous run, clear it by hand before running with ``--clean-run``.
 
-.. option:: -d, --data-query, --id <dataId>
+.. option:: -d, --data-query <dataId>
 
    **Butler data ID.**
 
@@ -63,15 +63,9 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    This should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--data-query "visit=12345 and detector in (1..6) and band='g'"``.
 
    Multiple copies of this argument are allowed.
-   For compatibility with the syntax used by command line tasks, this flag with no argument processes all data IDs.
 
    If this argument is omitted, then all data IDs in the dataset will be processed.
    
-   .. warning::
-
-      The ``--id`` form of this argument is for consistency with Gen 2 command-line tasks, and is deprecated.
-      It will be removed after Science Pipelines release 23.
-
 .. option:: --dataset <dataset_package>
 
    **Input dataset package.**
