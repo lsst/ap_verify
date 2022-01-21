@@ -23,6 +23,7 @@
 
 import argparse
 import functools
+import os
 import shutil
 import tempfile
 import unittest.mock
@@ -30,12 +31,17 @@ import unittest.mock
 from lsst.daf.base import PropertySet
 from lsst.pipe.base import DataIdContainer
 import lsst.utils.tests
+from lsst.obs.base import RawIngestTask, DefineVisitsTask
 from lsst.ap.verify import pipeline_driver
-from lsst.ap.verify.workspace import WorkspaceGen3
+from lsst.ap.verify.testUtils import DataTestCase
+from lsst.ap.verify import Dataset, WorkspaceGen3
 
 
-def _getDataIds():
-    return [{"visit": 42, "ccd": 0}]
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+def _getDataIds(butler):
+    return list(butler.registry.queryDataIds({"instrument", "visit", "detector"}, datasets="raw"))
 
 
 def patchApPipeGen3(method):
@@ -53,19 +59,32 @@ def patchApPipeGen3(method):
     return wrapper
 
 
-class PipelineDriverTestSuiteGen3(lsst.utils.tests.TestCase):
+class PipelineDriverTestSuiteGen3(DataTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.dataset = Dataset(cls.testDataset)
+
     def setUp(self):
+        super().setUp()
+
         self._testDir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self._testDir, ignore_errors=True)
 
-        # Fake Butler to avoid Workspace initialization overhead
-        self.setUpMockPatch("lsst.daf.butler.Registry",
-                            **{"queryDatasets.return_value": []})
-        self.setUpMockPatch("lsst.daf.butler.Butler")
-
         self.workspace = WorkspaceGen3(self._testDir)
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
+        raws = [os.path.join(self.dataset.rawLocation, "lsst_a_204595_R11_S01_i.fits")]
+        rawIngest = RawIngestTask(butler=self.workspace.workButler, config=RawIngestTask.ConfigClass())
+        rawIngest.run(raws, run=None)
+        defineVisit = DefineVisitsTask(butler=self.workspace.workButler,
+                                       config=DefineVisitsTask.ConfigClass())
+        defineVisit.run(self.workspace.workButler.registry.queryDataIds("exposure", datasets="raw"))
+        ids = _getDataIds(self.workspace.workButler)
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(
-            ["--id", "visit = %d" % _getDataIds()[0]["visit"]])
+            ["--data-query", f"instrument = '{ids[0]['instrument']}' AND visit = {ids[0]['visit']}",
+             "--pipeline", os.path.join(TESTDIR, "MockApPipe.yaml")])
 
     @staticmethod
     def dummyMetadata():
@@ -101,16 +120,19 @@ class PipelineDriverTestSuiteGen3(lsst.utils.tests.TestCase):
         self.addCleanup(patcher.stop)
         return mock
 
-    @unittest.skip("Fix test in DM-27117")
-    # Mock up CmdLineFwk to avoid doing any processing.
-    @patchApPipeGen3
-    def testrunApPipeGen3Steps(self, mockDb, mockFwk):
+    def testrunApPipeGen3Steps(self):
         """Test that runApPipeGen3 runs the entire pipeline.
         """
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
-        mockDb.assert_called_once()
-        mockFwk().parseAndRun.assert_called_once()
+        # Use datasets as a proxy for pipeline completion
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        self.assertTrue(self.workspace.analysisButler.datasetExists("calexp", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("src", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_differenceExp", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_diaSrc", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("apdb_marker", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_assocDiaSrc", id))
 
     def _getCmdLineArgs(self, parseAndRunArgs):
         if parseAndRunArgs[0]:
