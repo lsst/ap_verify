@@ -22,7 +22,7 @@ The basic call signature of :command:`ap_verify.py` is:
 
    ap_verify.py --dataset DATASET --output WORKSPACE
 
-These two arguments are mandatory, all others are optional (though use of either :option:`--gen2` or :option:`--gen3` is highly recommended).
+These two arguments are mandatory, all others are optional.
 
 .. _ap-verify-cmd-return:
 
@@ -30,9 +30,8 @@ Status code
 ===========
 
 :command:`ap_verify.py` returns 0 on success, and a non-zero value if there were any processing problems.
-In :option:`--gen2` mode, the status code is the number of data IDs that could not be processed, like for :ref:`command-line tasks <command-line-task-argument-reference>`.
 
-With both :option:`--gen2` and :option:`--gen3`, an uncaught exception may cause :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead of the above.
+An uncaught exception may cause :command:`ap_verify.py` to return an interpreter-dependent nonzero value instead of the above.
 
 .. _ap-verify-cmd-args:
 
@@ -43,7 +42,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
 .. option:: --clean-run
 
-   **Rerun ap_verify in a clean Gen 3 run even if the workspace already exists. (Gen 3 only)**
+   **Rerun ap_verify in a clean Gen 3 run even if the workspace already exists.**
 
    By default, when ``ap_verify`` is run multiple times with the same :option:`--output` workspace, the previous run collection is reused to avoid repeating processing.
    If this is undesirable (e.g., experimental config changes), this flag creates a new run, and the pipeline is run from the beginning.
@@ -56,24 +55,17 @@ Required arguments are :option:`--dataset` and :option:`--output`.
       specific database system being used. If the database has been written to
       by a previous run, clear it by hand before running with ``--clean-run``.
 
-.. option:: -d, --data-query, --id <dataId>
+.. option:: -d, --data-query <dataId>
 
    **Butler data ID.**
 
    Specify data ID to process.
-   If using :option:`--gen2`, this should use :doc:`data ID syntax </modules/lsst.pipe.base/command-line-task-dataid-howto>`, such as ``--data-query "visit=12345 ccd=1..6 filter=g"``.
-   If using :option:`--gen3`, this should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--data-query "visit=12345 and detector in (1..6) and band='g'"``.
+   This should use :ref:`dimension expression syntax <daf_butler_dimension_expressions>`, such as ``--data-query "visit=12345 and detector in (1..6) and band='g'"``.
 
    Multiple copies of this argument are allowed.
-   For compatibility with the syntax used by command line tasks, this flag with no argument processes all data IDs.
 
    If this argument is omitted, then all data IDs in the dataset will be processed.
    
-   .. warning::
-
-      The ``--id`` form of this argument is for consistency with Gen 2 command-line tasks, and is deprecated.
-      It will be removed after Science Pipelines release 23.
-
 .. option:: --dataset <dataset_package>
 
    **Input dataset package.**
@@ -85,21 +77,6 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    This documentation includes a :ref:`list of supported datasets <ap-verify-datasets-index>`.
 
-.. option:: --dataset-metrics-config <filename>
-
-   **Input dataset-level metrics config. (Gen 2 only)**
-
-   A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
-   If this argument is omitted, :file:`config/default_dataset_metrics.py` will be used.
-
-   Use :option:`--image-metrics-config` to configure image-level metrics instead.
-   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
-   See also :doc:`new-metrics`.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
 .. option:: --db, --db_url
 
    **Target Alert Production Database**
@@ -109,18 +86,6 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    The indicated database is created if it does not exist and this is appropriate for the database type.
 
    If this argument is omitted, ``ap_verify`` creates an SQLite database inside the directory indicated by :option:`--output`.
-
-.. option:: --gen2
-.. option:: --gen3
-
-   **Choose Gen 2 or Gen 3 processing.**
-
-   These optional flags run either the Gen 2 pipeline (`~lsst.ap.pipe.ApPipeTask`), or the Gen 3 pipeline (:file:`apPipe.yaml`).
-   If neither flag is provided, the Gen 3 pipeline will be run.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
 
 .. option:: -h, --help
 
@@ -133,47 +98,19 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Number of processes to use.**
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
-   In Gen 3 mode, data ingestion may also be parallelized.
    
-.. option:: --image-metrics-config <filename>
-
-   **Input image-level metrics config. (Gen 2 only)**
-
-   A config file containing a `~lsst.verify.gen2tasks.MetricsControllerConfig`, which specifies which metrics are measured and sets any options.
-   If this argument is omitted, :file:`config/default_image_metrics.py` will be used.
-
-   Use :option:`--dataset-metrics-config` to configure dataset-level metrics instead.
-   For the Gen 3 equivalent to this option, see :option:`--pipeline`.
-   See also :doc:`new-metrics`.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
-.. option:: --metrics-file <filename>
-
-   **Output metrics file. (Gen 2 only)**
-
-   The template for a file to contain metrics measured by ``ap_verify``, in a format readable by the :doc:`lsst.verify</modules/lsst.verify/index>` framework.
-   The string ``{dataId}`` shall be replaced with the data ID associated with the job, and its use is strongly recommended.
-   If omitted, the output will go to files named after ``ap_verify.{dataId}.verify.json`` in the user's working directory.
-
-   .. warning::
-
-      Support for Gen 2 processing is deprecated and will be removed after Science Pipelines release 23.
-
 .. option:: --output <workspace_dir>
 
    **Output and intermediate product path.**
 
    The output argument is required for all ``ap_verify`` runs except when using :option:`--help`.
 
-   The workspace will be created if it does not exist, and will contain both input and output repositories required for processing the data.
+   The workspace will be created if it does not exist, and will contain the repository required for processing the data.
    The path may be absolute or relative to the current working directory.
 
 .. option:: -p, --pipeline <filename>
 
-   **Custom ap_verify pipeline. (Gen 3 only)**
+   **Custom ap_verify pipeline.**
 
    A pipeline definition file containing a custom verification pipeline.
    This pipeline must be specialized as necessary for the instrument and dataset being processed.
@@ -185,5 +122,3 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
       At present, ap_verify assumes that the provided pipeline includes the ``diaPipe`` task from the AP pipeline, and configures it on the fly.
       It will likely crash if this task is missing.
-
-   For the Gen 2 equivalent to this option, see :option:`--dataset-metrics-config` and :option:`--image-metrics-config`.

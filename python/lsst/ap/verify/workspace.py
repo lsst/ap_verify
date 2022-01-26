@@ -21,7 +21,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-__all__ = ["Workspace", "WorkspaceGen2", "WorkspaceGen3"]
+__all__ = ["Workspace", "WorkspaceGen3"]
 
 import abc
 import os
@@ -30,7 +30,6 @@ import re
 import stat
 
 import lsst.skymap
-import lsst.daf.persistence as dafPersist
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
 
@@ -138,116 +137,6 @@ class Workspace(metaclass=abc.ABCMeta):
 
         The Butler should be read-only, if its type supports the restriction.
         """
-
-
-class WorkspaceGen2(Workspace):
-    """A directory used by ``ap_verify`` to handle data.
-
-    Any object of this class represents a working directory containing
-    (possibly empty) subdirectories for repositories. Constructing a
-    WorkspaceGen2 does not *initialize* its repositories, as this requires
-    external information.
-
-    Parameters
-    ----------
-    location : `str`
-       The location on disk where the workspace will be set up. Will be
-       created if it does not already exist.
-
-    Raises
-    ------
-    EnvironmentError
-        Raised if ``location`` is not readable or not writeable
-    """
-
-    def __init__(self, location):
-        super().__init__(location)
-
-        self.mkdir(self.dataRepo)
-        self.mkdir(self.calibRepo)
-        self.mkdir(self.templateRepo)
-        self.mkdir(self.outputRepo)
-
-        # Lazy evaluation to optimize butlers
-        self._workButler = None
-        self._analysisButler = None
-
-    @property
-    def dataRepo(self):
-        """The absolute path/URI to a Butler repo for science data
-        (`str`, read-only).
-        """
-        return os.path.join(self._location, 'ingested')
-
-    @property
-    def calibRepo(self):
-        """The absolute path/URI to a Butler repo for calibration data
-        (`str`, read-only).
-        """
-        return os.path.join(self._location, 'calibingested')
-
-    @property
-    def templateRepo(self):
-        """The absolute path/URI to a Butler repo for precomputed templates
-        (`str`, read-only).
-        """
-        return self.dataRepo
-
-    @property
-    def outputRepo(self):
-        """The absolute path/URI to a Butler repo for AP pipeline products
-        (`str`, read-only).
-        """
-        return os.path.join(self._location, 'output')
-
-    @property
-    def dbLocation(self):
-        return os.path.join(self._location, 'association.db')
-
-    @property
-    def alertLocation(self):
-        return os.path.join(self._location, 'alerts')
-
-    @property
-    def workButler(self):
-        """A Butler that can produce pipeline inputs and outputs
-        (`lsst.daf.persistence.Butler`, read-only).
-        """
-        if self._workButler is None:
-            self._workButler = self._makeButler()
-        return self._workButler
-
-    def _makeButler(self):
-        """Create a butler for accessing the entire workspace.
-
-        Returns
-        -------
-        butler : `lsst.daf.persistence.Butler`
-            A butler accepting `dataRepo`, `calibRepo`, and `templateRepo` as
-            inputs, and `outputRepo` as an output.
-
-        Notes
-        -----
-        Assumes all `*Repo` properties have been initialized.
-        """
-        # common arguments for butler elements
-        mapperArgs = {"calibRoot": os.path.abspath(self.calibRepo)}
-
-        inputs = [{"root": self.dataRepo, "mapperArgs": mapperArgs}]
-        outputs = [{"root": self.outputRepo, "mode": "rw", "mapperArgs": mapperArgs}]
-
-        if not os.path.samefile(self.dataRepo, self.templateRepo):
-            inputs.append({'root': self.templateRepo, 'mode': 'r', 'mapperArgs': mapperArgs})
-
-        return dafPersist.Butler(inputs=inputs, outputs=outputs)
-
-    @property
-    def analysisButler(self):
-        """A Butler that can read pipeline outputs (`lsst.daf.persistence.Butler`, read-only).
-        """
-        if self._analysisButler is None:
-            self._analysisButler = dafPersist.Butler(inputs={"root": self.outputRepo, "mode": "r"})
-        return self._analysisButler
 
 
 class WorkspaceGen3(Workspace):
