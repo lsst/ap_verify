@@ -39,8 +39,8 @@ usage() {
     print_error
     print_error "Specific options:"
     print_error "   -d          Dataset name"
-    print_error "   -g          Middleware generation number (int)"
-    print_error "   -p          Pipeline to run (Gen 3 only)"
+    print_error "   -g          Middleware generation number (int) [currently unused]"
+    print_error "   -p          Pipeline to run"
     print_error "   -h          show this message"
     exit 1
 }
@@ -58,9 +58,6 @@ if [[ -z "${DATASET}" ]]; then
     print_error "$0: mandatory argument -- d"
     usage
     exit 1
-fi
-if [[ -n "${GEN}" ]]; then
-    GEN="--gen${GEN}"
 fi
 if [[ -n "${PIPE}" ]]; then
     PIPE="--pipeline ${PIPE}"
@@ -90,11 +87,9 @@ fi
 max_proc=8
 NUMPROC=${NUMPROC:-$((sys_proc < max_proc ? sys_proc : max_proc))}
 
-echo "Running ap_verify on ${DATASET} ${GEN}..."
+echo "Running ap_verify on ${DATASET}..."
 ap_verify.py --dataset "${DATASET}" \
-    ${GEN} \
     ${PIPE} \
     --output "${WORKSPACE}" \
     --processes "${NUMPROC}" \
-    --metrics-file "${WORKSPACE}/ap_verify.{dataId}.verify.json" \
     &>> "${WORKSPACE}"/apVerify.log
