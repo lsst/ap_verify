@@ -75,6 +75,7 @@ tasks:
   imageDifference:
     class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
     config:
+      doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
       connections.fakesType: parameters.fakesType
       # TODO: redundant connection definitions workaround for DM-30210
       connections.coaddName: parameters.coaddName
