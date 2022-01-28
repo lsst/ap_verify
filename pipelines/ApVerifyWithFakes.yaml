@@ -55,7 +55,7 @@ tasks:
   # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
   # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
   imageDifferenceNoFakes:
-    class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+    class: lsst.pipe.tasks.imageDifference.ImageDifferenceFromTemplateTask
     config:
       doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
       doSkySources: True
@@ -71,10 +71,12 @@ tasks:
       connections.warpedExposure: parameters.diffWarp
       connections.matchedExposure: parameters.diffMatch
       connections.diaSources: parameters.diaSrcCat
+      connections.inputTemplate: parameters.templateExp
       # TODO: end DM-30210 workaround
   imageDifference:
-    class: lsst.pipe.tasks.imageDifference.ImageDifferenceTask
+    class: lsst.pipe.tasks.imageDifference.ImageDifferenceFromTemplateTask
     config:
+      doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
       connections.fakesType: parameters.fakesType
       # TODO: redundant connection definitions workaround for DM-30210
       connections.coaddName: parameters.coaddName
@@ -87,6 +89,7 @@ tasks:
       connections.warpedExposure: parameters.fakesDiffWarp
       connections.matchedExposure: parameters.fakesDiffMatch
       connections.diaSources: parameters.fakesDiaSrcCat
+      connections.inputTemplate: parameters.templateExp
       # TODO: end DM-30210 workaround
   transformDiaSrcCat:
     class: lsst.ap.association.TransformDiaSourceCatalogTask
