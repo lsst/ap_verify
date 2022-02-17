@@ -170,15 +170,20 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         apdbConfig = self.workspace.analysisButler.get("apdb_marker", id)
         self.assertEqual(apdbConfig.db_url, self.apPipeArgs.db)
 
-    @unittest.skip("Fix test in DM-27117")
-    @patchApPipeGen3
-    def testrunApPipeGen3Reuse(self, _mockDb, mockFwk):
+    def testrunApPipeGen3Reuse(self):
         """Test that runApPipeGen3 does not run the pipeline at all (not even with
         --skip-existing) if --skip-pipeline is provided.
         """
         skipArgs = pipeline_driver.ApPipeParser().parse_args(["--skip-pipeline"])
         pipeline_driver.runApPipeGen3(self.workspace, skipArgs)
-        mockFwk().parseAndRun.assert_not_called()
+
+        # Use datasets as a proxy for pipeline completion.
+        # Depending on the overall test setup, the dataset may or may not be
+        # registered if the pipeline didn't run; check both cases.
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        calexpQuery = set(self.workspace.analysisButler.registry.queryDatasetTypes("calexp"))
+        calexpExists = len(calexpQuery) > 0
+        self.assertFalse(calexpExists and self.workspace.analysisButler.datasetExists("calexp", id))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
