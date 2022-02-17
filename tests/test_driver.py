@@ -21,7 +21,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import argparse
 import functools
 import os
 import shutil
@@ -29,7 +28,6 @@ import tempfile
 import unittest.mock
 
 from lsst.daf.base import PropertySet
-from lsst.pipe.base import DataIdContainer
 import lsst.utils.tests
 from lsst.obs.base import RawIngestTask, DefineVisitsTask
 from lsst.ap.verify import pipeline_driver
@@ -49,9 +47,6 @@ def patchApPipeGen3(method):
     """
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
-        parsedCmd = argparse.Namespace()
-        parsedCmd.id = DataIdContainer()
-        parsedCmd.id.idList = _getDataIds()
         dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makeApdb")
         execPatcher = unittest.mock.patch("lsst.ctrl.mpexec.CmdLineFwk")
         patchedMethod = execPatcher(dbPatcher(method))
@@ -142,38 +137,38 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         else:
             self.fail("No command-line args passed to parseAndRun!")
 
-    @unittest.skip("Fix test in DM-27117")
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceDb(self, mockDb, mockFwk):
+    def testrunApPipeGen3WorkspaceDb(self, mockDb, _mockFwk):
         """Test that runApPipeGen3 places a database in the workspace location by default.
         """
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
+        # Test the call to make_apdb.py
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
         self.assertIn("db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
-        mockParse = mockFwk().parseAndRun
-        mockParse.assert_called_once()
-        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-        self.assertIn("diaPipe:apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        # Test the call to the AP pipeline
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        apdbConfig = self.workspace.analysisButler.get("apdb_marker", id)
+        self.assertEqual(apdbConfig.db_url, "sqlite:///" + self.workspace.dbLocation)
 
-    @unittest.skip("Fix test in DM-27117")
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceCustom(self, mockDb, mockFwk):
+    def testrunApPipeGen3WorkspaceCustom(self, mockDb, _mockFwk):
         """Test that runApPipeGen3 places a database in the specified location.
         """
         self.apPipeArgs.db = "postgresql://somebody@pgdb.misc.org/custom_db"
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
+        # Test the call to make_apdb.py
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
         self.assertIn("db_url=" + self.apPipeArgs.db, cmdLineArgs)
 
-        mockParse = mockFwk().parseAndRun
-        mockParse.assert_called_once()
-        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-        self.assertIn("diaPipe:apdb.db_url=" + self.apPipeArgs.db, cmdLineArgs)
+        # Test the call to the AP pipeline
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        apdbConfig = self.workspace.analysisButler.get("apdb_marker", id)
+        self.assertEqual(apdbConfig.db_url, self.apPipeArgs.db)
 
     @unittest.skip("Fix test in DM-27117")
     @patchApPipeGen3
