@@ -27,7 +27,6 @@ import shutil
 import tempfile
 import unittest.mock
 
-from lsst.daf.base import PropertySet
 import lsst.utils.tests
 from lsst.obs.base import RawIngestTask, DefineVisitsTask
 from lsst.ap.verify import pipeline_driver
@@ -48,8 +47,7 @@ def patchApPipeGen3(method):
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makeApdb")
-        execPatcher = unittest.mock.patch("lsst.ctrl.mpexec.CmdLineFwk")
-        patchedMethod = execPatcher(dbPatcher(method))
+        patchedMethod = dbPatcher(method)
         return patchedMethod(self, *args, **kwargs)
     return wrapper
 
@@ -81,40 +79,6 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
             ["--data-query", f"instrument = '{ids[0]['instrument']}' AND visit = {ids[0]['visit']}",
              "--pipeline", os.path.join(TESTDIR, "MockApPipe.yaml")])
 
-    @staticmethod
-    def dummyMetadata():
-        result = PropertySet()
-        result.add("lsst.pipe.base.calibrate.cycleCount", 42)
-        return result
-
-    def setUpMockPatch(self, target, **kwargs):
-        """Create and register a patcher for a test suite.
-
-        The patching process is guaranteed to avoid resource leaks or
-        side effects lasting beyond the test case that calls this method.
-
-        Parameters
-        ----------
-        target : `str`
-            The target to patch. Must obey all restrictions listed
-            for the ``target`` parameter of `unittest.mock.patch`.
-        kwargs : any
-            Any keyword arguments that are allowed for `unittest.mock.patch`,
-            particularly optional attributes for a `unittest.mock.Mock`.
-
-        Returns
-        -------
-        mock : `unittest.mock.Mock`
-            Object representing the same type of entity as ``target``. For
-            example, if ``target`` is the name of a class, this method shall
-            return a replacement class (rather than a replacement object of
-            that class).
-        """
-        patcher = unittest.mock.patch(target, **kwargs)
-        mock = patcher.start()
-        self.addCleanup(patcher.stop)
-        return mock
-
     def testrunApPipeGen3Steps(self):
         """Test that runApPipeGen3 runs the entire pipeline.
         """
@@ -138,7 +102,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
             self.fail("No command-line args passed to parseAndRun!")
 
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceDb(self, mockDb, _mockFwk):
+    def testrunApPipeGen3WorkspaceDb(self, mockDb):
         """Test that runApPipeGen3 places a database in the workspace location by default.
         """
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
@@ -154,7 +118,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         self.assertEqual(apdbConfig.db_url, "sqlite:///" + self.workspace.dbLocation)
 
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceCustom(self, mockDb, _mockFwk):
+    def testrunApPipeGen3WorkspaceCustom(self, mockDb):
         """Test that runApPipeGen3 places a database in the specified location.
         """
         self.apPipeArgs.db = "postgresql://somebody@pgdb.misc.org/custom_db"
