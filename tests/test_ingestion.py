@@ -26,7 +26,7 @@ import pickle
 import re
 import shutil
 import tempfile
-import unittest.mock
+import unittest
 
 import lsst.utils.tests
 from lsst.daf.butler import CollectionType

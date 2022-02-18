@@ -21,21 +21,24 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import argparse
 import functools
+import os
 import shutil
 import tempfile
 import unittest.mock
 
-from lsst.daf.base import PropertySet
-from lsst.pipe.base import DataIdContainer
 import lsst.utils.tests
+from lsst.obs.base import RawIngestTask, DefineVisitsTask
 from lsst.ap.verify import pipeline_driver
-from lsst.ap.verify.workspace import WorkspaceGen3
+from lsst.ap.verify.testUtils import DataTestCase
+from lsst.ap.verify import Dataset, WorkspaceGen3
 
 
-def _getDataIds():
-    return [{"visit": 42, "ccd": 0}]
+TESTDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+def _getDataIds(butler):
+    return list(butler.registry.queryDataIds({"instrument", "visit", "detector"}, datasets="raw"))
 
 
 def patchApPipeGen3(method):
@@ -43,74 +46,52 @@ def patchApPipeGen3(method):
     """
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
-        parsedCmd = argparse.Namespace()
-        parsedCmd.id = DataIdContainer()
-        parsedCmd.id.idList = _getDataIds()
         dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.makeApdb")
-        execPatcher = unittest.mock.patch("lsst.ctrl.mpexec.CmdLineFwk")
-        patchedMethod = execPatcher(dbPatcher(method))
+        patchedMethod = dbPatcher(method)
         return patchedMethod(self, *args, **kwargs)
     return wrapper
 
 
-class PipelineDriverTestSuiteGen3(lsst.utils.tests.TestCase):
+class PipelineDriverTestSuiteGen3(DataTestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+
+        cls.dataset = Dataset(cls.testDataset)
+
     def setUp(self):
+        super().setUp()
+
         self._testDir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self._testDir, ignore_errors=True)
 
-        # Fake Butler to avoid Workspace initialization overhead
-        self.setUpMockPatch("lsst.daf.butler.Registry",
-                            **{"queryDatasets.return_value": []})
-        self.setUpMockPatch("lsst.daf.butler.Butler")
-
         self.workspace = WorkspaceGen3(self._testDir)
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
+        raws = [os.path.join(self.dataset.rawLocation, "lsst_a_204595_R11_S01_i.fits")]
+        rawIngest = RawIngestTask(butler=self.workspace.workButler, config=RawIngestTask.ConfigClass())
+        rawIngest.run(raws, run=None)
+        defineVisit = DefineVisitsTask(butler=self.workspace.workButler,
+                                       config=DefineVisitsTask.ConfigClass())
+        defineVisit.run(self.workspace.workButler.registry.queryDataIds("exposure", datasets="raw"))
+        ids = _getDataIds(self.workspace.workButler)
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(
-            ["--id", "visit = %d" % _getDataIds()[0]["visit"]])
+            ["--data-query", f"instrument = '{ids[0]['instrument']}' AND visit = {ids[0]['visit']}",
+             "--pipeline", os.path.join(TESTDIR, "MockApPipe.yaml")])
 
-    @staticmethod
-    def dummyMetadata():
-        result = PropertySet()
-        result.add("lsst.pipe.base.calibrate.cycleCount", 42)
-        return result
-
-    def setUpMockPatch(self, target, **kwargs):
-        """Create and register a patcher for a test suite.
-
-        The patching process is guaranteed to avoid resource leaks or
-        side effects lasting beyond the test case that calls this method.
-
-        Parameters
-        ----------
-        target : `str`
-            The target to patch. Must obey all restrictions listed
-            for the ``target`` parameter of `unittest.mock.patch`.
-        kwargs : any
-            Any keyword arguments that are allowed for `unittest.mock.patch`,
-            particularly optional attributes for a `unittest.mock.Mock`.
-
-        Returns
-        -------
-        mock : `unittest.mock.Mock`
-            Object representing the same type of entity as ``target``. For
-            example, if ``target`` is the name of a class, this method shall
-            return a replacement class (rather than a replacement object of
-            that class).
-        """
-        patcher = unittest.mock.patch(target, **kwargs)
-        mock = patcher.start()
-        self.addCleanup(patcher.stop)
-        return mock
-
-    @unittest.skip("Fix test in DM-27117")
-    # Mock up CmdLineFwk to avoid doing any processing.
-    @patchApPipeGen3
-    def testrunApPipeGen3Steps(self, mockDb, mockFwk):
+    def testrunApPipeGen3Steps(self):
         """Test that runApPipeGen3 runs the entire pipeline.
         """
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
-        mockDb.assert_called_once()
-        mockFwk().parseAndRun.assert_called_once()
+        # Use datasets as a proxy for pipeline completion
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        self.assertTrue(self.workspace.analysisButler.datasetExists("calexp", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("src", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_differenceExp", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_diaSrc", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("apdb_marker", id))
+        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_assocDiaSrc", id))
 
     def _getCmdLineArgs(self, parseAndRunArgs):
         if parseAndRunArgs[0]:
@@ -120,48 +101,53 @@ class PipelineDriverTestSuiteGen3(lsst.utils.tests.TestCase):
         else:
             self.fail("No command-line args passed to parseAndRun!")
 
-    @unittest.skip("Fix test in DM-27117")
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceDb(self, mockDb, mockFwk):
+    def testrunApPipeGen3WorkspaceDb(self, mockDb):
         """Test that runApPipeGen3 places a database in the workspace location by default.
         """
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
+        # Test the call to make_apdb.py
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
         self.assertIn("db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
 
-        mockParse = mockFwk().parseAndRun
-        mockParse.assert_called_once()
-        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-        self.assertIn("diaPipe:apdb.db_url=sqlite:///" + self.workspace.dbLocation, cmdLineArgs)
+        # Test the call to the AP pipeline
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        apdbConfig = self.workspace.analysisButler.get("apdb_marker", id)
+        self.assertEqual(apdbConfig.db_url, "sqlite:///" + self.workspace.dbLocation)
 
-    @unittest.skip("Fix test in DM-27117")
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceCustom(self, mockDb, mockFwk):
+    def testrunApPipeGen3WorkspaceCustom(self, mockDb):
         """Test that runApPipeGen3 places a database in the specified location.
         """
         self.apPipeArgs.db = "postgresql://somebody@pgdb.misc.org/custom_db"
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
+        # Test the call to make_apdb.py
         mockDb.assert_called_once()
         cmdLineArgs = self._getCmdLineArgs(mockDb.call_args)
         self.assertIn("db_url=" + self.apPipeArgs.db, cmdLineArgs)
 
-        mockParse = mockFwk().parseAndRun
-        mockParse.assert_called_once()
-        cmdLineArgs = self._getCmdLineArgs(mockParse.call_args)
-        self.assertIn("diaPipe:apdb.db_url=" + self.apPipeArgs.db, cmdLineArgs)
+        # Test the call to the AP pipeline
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        apdbConfig = self.workspace.analysisButler.get("apdb_marker", id)
+        self.assertEqual(apdbConfig.db_url, self.apPipeArgs.db)
 
-    @unittest.skip("Fix test in DM-27117")
-    @patchApPipeGen3
-    def testrunApPipeGen3Reuse(self, _mockDb, mockFwk):
+    def testrunApPipeGen3Reuse(self):
         """Test that runApPipeGen3 does not run the pipeline at all (not even with
         --skip-existing) if --skip-pipeline is provided.
         """
         skipArgs = pipeline_driver.ApPipeParser().parse_args(["--skip-pipeline"])
         pipeline_driver.runApPipeGen3(self.workspace, skipArgs)
-        mockFwk().parseAndRun.assert_not_called()
+
+        # Use datasets as a proxy for pipeline completion.
+        # Depending on the overall test setup, the dataset may or may not be
+        # registered if the pipeline didn't run; check both cases.
+        id = _getDataIds(self.workspace.analysisButler)[0]
+        calexpQuery = set(self.workspace.analysisButler.registry.queryDatasetTypes("calexp"))
+        calexpExists = len(calexpQuery) > 0
+        self.assertFalse(calexpExists and self.workspace.analysisButler.datasetExists("calexp", id))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

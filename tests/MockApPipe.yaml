@@ -1,0 +1,90 @@
+description: Mock Alert Production pipeline. Use only for testing!
+
+parameters:
+  # only templates in ap_verify_testdata
+  coaddName: goodSeeing
+  # only refcat in ap_verify_testdata
+  refcat: gaia
+  # TODO: redundant connection definitions workaround for DM-30210
+  template: goodSeeingCoadd
+  diaSrcCat: goodSeeingDiff_diaSrc
+  diaSrcSchema: goodSeeingDiff_diaSrc_schema
+  diaSrcParquet: goodSeeingDiff_diaSrcTable
+  diff: goodSeeingDiff_differenceExp
+  diffScore: goodSeeingDiff_scoreExp
+  diffWarp: goodSeeingDiff_warpedExp
+  diffMatch: goodSeeingDiff_matchedExp
+  assocSrc: goodSeeingDiff_assocDiaSrc
+  # TODO: end DM-30210 workaround
+tasks:
+  isr:
+    class: lsst.ap.verify.testPipeline.MockIsrTask
+    config:
+      # ap_verify_testdata lacks many auxiliary inputs
+      doDark: False
+      doDefect: False
+  characterizeImage: lsst.ap.verify.testPipeline.MockCharacterizeImageTask
+  calibrate:
+    class: lsst.ap.verify.testPipeline.MockCalibrateTask
+    config:
+      connections.astromRefCat: parameters.refcat
+      connections.photoRefCat: parameters.refcat
+      # Backwards-compatibility with Gen 2
+      astromRefObjLoader.ref_dataset_name: parameters.refcat
+      photoRefObjLoader.ref_dataset_name: parameters.refcat
+      # ap_verify_testdata has bad refcats
+      doAstrometry: False
+      doPhotoCal: False
+  imageDifference:
+    class: lsst.ap.verify.testPipeline.MockImageDifferenceTask
+    config:
+      doWriteWarpedExp: True             # Required for packaging alerts in diaPipe
+      doSkySources: True
+      coaddName: parameters.coaddName              # Can be removed once ImageDifference no longer supports Gen 2
+      getTemplate.coaddName: parameters.coaddName  # Can be removed once ImageDifference no longer supports Gen 2
+      connections.coaddName: parameters.coaddName
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.coaddExposures: parameters.template
+      connections.dcrCoadds: dcrCoadd
+      connections.outputSchema: parameters.diaSrcSchema
+      connections.subtractedExposure: parameters.diff
+      connections.scoreExposure: parameters.diffScore
+      connections.warpedExposure: parameters.diffWarp
+      connections.matchedExposure: parameters.diffMatch
+      connections.diaSources: parameters.diaSrcCat
+      # TODO: end DM-30210 workaround
+  transformDiaSrcCat:
+    class: lsst.ap.verify.testPipeline.MockTransformDiaSourceCatalogTask
+    config:
+      doRemoveSkySources: True
+      connections.coaddName: parameters.coaddName
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.diaSourceSchema: parameters.diaSrcSchema
+      connections.diaSourceCat: parameters.diaSrcCat
+      connections.diffIm: parameters.diff
+      connections.diaSourceTable: parameters.diaSrcParquet
+      # TODO: end DM-30210 workaround
+  diaPipe:
+    class: lsst.ap.verify.testPipeline.MockDiaPipelineTask
+    config:
+      doWriteAssociatedSources: True
+      connections.coaddName: parameters.coaddName
+      # TODO: redundant connection definitions workaround for DM-30210
+      connections.diaSourceTable: parameters.diaSrcParquet
+      connections.diffIm: parameters.diff
+      connections.warpedExposure: parameters.diffWarp
+      connections.associatedDiaSources: parameters.assocSrc
+      # TODO: end DM-30210 workaround
+contracts:
+  # DiaPipelineTask needs diaSource fluxes, catalogs, warped exposures, and difference exposures
+  - imageDifference.doMeasurement is True
+  - imageDifference.doWriteSources is True
+  - imageDifference.doWriteWarpedExp is True
+  - imageDifference.doWriteSubtractedExp is True
+  - imageDifference.doSkySources == transformDiaSrcCat.doRemoveSkySources
+  # Inputs and outputs must match
+  - imageDifference.connections.coaddName == transformDiaSrcCat.connections.coaddName
+  - imageDifference.connections.fakesType == transformDiaSrcCat.connections.fakesType
+  - imageDifference.connections.coaddName == diaPipe.connections.coaddName
+  - imageDifference.connections.fakesType == diaPipe.connections.fakesType
+  - transformDiaSrcCat.connections.diaSourceTable == diaPipe.connections.diaSourceTable
