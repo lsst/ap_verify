@@ -211,7 +211,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         exposuresNoVisits = exposures - exposuresWithVisits
         if exposuresNoVisits:
             self.log.info("Defining visits...")
-            self.visitDefiner.run(exposuresNoVisits, processes=processes)
+            self.visitDefiner.run(exposuresNoVisits)
         else:
             self.log.info("Visits were previously defined, skipping...")
 
