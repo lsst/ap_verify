@@ -29,7 +29,6 @@ import pathlib
 import re
 import stat
 
-import lsst.skymap
 import lsst.daf.butler as dafButler
 import lsst.obs.base as obsBase
 
@@ -221,19 +220,17 @@ class WorkspaceGen3(Workspace):
         """
         if self._workButler is None:
             try:
-                # Hard-code the collection names because it's hard to infer the inputs from the Butler
+                # Dataset generation puts all preloaded datasets in <instrument>/defaults.
+                # However, this definition excludes raws, which are not preloaded.
                 queryButler = dafButler.Butler(self.repo, writeable=True)  # writeable for _workButler
-                inputs = {
-                    lsst.skymap.BaseSkyMap.SKYMAP_RUN_COLLECTION_NAME,
-                }
+                inputs = []
                 for dimension in queryButler.registry.queryDataIds('instrument'):
                     instrument = obsBase.Instrument.fromName(dimension["instrument"], queryButler.registry)
+                    defaultName = instrument.makeCollectionName("defaults")
+                    inputs.append(defaultName)
                     rawName = instrument.makeDefaultRawIngestRunName()
-                    inputs.add(rawName)
+                    inputs.append(rawName)
                     self._ensureCollection(queryButler.registry, rawName, dafButler.CollectionType.RUN)
-                    inputs.add(instrument.makeCalibrationCollectionName())
-                    inputs.add(instrument.makeRefCatCollectionName())
-                inputs.update(queryButler.registry.queryCollections(re.compile(r"templates/\w+")))
 
                 # Create an output chain here, so that workButler can see it.
                 # Definition does not conflict with what pipetask --output uses.
