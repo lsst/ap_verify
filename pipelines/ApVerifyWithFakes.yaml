@@ -60,7 +60,6 @@ tasks:
       doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
       doSkySources: True
       coaddName: parameters.coaddName
-      getTemplate.coaddName: parameters.coaddName
       connections.coaddName: parameters.coaddName
       # TODO: redundant connection definitions workaround for DM-30210
       connections.coaddExposures: parameters.template
