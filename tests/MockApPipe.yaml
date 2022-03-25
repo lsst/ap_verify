@@ -41,7 +41,6 @@ tasks:
       doWriteWarpedExp: True             # Required for packaging alerts in diaPipe
       doSkySources: True
       coaddName: parameters.coaddName              # Can be removed once ImageDifference no longer supports Gen 2
-      getTemplate.coaddName: parameters.coaddName  # Can be removed once ImageDifference no longer supports Gen 2
       connections.coaddName: parameters.coaddName
       # TODO: redundant connection definitions workaround for DM-30210
       connections.coaddExposures: parameters.template
