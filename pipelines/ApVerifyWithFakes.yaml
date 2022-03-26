@@ -52,6 +52,12 @@ tasks:
     config:
       insertFakes.doSubSelectSources: True
       insertFakes.select_col: "isVisitSource"
+  retrieveTemplateWithFakes:
+    class: lsst.ip.diffim.getTemplate.GetTemplateTask
+    config:
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+
   # Contracts require imageDifference, transformDiaSrc, and diaPipe to have matching configs.
   # Since diaPipe must include fakes (see below), do non-fakes processing with non-standard names.
   imageDifferenceNoFakes:
@@ -165,6 +171,7 @@ subsets:
       - isr
       - characterizeImage
       - calibrate
+      - retrieveTemplate
       - imageDifferenceNoFakes
     description: >
       The AP pipeline without fakes. Only includes processing through
@@ -178,6 +185,7 @@ subsets:
   apPipeWithFakes:
     subset:
       - singleFrameWithFakes    # characterizeImage and calibrate with fakes
+      - retrieveTemplate
       - imageDifference
       - transformDiaSrcCat
       - diaPipe
