@@ -185,7 +185,7 @@ subsets:
   apPipeWithFakes:
     subset:
       - singleFrameWithFakes    # characterizeImage and calibrate with fakes
-      - retrieveTemplate
+      - retrieveTemplateWithFakes
       - imageDifference
       - transformDiaSrcCat
       - diaPipe
