@@ -30,6 +30,8 @@ tasks:
     class: lsst.ip.diffim.metrics.NumberSciSourcesMetricTask
   fracDiaSourcesToSciSources:
     class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+    config:
+      connections.coaddName: parameters.coaddName
   numDeblendedSciSources:
     class: lsst.pipe.tasks.metrics.NumberDeblendedSourcesMetricTask
   numDeblendChildSciSources:

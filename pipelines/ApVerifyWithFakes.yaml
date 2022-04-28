@@ -69,6 +69,8 @@ tasks:
   fracDiaSourcesToSciSources:
     # Uses output of imageDifferenceNoFakes
     class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+    config:
+      connections.coaddName: parameters.coaddName
   timing_imageDifference:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
