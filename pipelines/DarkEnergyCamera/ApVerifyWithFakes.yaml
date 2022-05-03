@@ -24,7 +24,7 @@ tasks:
     config:
       photoCal.match.referenceSelection.magLimit.fluxField: i_flux
       photoCal.match.referenceSelection.magLimit.maximum: 22.0
-  singleFrameWithFakes:
+  processVisitFakes:
     class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
     config:
       calibrate.photoCal.match.referenceSelection.magLimit.fluxField: i_flux

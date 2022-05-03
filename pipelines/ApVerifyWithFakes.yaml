@@ -3,9 +3,9 @@
 
 description: Fully instrumented AP pipeline with fakes
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
-    exclude:
-      - fracDiaSourcesToSciSources  # Selectively turn off this task's contracts
+  - location: $AP_PIPE_DIR/pipelines/ApPipeWithFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
+  - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
 parameters:
   fakesType: fakes_
@@ -24,12 +24,16 @@ tasks:
       select_col: "isTemplateSource"
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-  singleFrameWithFakes:
+  processVisitFakes:
     class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
     config:
       connections.fakesType: parameters.fakesType
       insertFakes.doSubSelectSources: True
       insertFakes.select_col: "isVisitSource"
+  retrieveTemplate:
+    class: lsst.ip.diffim.getTemplate.GetTemplateTask
+    config:
+        connections.coaddName: parameters.coaddName
   retrieveTemplateWithFakes:
     class: lsst.ip.diffim.getTemplate.GetTemplateTask
     config:
@@ -45,12 +49,12 @@ tasks:
       doSkySources: True
       coaddName: parameters.coaddName
       connections.coaddName: parameters.coaddName
-  imageDifference:
+  imageDifferenceWithFakes:
     class: lsst.pipe.tasks.imageDifference.ImageDifferenceFromTemplateTask
     config:
       doWriteWarpedExp: True       # Required for packaging alerts in diaPipe
       connections.fakesType: parameters.fakesType
-  transformDiaSrcCat:
+  transformDiaSrcCatWithFakes:
     class: lsst.ap.association.TransformDiaSourceCatalogTask
     config:
       connections.fakesType: parameters.fakesType
@@ -58,9 +62,10 @@ tasks:
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
     config:
+      doPackageAlerts: True
       doWriteAssociatedSources: True
       connections.fakesType: parameters.fakesType
-  fakesMatcher:
+  fakesMatch:
     class: lsst.pipe.tasks.matchFakes.MatchVariableFakesTask
     config:
       matchDistanceArcseconds: 0.1
@@ -101,6 +106,11 @@ tasks:
     config:
       connections.labelName: imageDifferenceNoFakes
       target: imageDifferenceNoFakes:measurement.run
+  timing_transformDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: transformDiaSrcCatWithFakes
+      target: transformDiaSrcCatWithFakes.run
 subsets:
   apPipe:
     subset:
@@ -120,12 +130,12 @@ subsets:
       Creation of fake sources.
   apPipeWithFakes:
     subset:
-      - singleFrameWithFakes    # characterizeImage and calibrate with fakes
+      - processVisitFakes    # characterizeImage and calibrate with fakes
       - retrieveTemplateWithFakes
-      - imageDifference
-      - transformDiaSrcCat
+      - imageDifferenceWithFakes
+      - transformDiaSrcCatWithFakes
       - diaPipe
-      - fakesMatcher
+      - fakesMatch
     description: >
       The AP pipeline with fakes. Requires apPipe and prepareFakes subsets.
 contracts:
@@ -134,24 +144,24 @@ contracts:
   - createFakes.connections.ConnectionsClass(config=createFakes).fakeCat.name ==
       coaddFakes.connections.ConnectionsClass(config=coaddFakes).fakeCat.name
   - createFakes.connections.ConnectionsClass(config=createFakes).fakeCat.name ==
-      singleFrameWithFakes.connections.ConnectionsClass(config=singleFrameWithFakes).fakeCats.name
+      processVisitFakes.connections.ConnectionsClass(config=processVisitFakes).fakeCats.name
   - coaddFakes.connections.ConnectionsClass(config=coaddFakes).imageWithFakes.name ==
       retrieveTemplateWithFakes.connections.ConnectionsClass(config=retrieveTemplateWithFakes).coaddExposures.name
-  - singleFrameWithFakes.connections.ConnectionsClass(config=singleFrameWithFakes).outputExposure.name ==
-      imageDifference.connections.ConnectionsClass(config=imageDifference).exposure.name
+  - processVisitFakes.connections.ConnectionsClass(config=processVisitFakes).outputExposure.name ==
+      imageDifferenceWithFakes.connections.ConnectionsClass(config=imageDifferenceWithFakes).exposure.name
   - createFakes.connections.ConnectionsClass(config=createFakes).fakeCat.name ==
-      fakesMatcher.connections.ConnectionsClass(config=fakesMatcher).fakeCats.name
-  - imageDifference.connections.ConnectionsClass(config=imageDifference).subtractedExposure.name ==
-      fakesMatcher.connections.ConnectionsClass(config=fakesMatcher).diffIm.name
+      fakesMatch.connections.ConnectionsClass(config=fakesMatch).fakeCats.name
+  - imageDifferenceWithFakes.connections.ConnectionsClass(config=imageDifferenceWithFakes).subtractedExposure.name ==
+      fakesMatch.connections.ConnectionsClass(config=fakesMatch).diffIm.name
   - diaPipe.connections.ConnectionsClass(config=diaPipe).associatedDiaSources.name ==
-      fakesMatcher.connections.ConnectionsClass(config=fakesMatcher).associatedDiaSources.name
+      fakesMatch.connections.ConnectionsClass(config=fakesMatch).associatedDiaSources.name
   - retrieveTemplateWithFakes.connections.ConnectionsClass(config=retrieveTemplateWithFakes).outputExposure.name ==
-      imageDifference.connections.ConnectionsClass(config=imageDifference).inputTemplate.name
-  - fakesMatcher.connections.ConnectionsClass(config=fakesMatcher).matchedDiaSources.name ==
+      imageDifferenceWithFakes.connections.ConnectionsClass(config=imageDifferenceWithFakes).inputTemplate.name
+  - fakesMatch.connections.ConnectionsClass(config=fakesMatch).matchedDiaSources.name ==
       apFakesCompletenessMag20t22.connections.ConnectionsClass(config=apFakesCompletenessMag20t22).matchedFakes.name
-  - fakesMatcher.connections.ConnectionsClass(config=fakesMatcher).matchedDiaSources.name ==
+  - fakesMatch.connections.ConnectionsClass(config=fakesMatch).matchedDiaSources.name ==
       apFakesCompletenessMag22t24.connections.ConnectionsClass(config=apFakesCompletenessMag22t24).matchedFakes.name
-  - fakesMatcher.connections.ConnectionsClass(config=fakesMatcher).matchedDiaSources.name ==
+  - fakesMatch.connections.ConnectionsClass(config=fakesMatch).matchedDiaSources.name ==
       apFakesCompletenessMag24t26.connections.ConnectionsClass(config=apFakesCompletenessMag24t26).matchedFakes.name
   - imageDifferenceNoFakes.connections.ConnectionsClass(config=imageDifferenceNoFakes).diaSources.name ==
       fracDiaSourcesToSciSources.connections.ConnectionsClass(config=fracDiaSourcesToSciSources).diaSources.name
