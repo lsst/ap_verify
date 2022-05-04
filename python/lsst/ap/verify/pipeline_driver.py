@@ -135,6 +135,8 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
         # subprocess is an unsafe workaround for DM-26239
         # TODO: generalize this code in DM-26028
         # TODO: work off of workspace.workButler after DM-26239
+        log.info("Running pipeline:")
+        log.info(' '.join(pipelineArgs))
         results = subprocess.run(pipelineArgs, capture_output=False, shell=False, check=False)
         log.info('Pipeline complete.')
         return results.returncode
