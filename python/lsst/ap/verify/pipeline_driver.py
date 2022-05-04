@@ -95,6 +95,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
 
     pipelineFile = _getPipelineFile(workspace, parsedCmdLine)
     pipelineArgs = ["pipetask", "run",
+                    "--fail-fast",
                     "--butler-config", workspace.repo,
                     "--pipeline", pipelineFile,
                     ]
