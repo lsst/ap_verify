@@ -118,6 +118,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             The number processes to use to ingest.
         """
         self._ensureRaws(processes=processes)
+        self._ensureCuratedCalibs(processes=processes)
         self._defineVisits(processes=processes)
         self._copyConfigs()
 
@@ -185,6 +186,37 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             self.ingester.run(dataFiles, run=None, processes=processes)
         except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
             raise RuntimeError("Not all raw files are unique") from detail
+
+    def _ensureCuratedCalibs(self, processes):
+        """Ensure that the repository in ``workspace`` has curated calibs ingested.
+
+        After this method returns, this task's repository contains all curated
+        calibs appropriate for the instrument, whether or not these calibs are
+        provided by this task's ap_verify dataset. Butler operations on the
+        repository are not able to modify ``dataset`` in any way.
+
+        Parameters
+        ----------
+        processes : `int`
+            The number processes to use to ingest, if ingestion must be run.
+        """
+        # TODO: regex is workaround for DM-25945
+        calibCollectionFilter = re.compile(
+            self.dataset.instrument.makeCalibrationCollectionName("curated", ".+"))
+        calibCollections = list(self.workspace.workButler.registry.queryCollections(calibCollectionFilter))
+        calibData = list(self.workspace.workButler.registry.queryDatasets(
+            ...,
+            collections=calibCollections,
+            dataId={"instrument": self.dataset.instrument.getName()})) \
+            if calibCollections else []
+
+        if calibData:
+            self.log.info("Curated calibrations for %s were previously ingested, skipping...",
+                          self.dataset.instrument.getName())
+        else:
+            self.log.info("Ingesting curated calibs...")
+            self.dataset.instrument.writeCuratedCalibrations(self.workspace.workButler)
+            self.log.info("Curated calibs are now ingested in %s", self.workspace.repo)
 
     def _defineVisits(self, processes):
         """Map visits to the ingested exposures.
