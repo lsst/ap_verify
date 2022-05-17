@@ -8,24 +8,16 @@ instrument: lsst.obs.decam.DarkEnergyCamera
 description: Fully instrumented AP pipeline with fakes, specialized for DECam
 imports:
   - location: $AP_VERIFY_DIR/pipelines/ApVerifyWithFakes.yaml
+    exclude:
+      - processCcd
+  - location: $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ProcessCcd.yaml
   # Can't use $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ApPipeWithFakes.yaml here
   # because the changes made by that file and ../ApVerifyWithFakes.yaml are
   # hard to separate.
 tasks:
-  isr:
-    class: lsst.ip.isr.IsrTask
-    config:
-      connections.ccdExposure: raw
-      connections.crosstalkSources: overscanRaw
-      doOverscan: true
-      doCrosstalk: true
-  calibrate:
-    class: lsst.pipe.tasks.calibrate.CalibrateTask
-    config:
-      photoCal.match.referenceSelection.magLimit.fluxField: i_flux
-      photoCal.match.referenceSelection.magLimit.maximum: 22.0
   processVisitFakes:
     class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
     config:
+      # Mirror calibrate config from DarkEnergyCamera/ProcessCcd.yaml
       calibrate.photoCal.match.referenceSelection.magLimit.fluxField: i_flux
       calibrate.photoCal.match.referenceSelection.magLimit.maximum: 22.0

@@ -5,6 +5,9 @@ instrument: lsst.obs.subaru.HyperSuprimeCam
 description: Fully instrumented AP pipeline with fakes, specialized for HSC
 imports:
   - location: $AP_VERIFY_DIR/pipelines/ApVerifyWithFakes.yaml
+    exclude:
+      - processCcd
+  - location: $AP_PIPE_DIR/pipelines/HyperSuprimeCam/ProcessCcd.yaml
   # Can't use $AP_PIPE_DIR/pipelines/HyperSuprimeCam/ApPipeWithFakes.yaml here
   # because the changes made by that file and ../ApVerifyWithFakes.yaml are
   # hard to separate.
