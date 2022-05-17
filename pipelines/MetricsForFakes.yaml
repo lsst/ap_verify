@@ -12,9 +12,6 @@ tasks:
       magMax: 22
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
   apFakesCompletenessMag22t24:
     class: lsst.ap.pipe.metrics.ApFakesCompletenessMetricTask
     config:
@@ -23,9 +20,6 @@ tasks:
       magMax: 24
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
   apFakesCompletenessMag24t26:
     class: lsst.ap.pipe.metrics.ApFakesCompletenessMetricTask
     config:
@@ -34,9 +28,6 @@ tasks:
       magMax: 26
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
   apFakesCountMag20t22:
     class: lsst.ap.pipe.metrics.ApFakesCountMetricTask
     config:
@@ -45,9 +36,6 @@ tasks:
       magMax: 22
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
   apFakesCountMag22t24:
     class: lsst.ap.pipe.metrics.ApFakesCountMetricTask
     config:
@@ -56,9 +44,6 @@ tasks:
       magMax: 24
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
   apFakesCountMag24t26:
     class: lsst.ap.pipe.metrics.ApFakesCountMetricTask
     config:
@@ -67,9 +52,6 @@ tasks:
       magMax: 26
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
   apFakesCount:
     class: lsst.ap.pipe.metrics.ApFakesCountMetricTask
     config:
@@ -78,6 +60,3 @@ tasks:
       magMax: 39
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
-      # TODO: redundant connection definitions workaround for DM-30210
-      connections.matchedFakes: parameters.fakesMatchedSrc
-      # TODO: end DM-30210 workaround
