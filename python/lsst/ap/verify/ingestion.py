@@ -181,8 +181,12 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             raise RuntimeError("No raw files to ingest (expected list of filenames, got %r)." % dataFiles)
 
         try:
-            # run=None because expect ingester to name a new collection
-            self.ingester.run(dataFiles, run=None, processes=processes)
+            # run=None because expect ingester to name a new collection.
+            # HACK: update_exposure_records=True to modernize exposure records
+            # from old ap_verify datasets. Since the exposure records are
+            # generated from the same files, the only changes should be
+            # schema-related.
+            self.ingester.run(dataFiles, run=None, processes=processes, update_exposure_records=True)
         except lsst.daf.butler.registry.ConflictingDefinitionError as detail:
             raise RuntimeError("Not all raw files are unique") from detail
 
