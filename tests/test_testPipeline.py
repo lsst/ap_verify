@@ -111,7 +111,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "dcrCoadd", cls.subfilterId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_differenceExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_scoreExp", cls.visitId.keys(), "ExposureF")
-        butlerTests.addDatasetType(cls.repo, "deepDiff_warpedExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_templateExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrc", cls.visitId.keys(), "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrcTable", cls.visitId.keys(), "DataFrame")
@@ -196,7 +196,7 @@ class MockTaskTestSuite(unittest.TestCase):
              "dcrCoadds": [self.subfilterId],
              "subtractedExposure": self.visitId,
              "scoreExposure": self.visitId,
-             "warpedExposure": self.visitId,
+             "template": self.visitId,
              "matchedExposure": self.visitId,
              "diaSources": self.visitId,
              })
@@ -229,14 +229,14 @@ class MockTaskTestSuite(unittest.TestCase):
         self.butler.put(pandas.DataFrame(), "visitSsObjects", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
-        self.butler.put(afwImage.ExposureF(), "deepDiff_warpedExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
             {"diaSourceTable": self.visitId,
              "solarSystemObjectTable": self.visitId,
              "diffIm": self.visitId,
              "exposure": self.visitId,
-             "warpedExposure": self.visitId,
+             "template": self.visitId,
              "apdbMarker": self.visitId,
              "associatedDiaSources": self.visitId,
              })

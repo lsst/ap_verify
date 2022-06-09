@@ -31,6 +31,7 @@ tasks:
       doSkySources: True
       coaddName: parameters.coaddName              # Can be removed once ImageDifference no longer supports Gen 2
       connections.coaddName: parameters.coaddName
+      connections.warpedExposure: goodSeeingDiff_templateExp
   transformDiaSrcCat:
     class: lsst.ap.verify.testPipeline.MockTransformDiaSourceCatalogTask
     config:
@@ -50,8 +51,6 @@ contracts:
   - imageDifference.doSkySources == transformDiaSrcCat.doRemoveSkySources
   # Inputs and outputs must match
   # Use of ConnectionsClass for templated fields is a workaround for DM-30210
-  - retrieveTemplate.connections.ConnectionsClass(config=retrieveTemplate).outputExposure.name ==
-      imageDifference.connections.ConnectionsClass(config=imageDifference).inputTemplate.name
   - imageDifference.connections.ConnectionsClass(config=imageDifference).subtractedExposure.name ==
       transformDiaSrcCat.connections.ConnectionsClass(config=transformDiaSrcCat).diffIm.name
   - imageDifference.connections.ConnectionsClass(config=imageDifference).diaSources.name ==
@@ -59,7 +58,7 @@ contracts:
   - imageDifference.connections.ConnectionsClass(config=imageDifference).subtractedExposure.name ==
         diaPipe.connections.ConnectionsClass(config=diaPipe).diffIm.name
   - imageDifference.connections.ConnectionsClass(config=imageDifference).warpedExposure.name ==
-        diaPipe.connections.ConnectionsClass(config=diaPipe).warpedExposure.name
+        diaPipe.connections.ConnectionsClass(config=diaPipe).template.name
   - imageDifference.connections.ConnectionsClass(config=imageDifference).exposure.name ==
       diaPipe.connections.ConnectionsClass(config=diaPipe).exposure.name
   - transformDiaSrcCat.connections.ConnectionsClass(config=transformDiaSrcCat).diaSourceTable.name ==

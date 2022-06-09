@@ -422,7 +422,7 @@ class MockDiaPipelineTask(PipelineTask):
             solarSystemObjectTable,
             diffIm,
             exposure,
-            warpedExposure,
+            template,
             ccdExposureIdBits,
             band):
         """Produce DiaSource and DiaObject outputs with no processing.
@@ -439,7 +439,7 @@ class MockDiaPipelineTask(PipelineTask):
         exposure : `lsst.afw.image.ExposureF`
             Calibrated exposure differenced with a template to create
             ``diffIm``.
-        warpedExposure : `lsst.afw.image.ExposureF`
+        template : `lsst.afw.image.ExposureF`
             Template exposure used to create diffIm.
         ccdExposureIdBits : `int`
             Number of bits used for a unique ``ccdVisitId``.
