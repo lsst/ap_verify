@@ -36,6 +36,14 @@ For example, to install the `Cosmos PDR2 <https://github.com/lsst/ap_verify_ci_c
 
    rebuild -u ap_verify_ci_cosmos_pdr2
 
+Alternatively, the dataset can be cloned directly and setup:
+
+.. prompt:: bash
+
+   git clone https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
+   setup -r ap_verify_ci_cosmos_pdr2
+
+The dataset should be setup each time before use.
 Once this is done, ``ap_verify`` will be able to find the Cosmos data when requested through :option:`--dataset`.
 
 Further reading

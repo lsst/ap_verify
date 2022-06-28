@@ -17,9 +17,18 @@ For more details, see the :doc:`command-line-reference` or run :option:`ap_verif
 How to run ap_verify in a new workspace
 =======================================
 
-Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows:
+Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows.
 
-.. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
+.. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/ 
+
+First download and setup the dataset. 
+
+.. prompt:: bash
+
+   git clone https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
+   setup -r ap_verify_ci_cosmos_pdr2
+
+You will need to setup the dataset each time you want to use it. 
 
 .. prompt:: bash
 
