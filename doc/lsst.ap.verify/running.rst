@@ -23,12 +23,12 @@ Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_veri
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --data-query "visit in (59150, 59160) and band='g'" -j4 --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --data-query "visit in (59150, 59160)" -j4 --output workspaces/cosmos/
 
 Here the inputs are:
 
 * :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
-* :command:`visit in (59150, 59160) and band='g'` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
+* :command:`visit in (59150, 59160)` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
 * :option:`-j` causes the ingest and processing pipelines to use 4 processes: choose a value appropriate for your machine; the system does not automatically determine how many parallel processes to use.
 
 while the output is:
