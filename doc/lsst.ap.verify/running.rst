@@ -17,18 +17,27 @@ For more details, see the :doc:`command-line-reference` or run :option:`ap_verif
 How to run ap_verify in a new workspace
 =======================================
 
-Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows:
+Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows.
 
-.. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
+.. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/ 
+
+First download and setup the dataset. 
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --data-query "visit in (59150, 59160) and band='g'" -j4 --output workspaces/cosmos/
+   git clone https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
+   setup -r ap_verify_ci_cosmos_pdr2
+
+You will need to setup the dataset each time you want to use it. 
+
+.. prompt:: bash
+
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --data-query "visit in (59150, 59160)" -j4 --output workspaces/cosmos/
 
 Here the inputs are:
 
 * :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
-* :command:`visit in (59150, 59160) and band='g'` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
+* :command:`visit in (59150, 59160)` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
 * :option:`-j` causes the ingest and processing pipelines to use 4 processes: choose a value appropriate for your machine; the system does not automatically determine how many parallel processes to use.
 
 while the output is:
