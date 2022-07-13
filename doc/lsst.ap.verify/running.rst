@@ -20,17 +20,17 @@ If this is not the case, see :doc:`datasets-install`.
 How to run ap_verify in a new workspace
 =======================================
 
-Using the `Cosmos PDR2`_ CI dataset as an example, one can run :command:`ap_verify.py` as follows.
+Using the `Cosmos PDR2`_ CI dataset as an example, first setup the dataset, if it isn't already.
 
 .. _Cosmos PDR2: https://github.com/lsst/ap_verify_ci_cosmos_pdr2/
-
-First setup the dataset, if it isn't already.
 
 .. prompt:: bash
 
    setup [-r] ap_verify_ci_cosmos_pdr2
 
 You will need to setup the dataset once each session.
+
+You can then run :command:`ap_verify.py` as follows.
 
 .. prompt:: bash
 
