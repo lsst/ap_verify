@@ -24,54 +24,34 @@ tasks:
       connections.metric: CalibrateTime
       connections.labelName: calibrate
       target: calibrate.run
-  timing_imageDifference:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: ImageDifferenceTime
-      connections.labelName: imageDifference
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: imageDifference.run
-  timing_imageDifference_astrometer:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: meas_astrom
-      connections.metric: AstrometryTime
-      connections.labelName: imageDifference
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: imageDifference:astrometer.loadAndMatch
-  timing_imageDifference_register:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: RegisterImageTime
-      connections.labelName: imageDifference
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: imageDifference:register.run
-  timing_imageDifference_subtract:
+  timing_subtractImages:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ip_diffim
-      connections.metric: ImagePsfMatchTime
-      connections.labelName: imageDifference
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: imageDifference:subtract.subtractExposures
-  timing_imageDifference_detection:
+      connections.metric: SubtractImagesALTime
+      connections.labelName: subtractImages
+      target: subtractImages.run
+  timing_detectAndMeasure:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.package: ip_diffim
+      connections.metric: DetectAndMeasureTime
+      connections.labelName: detectAndMeasure
+      target: detectAndMeasure.run
+  timing_detectAndMeasure_detection:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: meas_algorithms
       connections.metric: SourceDetectionTime
-      connections.labelName: imageDifference
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: imageDifference:detection.run
-  timing_imageDifference_measurement:
+      connections.labelName: detectAndMeasure
+      target: detectAndMeasure:detection.run
+  timing_detectAndMeasure_measurement:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: DipoleFitTime
-      connections.labelName: imageDifference
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: imageDifference:measurement.run
+      connections.labelName: detectAndMeasure
+      target: detectAndMeasure:measurement.run
   timing_diaPipe:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
