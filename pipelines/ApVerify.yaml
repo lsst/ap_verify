@@ -14,5 +14,5 @@ tasks:
 contracts:
   # Metric inputs must match pipeline outputs
   # Use of ConnectionsClass for templated fields is a workaround for DM-30210
-  - imageDifference.connections.ConnectionsClass(config=imageDifference).diaSources.name ==
+  - detectAndMeasure.connections.ConnectionsClass(config=detectAndMeasure).diaSources.name ==
       fracDiaSourcesToSciSources.connections.ConnectionsClass(config=fracDiaSourcesToSciSources).diaSources.name
