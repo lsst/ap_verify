@@ -219,7 +219,9 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
     def testMockDiaPipelineTask(self):
-        task = MockDiaPipelineTask()
+        config = MockDiaPipelineTask.ConfigClass()
+        config.apdb.db_url = "testing_only"
+        task = MockDiaPipelineTask(config=config)
         pipelineTests.assertValidInitOutput(task)
         result = task.run(pandas.DataFrame(), pandas.DataFrame(), afwImage.ExposureF(),
                           afwImage.ExposureF(), afwImage.ExposureF(), 42, 'k')
