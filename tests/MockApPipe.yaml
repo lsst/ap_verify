@@ -18,9 +18,6 @@ tasks:
     config:
       connections.astromRefCat: parameters.refcat
       connections.photoRefCat: parameters.refcat
-      # Backwards-compatibility with Gen 2
-      astromRefObjLoader.ref_dataset_name: parameters.refcat
-      photoRefObjLoader.ref_dataset_name: parameters.refcat
       # ap_verify_testdata has bad refcats
       doAstrometry: False
       doPhotoCal: False
