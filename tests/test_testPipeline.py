@@ -36,7 +36,8 @@ import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
-    MockCalibrateTask, MockGetTemplateTask, MockImageDifferenceTask, MockTransformDiaSourceCatalogTask, \
+    MockCalibrateTask, MockGetTemplateTask, MockImageDifferenceTask, \
+    MockAlardLuptonSubtractTask, MockTransformDiaSourceCatalogTask, \
     MockDiaPipelineTask
 
 
@@ -111,6 +112,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "goodSeeingCoadd", cls.patchId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "dcrCoadd", cls.subfilterId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_differenceExp", cls.visitId.keys(), "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_differenceTempExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_scoreExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_templateExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "goodSeeingDiff_templateExp", cls.visitId.keys(), "ExposureF")
@@ -225,6 +227,25 @@ class MockTaskTestSuite(unittest.TestCase):
              "template": self.visitId,
              "matchedExposure": self.visitId,
              "diaSources": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockAlardLuptonSubtractTask(self):
+        task = MockAlardLuptonSubtractTask()
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(afwImage.ExposureF(), afwImage.ExposureF(), afwTable.SourceCatalog())
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "src", self.visitId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"template": self.visitId,
+             "science": self.visitId,
+             "sources": self.visitId,
+             "difference": self.visitId,
+             "matchedTemplate": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 

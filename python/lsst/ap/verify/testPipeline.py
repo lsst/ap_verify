@@ -37,7 +37,7 @@ import lsst.afw.table as afwTable
 import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
-from lsst.ip.diffim import GetTemplateConfig
+from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.pipe.tasks.imageDifference import ImageDifferenceConfig
@@ -396,6 +396,49 @@ class MockImageDifferenceTask(PipelineTask):
             diaSources=afwTable.SourceCatalog(),
             selectSources=afwTable.SourceCatalog(),
         )
+
+
+class MockAlardLuptonSubtractTask(PipelineTask):
+    """A do-nothing substitute for AlardLuptonSubtractTask.
+    """
+    ConfigClass = AlardLuptonSubtractConfig
+    _DefaultName = "notAlardLuptonSubtract"
+
+    def run(self, template, science, sources, finalizedPsfApCorrCatalog=None):
+        """PSF match, subtract, and decorrelate two images.
+
+        Parameters
+        ----------
+        template : `lsst.afw.image.ExposureF`
+            Template exposure, warped to match the science exposure.
+        science : `lsst.afw.image.ExposureF`
+            Science exposure to subtract from the template.
+        sources : `lsst.afw.table.SourceCatalog`
+            Identified sources on the science exposure. This catalog is used to
+            select sources in order to perform the AL PSF matching on stamp
+            images around them.
+        finalizedPsfApCorrCatalog : `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with finalized psf models and aperture correction
+            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog uses
+            the detector id for the catalog id, sorted on id for fast lookup.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            ``difference`` : `lsst.afw.image.ExposureF`
+                Result of subtracting template and science.
+            ``matchedTemplate`` : `lsst.afw.image.ExposureF`
+                Warped and PSF-matched template exposure.
+            ``backgroundModel`` : `lsst.afw.math.Function2D`
+                Background model that was fit while solving for the PSF-matching kernel
+            ``psfMatchingKernel`` : `lsst.afw.math.Kernel`
+                Kernel used to PSF-match the convolved image.
+        """
+        return Struct(difference=afwImage.ExposureF(),
+                      matchedTemplate=afwImage.ExposureF(),
+                      backgroundModel=afwMath.NullFunction2D(),
+                      psfMatchingKernel=afwMath.FixedKernel(),
+                      )
 
 
 class MockTransformDiaSourceCatalogTask(PipelineTask):
