@@ -36,7 +36,7 @@ import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
-    MockCalibrateTask, MockGetTemplateTask, MockImageDifferenceTask, \
+    MockCalibrateTask, MockGetTemplateTask, \
     MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
     MockDiaPipelineTask
 
@@ -108,12 +108,9 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "srcMatchFull", cls.visitId.keys(), "Catalog")
         butlerTests.addDatasetType(cls.repo, lsst.skymap.BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
                                    cls.skymapId.keys(), "SkyMap")
-        butlerTests.addDatasetType(cls.repo, "deepCoadd", cls.patchId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "goodSeeingCoadd", cls.patchId.keys(), "ExposureF")
-        butlerTests.addDatasetType(cls.repo, "dcrCoadd", cls.subfilterId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_differenceExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_differenceTempExp", cls.visitId.keys(), "ExposureF")
-        butlerTests.addDatasetType(cls.repo, "deepDiff_scoreExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_templateExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "goodSeeingDiff_templateExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.keys(), "ExposureF")
@@ -202,31 +199,6 @@ class MockTaskTestSuite(unittest.TestCase):
              "skyMap": self.skymapId,
              "coaddExposures": [self.patchId],
              "template": self.visitId,
-             })
-        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
-
-    def testMockImageDifferenceTask(self):
-        task = MockImageDifferenceTask()
-        pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwImage.ExposureF(), templateExposure=afwImage.ExposureF())
-        pipelineTests.assertValidOutput(task, result)
-
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
-        skymap = lsst.skymap.DiscreteSkyMap(lsst.skymap.DiscreteSkyMapConfig())
-        self.butler.put(skymap, lsst.skymap.BaseSkyMap.SKYMAP_DATASET_TYPE_NAME, self.skymapId)
-        self.butler.put(afwImage.ExposureF(), "deepCoadd", self.patchId)
-        self.butler.put(afwImage.ExposureF(), "dcrCoadd", self.subfilterId)
-        quantum = pipelineTests.makeQuantum(
-            task, self.butler, self.skymapVisitId,
-            {"exposure": self.visitId,
-             "skyMap": self.skymapId,
-             "coaddExposures": [self.patchId],
-             "dcrCoadds": [self.subfilterId],
-             "subtractedExposure": self.visitId,
-             "scoreExposure": self.visitId,
-             "template": self.visitId,
-             "matchedExposure": self.visitId,
-             "diaSources": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
