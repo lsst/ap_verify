@@ -55,7 +55,7 @@ class MockIsrTask(PipelineTask):
             fringes=Struct(fringes=None), opticsTransmission=None, filterTransmission=None,
             sensorTransmission=None, atmosphereTransmission=None,
             detectorNum=None, strayLightData=None, illumMaskedImage=None,
-            isGen3=False,
+            deferredCharge=None,
             ):
         """Accept ISR inputs, and produce ISR outputs with no processing.
 
@@ -135,11 +135,17 @@ class MockIsrTask(PipelineTask):
             ``flattenedThumb``
                 Thumbnail image of the exposure after flat-field correction
                 (`numpy.ndarray`).
+            - ``outputStatistics`` : mapping [`str`]
+                Values of the additional statistics calculated.
         """
         return Struct(exposure=afwImage.ExposureF(),
                       outputExposure=afwImage.ExposureF(),
                       ossThumb=np.empty((1, 1)),
                       flattenedThumb=np.empty((1, 1)),
+                      preInterpExposure=afwImage.ExposureF(),
+                      outputOssThumbnail=np.empty((1, 1)),
+                      outputFlattenedThumbnail=np.empty((1, 1)),
+                      outputStatistics={},
                       )
 
 
