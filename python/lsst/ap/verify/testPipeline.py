@@ -37,6 +37,7 @@ import lsst.afw.table as afwTable
 import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
+from lsst.ip.diffim import GetTemplateConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.pipe.tasks.imageDifference import ImageDifferenceConfig
@@ -267,6 +268,53 @@ class MockCalibrateTask(PipelineTask):
                       outputBackground=afwMath.BackgroundList(bg),
                       outputCat=afwTable.SourceCatalog(),
                       astromMatches=[],
+                      )
+
+
+class MockGetTemplateTask(PipelineTask):
+    """A do-nothing substitute for GetTemplateTask.
+    """
+    ConfigClass = GetTemplateConfig
+    _DefaultName = "notGetTemplate"
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        # Mock GetTemplateTask.getOverlappingExposures
+        results = Struct(coaddExposures=[],
+                         dataIds=[],
+                         )
+        inputs["coaddExposures"] = results.coaddExposures
+        inputs["dataIds"] = results.dataIds
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self, coaddExposures, bbox, wcs, dataIds, **kwargs):
+        """Warp coadds from multiple tracts to form a template for image diff.
+
+        Where the tracts overlap, the resulting template image is averaged.
+        The PSF on the template is created by combining the CoaddPsf on each
+        template image into a meta-CoaddPsf.
+
+        Parameters
+        ----------
+        coaddExposures : `list` of `lsst.afw.image.Exposure`
+            Coadds to be mosaicked
+        bbox : `lsst.geom.Box2I`
+            Template Bounding box of the detector geometry onto which to
+            resample the coaddExposures
+        wcs : `lsst.afw.geom.SkyWcs`
+            Template WCS onto which to resample the coaddExposures
+        dataIds : `list` of `lsst.daf.butler.DataCoordinate`
+            Record of the tract and patch of each coaddExposure.
+        **kwargs
+            Any additional keyword parameters.
+
+        Returns
+        -------
+        result : `lsst.pipe.base.Struct` containing
+            - ``template`` : a template coadd exposure assembled out of patches
+        """
+        return Struct(template=afwImage.ExposureF(),
                       )
 
 
