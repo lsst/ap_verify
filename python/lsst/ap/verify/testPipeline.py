@@ -37,7 +37,7 @@ import lsst.afw.table as afwTable
 import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
-from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig
+from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig, DetectAndMeasureConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.pipe.tasks.imageDifference import ImageDifferenceConfig
@@ -438,6 +438,58 @@ class MockAlardLuptonSubtractTask(PipelineTask):
                       matchedTemplate=afwImage.ExposureF(),
                       backgroundModel=afwMath.NullFunction2D(),
                       psfMatchingKernel=afwMath.FixedKernel(),
+                      )
+
+
+class MockDetectAndMeasureTask(PipelineTask):
+    """A do-nothing substitute for DetectAndMeasureTask.
+    """
+    ConfigClass = DetectAndMeasureConfig
+    _DefaultName = "notDetectAndMeasure"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.outputSchema = afwTable.SourceCatalog()
+
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        idFactory = obsBase.ExposureIdInfo(8, 4).makeSourceIdFactory()
+
+        outputs = self.run(inputs['science'],
+                           inputs['matchedTemplate'],
+                           inputs['difference'],
+                           inputs['selectSources'],
+                           idFactory=idFactory)
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self, science, matchedTemplate, difference, selectSources,
+            idFactory=None):
+        """Detect and measure sources on a difference image.
+
+        Parameters
+        ----------
+        science : `lsst.afw.image.ExposureF`
+            Science exposure that the template was subtracted from.
+        matchedTemplate : `lsst.afw.image.ExposureF`
+            Warped and PSF-matched template that was used produce the
+            difference image.
+        difference : `lsst.afw.image.ExposureF`
+            Result of subtracting template from the science image.
+        selectSources : `lsst.afw.table.SourceCatalog`
+            Identified sources on the science exposure.
+        idFactory : `lsst.afw.table.IdFactory`, optional
+            Generator object to assign ids to detected sources in the difference image.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            ``subtractedMeasuredExposure`` : `lsst.afw.image.ExposureF`
+                Subtracted exposure with detection mask applied.
+            ``diaSources``  : `lsst.afw.table.SourceCatalog`
+                The catalog of detected sources.
+        """
+        return Struct(subtractedMeasuredExposure=difference,
+                      diaSources=afwTable.SourceCatalog(),
                       )
 
 

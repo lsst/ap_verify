@@ -37,7 +37,7 @@ import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
     MockCalibrateTask, MockGetTemplateTask, MockImageDifferenceTask, \
-    MockAlardLuptonSubtractTask, MockTransformDiaSourceCatalogTask, \
+    MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
     MockDiaPipelineTask
 
 
@@ -246,6 +246,31 @@ class MockTaskTestSuite(unittest.TestCase):
              "sources": self.visitId,
              "difference": self.visitId,
              "matchedTemplate": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockDetectAndMeasureTask(self):
+        task = MockDetectAndMeasureTask()
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(science=afwImage.ExposureF(),
+                          matchedTemplate=afwImage.ExposureF(),
+                          difference=afwImage.ExposureF(),
+                          selectSources=afwTable.SourceCatalog(),
+                          )
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_matchedExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_differenceTempExp", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "src", self.visitId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"science": self.visitId,
+             "matchedTemplate": self.visitId,
+             "difference": self.visitId,
+             "selectSources": self.visitId,
+             "diaSources": self.visitId,
+             "subtractedMeasuredExposure": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
