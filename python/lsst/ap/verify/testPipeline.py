@@ -37,9 +37,9 @@ import lsst.afw.table as afwTable
 import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
+from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig, DetectAndMeasureConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
-from lsst.pipe.tasks.imageDifference import ImageDifferenceConfig
 from lsst.ap.association import TransformDiaSourceCatalogConfig, DiaPipelineConfig
 
 
@@ -55,7 +55,7 @@ class MockIsrTask(PipelineTask):
             fringes=Struct(fringes=None), opticsTransmission=None, filterTransmission=None,
             sensorTransmission=None, atmosphereTransmission=None,
             detectorNum=None, strayLightData=None, illumMaskedImage=None,
-            isGen3=False,
+            deferredCharge=None,
             ):
         """Accept ISR inputs, and produce ISR outputs with no processing.
 
@@ -135,11 +135,17 @@ class MockIsrTask(PipelineTask):
             ``flattenedThumb``
                 Thumbnail image of the exposure after flat-field correction
                 (`numpy.ndarray`).
+            - ``outputStatistics`` : mapping [`str`]
+                Values of the additional statistics calculated.
         """
         return Struct(exposure=afwImage.ExposureF(),
                       outputExposure=afwImage.ExposureF(),
                       ossThumb=np.empty((1, 1)),
                       flattenedThumb=np.empty((1, 1)),
+                      preInterpExposure=afwImage.ExposureF(),
+                      outputOssThumbnail=np.empty((1, 1)),
+                      outputFlattenedThumbnail=np.empty((1, 1)),
+                      outputStatistics={},
                       )
 
 
@@ -270,84 +276,146 @@ class MockCalibrateTask(PipelineTask):
                       )
 
 
-class MockImageDifferenceTask(PipelineTask):
-    """A do-nothing substitute for ImageDifferenceTask.
+class MockGetTemplateTask(PipelineTask):
+    """A do-nothing substitute for GetTemplateTask.
     """
-    ConfigClass = ImageDifferenceConfig
-    _DefaultName = "notImageDifference"
+    ConfigClass = GetTemplateConfig
+    _DefaultName = "notGetTemplate"
 
-    def __init__(self, butler=None, **kwargs):
+    def runQuantum(self, butlerQC, inputRefs, outputRefs):
+        inputs = butlerQC.get(inputRefs)
+        # Mock GetTemplateTask.getOverlappingExposures
+        results = Struct(coaddExposures=[],
+                         dataIds=[],
+                         )
+        inputs["coaddExposures"] = results.coaddExposures
+        inputs["dataIds"] = results.dataIds
+        outputs = self.run(**inputs)
+        butlerQC.put(outputs, outputRefs)
+
+    def run(self, coaddExposures, bbox, wcs, dataIds, **kwargs):
+        """Warp coadds from multiple tracts to form a template for image diff.
+
+        Where the tracts overlap, the resulting template image is averaged.
+        The PSF on the template is created by combining the CoaddPsf on each
+        template image into a meta-CoaddPsf.
+
+        Parameters
+        ----------
+        coaddExposures : `list` of `lsst.afw.image.Exposure`
+            Coadds to be mosaicked
+        bbox : `lsst.geom.Box2I`
+            Template Bounding box of the detector geometry onto which to
+            resample the coaddExposures
+        wcs : `lsst.afw.geom.SkyWcs`
+            Template WCS onto which to resample the coaddExposures
+        dataIds : `list` of `lsst.daf.butler.DataCoordinate`
+            Record of the tract and patch of each coaddExposure.
+        **kwargs
+            Any additional keyword parameters.
+
+        Returns
+        -------
+        result : `lsst.pipe.base.Struct` containing
+            - ``template`` : a template coadd exposure assembled out of patches
+        """
+        return Struct(template=afwImage.ExposureF(),
+                      )
+
+
+class MockAlardLuptonSubtractTask(PipelineTask):
+    """A do-nothing substitute for AlardLuptonSubtractTask.
+    """
+    ConfigClass = AlardLuptonSubtractConfig
+    _DefaultName = "notAlardLuptonSubtract"
+
+    def run(self, template, science, sources, finalizedPsfApCorrCatalog=None):
+        """PSF match, subtract, and decorrelate two images.
+
+        Parameters
+        ----------
+        template : `lsst.afw.image.ExposureF`
+            Template exposure, warped to match the science exposure.
+        science : `lsst.afw.image.ExposureF`
+            Science exposure to subtract from the template.
+        sources : `lsst.afw.table.SourceCatalog`
+            Identified sources on the science exposure. This catalog is used to
+            select sources in order to perform the AL PSF matching on stamp
+            images around them.
+        finalizedPsfApCorrCatalog : `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with finalized psf models and aperture correction
+            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog uses
+            the detector id for the catalog id, sorted on id for fast lookup.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            ``difference`` : `lsst.afw.image.ExposureF`
+                Result of subtracting template and science.
+            ``matchedTemplate`` : `lsst.afw.image.ExposureF`
+                Warped and PSF-matched template exposure.
+            ``backgroundModel`` : `lsst.afw.math.Function2D`
+                Background model that was fit while solving for the PSF-matching kernel
+            ``psfMatchingKernel`` : `lsst.afw.math.Kernel`
+                Kernel used to PSF-match the convolved image.
+        """
+        return Struct(difference=afwImage.ExposureF(),
+                      matchedTemplate=afwImage.ExposureF(),
+                      backgroundModel=afwMath.NullFunction2D(),
+                      psfMatchingKernel=afwMath.FixedKernel(),
+                      )
+
+
+class MockDetectAndMeasureTask(PipelineTask):
+    """A do-nothing substitute for DetectAndMeasureTask.
+    """
+    ConfigClass = DetectAndMeasureConfig
+    _DefaultName = "notDetectAndMeasure"
+
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.outputSchema = afwTable.SourceCatalog()
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        outputs = self.run(exposure=inputs['exposure'],
-                           templateExposure=afwImage.ExposureF(),
-                           idFactory=obsBase.ExposureIdInfo(8, 4).makeSourceIdFactory())
+        idFactory = obsBase.ExposureIdInfo(8, 4).makeSourceIdFactory()
+
+        outputs = self.run(inputs['science'],
+                           inputs['matchedTemplate'],
+                           inputs['difference'],
+                           inputs['selectSources'],
+                           idFactory=idFactory)
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, exposure=None, selectSources=None, templateExposure=None, templateSources=None,
-            idFactory=None, calexpBackgroundExposure=None, subtractedExposure=None):
-        """Produce differencing outputs with no processing.
+    def run(self, science, matchedTemplate, difference, selectSources,
+            idFactory=None):
+        """Detect and measure sources on a difference image.
 
         Parameters
         ----------
-        exposure : `lsst.afw.image.ExposureF`, optional
-            The science exposure, the minuend in the image subtraction.
-            Can be None only if ``config.doSubtract==False``.
-        selectSources : `lsst.afw.table.SourceCatalog`, optional
-            Identified sources on the science exposure. This catalog is used to
-            select sources in order to perform the AL PSF matching on stamp images
-            around them. The selection steps depend on config options and whether
-            ``templateSources`` and ``matchingSources`` specified.
-        templateExposure : `lsst.afw.image.ExposureF`, optional
-            The template to be subtracted from ``exposure`` in the image subtraction.
-            ``templateExposure`` is modified in place if ``config.doScaleTemplateVariance==True``.
-            The template exposure should cover the same sky area as the science exposure.
-            It is either a stich of patches of a coadd skymap image or a calexp
-            of the same pointing as the science exposure. Can be None only
-            if ``config.doSubtract==False`` and ``subtractedExposure`` is not None.
-        templateSources : `lsst.afw.table.SourceCatalog`, optional
-            Identified sources on the template exposure.
-        idFactory : `lsst.afw.table.IdFactory`
+        science : `lsst.afw.image.ExposureF`
+            Science exposure that the template was subtracted from.
+        matchedTemplate : `lsst.afw.image.ExposureF`
+            Warped and PSF-matched template that was used produce the
+            difference image.
+        difference : `lsst.afw.image.ExposureF`
+            Result of subtracting template from the science image.
+        selectSources : `lsst.afw.table.SourceCatalog`
+            Identified sources on the science exposure.
+        idFactory : `lsst.afw.table.IdFactory`, optional
             Generator object to assign ids to detected sources in the difference image.
-        calexpBackgroundExposure : `lsst.afw.image.ExposureF`, optional
-            Background exposure to be added back to the science exposure
-            if ``config.doAddCalexpBackground==True``
-        subtractedExposure : `lsst.afw.image.ExposureF`, optional
-            If ``config.doSubtract==False`` and ``config.doDetection==True``,
-            performs the post subtraction source detection only on this exposure.
-            Otherwise should be None.
 
         Returns
         -------
         results : `lsst.pipe.base.Struct`
-
-            ``subtractedExposure`` : `lsst.afw.image.ExposureF`
-                Difference image.
-            ``scoreExposure`` : `lsst.afw.image.ExposureF` or `None`
-                The zogy score exposure, if calculated.
-            ``matchedExposure`` : `lsst.afw.image.ExposureF`
-                The matched PSF exposure.
-            ``warpedExposure`` : `lsst.afw.image.ExposureF`
-                The warped PSF exposure.
-            ``subtractRes`` : `lsst.pipe.base.Struct`
-                The returned result structure of the ImagePsfMatchTask subtask.
+            ``subtractedMeasuredExposure`` : `lsst.afw.image.ExposureF`
+                Subtracted exposure with detection mask applied.
             ``diaSources``  : `lsst.afw.table.SourceCatalog`
                 The catalog of detected sources.
-            ``selectSources`` : `lsst.afw.table.SourceCatalog`
-                The input source catalog with optionally added Qa information.
         """
-        return Struct(
-            subtractedExposure=afwImage.ExposureF(),
-            scoreExposure=afwImage.ExposureF(),
-            warpedExposure=afwImage.ExposureF(),
-            matchedExposure=afwImage.ExposureF(),
-            subtractRes=Struct(),
-            diaSources=afwTable.SourceCatalog(),
-            selectSources=afwTable.SourceCatalog(),
-        )
+        return Struct(subtractedMeasuredExposure=difference,
+                      diaSources=afwTable.SourceCatalog(),
+                      )
 
 
 class MockTransformDiaSourceCatalogTask(PipelineTask):
