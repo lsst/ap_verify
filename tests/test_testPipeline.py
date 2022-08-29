@@ -227,7 +227,6 @@ class MockTaskTestSuite(unittest.TestCase):
         result = task.run(science=afwImage.ExposureF(),
                           matchedTemplate=afwImage.ExposureF(),
                           difference=afwImage.ExposureF(),
-                          selectSources=afwTable.SourceCatalog(),
                           )
         pipelineTests.assertValidOutput(task, result)
 
@@ -240,7 +239,6 @@ class MockTaskTestSuite(unittest.TestCase):
             {"science": self.visitId,
              "matchedTemplate": self.visitId,
              "difference": self.visitId,
-             "selectSources": self.visitId,
              "diaSources": self.visitId,
              "subtractedMeasuredExposure": self.visitId,
              })
