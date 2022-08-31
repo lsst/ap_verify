@@ -383,11 +383,10 @@ class MockDetectAndMeasureTask(PipelineTask):
         outputs = self.run(inputs['science'],
                            inputs['matchedTemplate'],
                            inputs['difference'],
-                           inputs['selectSources'],
                            idFactory=idFactory)
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, science, matchedTemplate, difference, selectSources,
+    def run(self, science, matchedTemplate, difference,
             idFactory=None):
         """Detect and measure sources on a difference image.
 
@@ -400,8 +399,6 @@ class MockDetectAndMeasureTask(PipelineTask):
             difference image.
         difference : `lsst.afw.image.ExposureF`
             Result of subtracting template from the science image.
-        selectSources : `lsst.afw.table.SourceCatalog`
-            Identified sources on the science exposure.
         idFactory : `lsst.afw.table.IdFactory`, optional
             Generator object to assign ids to detected sources in the difference image.
 
