@@ -6,6 +6,7 @@ imports:
   - location: $AP_PIPE_DIR/pipelines/ApPipe.yaml
   - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
   - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
+  - location: $AP_VERIFY_DIR/pipelines/Conversions.yaml
 tasks:
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
