@@ -1,0 +1,54 @@
+# Add-on pipeline designed to be added to ApVerifyWithFakes or ApPipeWithFakes
+# for QA purposes.
+#
+# This pipeline depends on an external pipeline for the coaddName and fakesType
+# pipeline parameters.
+
+description: Type conversion tasks customized for AP pipeline
+imports:
+  - location: $AP_VERIFY_DIR/pipelines/Conversions.yaml
+    exclude:
+      # Fakes pipeline doesn't produce non-fakes DiaSourceTable.
+      - consolidateDiaSourceTable
+tasks:
+  # Conversion of fakes_src [afw.table] to fakes_source [Parquet]
+  writeSourceTableWithFakes:
+    class: lsst.pipe.tasks.postprocess.WriteSourceTableTask
+    config:
+      connections.catalogType: parameters.fakesType
+  # TODO: TransformSourceTableTask can't be run until we create a functor
+  # config that doesn't depend on shapeHSM.
+  # Merging of fakes_source [detector-level] to fakes_sourceTable_visit [visit-level]
+  consolidateSourceTableWithFakes:
+    class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
+    config:
+      connections.catalogType: parameters.fakesType
+      # Skip DPDD-ified sourceTable and just use source directly
+      connections.inputCatalogs: "{catalogType}source"
+
+  # Merging of fakes_*Diff_diaSrcTable [detector-level Parquet] to fakes_diaSourceTable [visit-level]
+  consolidateDiaSourceTableWithFakes:
+    class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
+    config:
+      # Task doesn't support coaddName, so coopt catalogType instead.
+      connections.catalogType: parameters.coaddName
+      # TODO: hard-code the "fakes_" label because I can't insert two templates,
+      # and fakesType is more stable than coaddName.
+      connections.inputCatalogs: "fakes_{catalogType}Diff_diaSrcTable"
+      connections.outputCatalog: fakes_diaSourceTable
+
+  # Creation of fakes_visitSummary
+  consolidateVisitSummaryWithFakes:
+    class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
+    config:
+      connections.calexpType: parameters.fakesType
+  # Conversion of fakes_visitSummary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
+  makeVisitTable:
+    class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
+    config:
+      connections.calexpType: parameters.fakesType
+  # Conversion of fakes_visitSummary [visit-level afw.table] to fakes_ccdVisitTable [instrument-level Parquet]
+  makeCcdVisitTable:
+    class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
+    config:
+      connections.calexpType: parameters.fakesType
