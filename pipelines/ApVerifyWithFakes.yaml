@@ -7,6 +7,7 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
   - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/ConversionsForFakes.yaml
 tasks:
   # Parallel to ApPipe's retrieveTemplateWithFakes, allows non-fakes image differencing.
   retrieveTemplate:
