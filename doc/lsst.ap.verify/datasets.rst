@@ -37,8 +37,7 @@ Supported datasets
 These datasets are maintained by the ``ap_verify`` group.
 There may be other datasets :ref:`formatted<ap-verify-datasets-structure>` for use with ``ap_verify``.
 
-* `ap_verify_hits2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_hits2015/>`_
-* `ap_verify_ci_hits2015 (HiTS 2015 CI Subset) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
+* `ap_verify_ci_hits2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
 * `ap_verify_ci_cosmos_pdr2 (Cosmos DR2 ultradeep fields) <https://github.com/lsst/ap_verify_ci_cosmos_pdr2/>`_
 
 ..
@@ -46,6 +45,5 @@ There may be other datasets :ref:`formatted<ap-verify-datasets-structure>` for u
    .. toctree::
       :maxdepth: 1
 
-      /packages/ap_verify_hits2015/index
       /packages/ap_verify_ci_hits2015/index
       /packages/ap_verify_ci_cosmos_pdr2/index
