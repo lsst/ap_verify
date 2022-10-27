@@ -34,12 +34,11 @@ You can then run :command:`ap_verify.py` as follows.
 
 .. prompt:: bash
 
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 --data-query "visit in (59150, 59160)" -j4 --output workspaces/cosmos/
+   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 -j4 --output workspaces/cosmos/
 
 Here the inputs are:
 
 * :command:`ap_verify_ci_cosmos_pdr2` is the ``ap_verify`` :ref:`dataset <ap-verify-datasets>` to process,
-* :command:`visit in (59150, 59160)` is the :ref:`data ID query <daf_butler_dimension_expressions>` to process,
 * :option:`-j` causes the ingest and processing pipelines to use 4 processes: choose a value appropriate for your machine; the system does not automatically determine how many parallel processes to use.
 
 while the output is:
@@ -48,15 +47,9 @@ while the output is:
 
 This call will create a new directory at :file:`workspaces/cosmos`, ingest the Cosmos data into a new repository, then run visits 59150 and 59160 through the entire AP pipeline.
 
-It's also possible to run an entire dataset by omitting the :option:`--data-query` argument (as some datasets are very large, do this with caution):
-
-.. prompt:: bash
-
-   ap_verify.py --dataset ap_verify_ci_cosmos_pdr2 -j4 --output workspaces/cosmos/
-
 .. warning::
 
-    Some datasets require particular data queries in order to successfully run through the pipeline, due to missing data or other limitations.
+    Some datasets require particular :ref:`data ID queries <daf_butler_dimension_expressions>` (e.g. ``--data-query "visit in ..."``) in order to successfully run through the pipeline, due to missing data or other limitations.
     Check the ``README.md`` in each dataset's main directory for what additional arguments might be necessary.
 
 
