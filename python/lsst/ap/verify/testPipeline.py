@@ -524,4 +524,6 @@ class MockDiaPipelineTask(PipelineTask):
         """
         return Struct(apdbMarker=self.config.apdb.value,
                       associatedDiaSources=pandas.DataFrame(),
+                      diaForcedSources=pandas.DataFrame(),
+                      diaObjects=pandas.DataFrame(),
                       )
