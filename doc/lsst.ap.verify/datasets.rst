@@ -39,6 +39,7 @@ There may be other datasets :ref:`formatted<ap-verify-datasets-structure>` for u
 
 * `ap_verify_ci_hits2015 (HiTS 2015 with 2014 templates) <https://github.com/lsst/ap_verify_ci_hits2015/>`_
 * `ap_verify_ci_cosmos_pdr2 (Cosmos DR2 ultradeep fields) <https://github.com/lsst/ap_verify_ci_cosmos_pdr2/>`_
+* `ap_verify_ci_dc2 (two overlapping LSSTCam ImSim images) <https://github.com/lsst/ap_verify_ci_dc2/>`_
 
 ..
    TODO: switch to toctree once these docs included in pipelines.lsst.io
@@ -47,3 +48,4 @@ There may be other datasets :ref:`formatted<ap-verify-datasets-structure>` for u
 
       /packages/ap_verify_ci_hits2015/index
       /packages/ap_verify_ci_cosmos_pdr2/index
+      /packages/ap_verify_ci_dc2/index
