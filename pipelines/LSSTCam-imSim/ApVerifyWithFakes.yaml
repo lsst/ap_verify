@@ -11,3 +11,12 @@ imports:
   # Can't use $AP_PIPE_DIR/pipelines/LsstCamImSim/ApPipeWithFakes.yaml here
   # because the changes made by that file and ../ApVerifyWithFakes.yaml are
   # hard to separate.
+
+tasks:
+  rbClassify:
+    class: lsst.meas.transiNet.TransiNetTask
+    config:
+      modelFile: testModel
+      weightsFile: '/home/nima/meas_transiNet/tests/data/checkpoint.pth.zip'
+      connections.coaddName: 'goodSeeing'
+

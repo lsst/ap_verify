@@ -15,6 +15,12 @@ tasks:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
+  rbClassify:
+    class: lsst.meas.transiNet.TransiNetTask
+    config:
+      modelFile: testModel
+      weightsFile: '/home/nima/meas_transiNet/tests/data/checkpoint.pth.zip'
+      connections.coaddName: 'goodSeeing'
 contracts:
   # Must re-declare contracts that cross apPipe and metrics boundary, as
   # these were removed on import.
