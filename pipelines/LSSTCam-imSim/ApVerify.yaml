@@ -20,7 +20,7 @@ tasks:
     config:
       modelFile: testModel
       weightsFile: '/home/nima/meas_transiNet/tests/data/checkpoint.pth.zip'
-      connections.coaddName: 'goodSeeing'
+      connections.coaddName: parameters.coaddName
 contracts:
   # Must re-declare contracts that cross apPipe and metrics boundary, as
   # these were removed on import.
