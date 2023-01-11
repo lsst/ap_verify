@@ -32,6 +32,10 @@ tasks:
   # Conversion of visitSummary [visit-level afw.table] to visitTable [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
+    config:
+      connections.visitSummaries: "{calexpType}visitSummary"
   # Conversion of visitSummary [visit-level afw.table] to ccdVisitTable [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
+    config:
+      connections.visitSummaryRefs: "{calexpType}visitSummary"
