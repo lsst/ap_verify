@@ -94,6 +94,98 @@ tasks:
       connections.metric: PackageAlertsTime
       connections.labelName: diaPipe
       target: diaPipe:alertPackager.run
+  cputiming_isr:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ip_isr
+      connections.metric: IsrCpuTime
+      connections.labelName: isr
+      metadataDimensions: [instrument, exposure, detector]  # TimingMetricTask assumes visit
+      target: isr.run
+  cputiming_characterizeImage:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: pipe_tasks
+      connections.metric: CharacterizeImageCpuTime
+      connections.labelName: characterizeImage
+      target: characterizeImage.run
+  cputiming_calibrate:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: pipe_tasks
+      connections.metric: CalibrateCpuTime
+      connections.labelName: calibrate
+      target: calibrate.run
+  cputiming_subtractImages:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ip_diffim
+      connections.metric: SubtractImagesALCpuTime
+      connections.labelName: subtractImages
+      target: subtractImages.run
+  cputiming_detectAndMeasure:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ip_diffim
+      connections.metric: DetectAndMeasureCpuTime
+      connections.labelName: detectAndMeasure
+      target: detectAndMeasure.run
+  cputiming_detectAndMeasure_detection:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: meas_algorithms
+      connections.metric: SourceDetectionCpuTime
+      connections.labelName: detectAndMeasure
+      target: detectAndMeasure:detection.run
+  cputiming_detectAndMeasure_measurement:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ip_diffim
+      connections.metric: DipoleFitCpuTime
+      connections.labelName: detectAndMeasure
+      target: detectAndMeasure:measurement.run
+  cputiming_diaPipe:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: DiaPipelineCpuTime
+      connections.labelName: diaPipe
+      target: diaPipe.run
+  cputiming_transformDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: MapDiaSourceCpuTime
+      connections.labelName: transformDiaSrcCat
+      target: transformDiaSrcCat.run
+  cputiming_diaPipe_diaCatalogLoader:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: LoadDiaCatalogsCpuTime
+      connections.labelName: diaPipe
+      target: diaPipe:diaCatalogLoader.run
+  cputiming_diaPipe_associator:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: AssociationCpuTime
+      connections.labelName: diaPipe
+      target: diaPipe:associator.run
+  cputiming_diaPipe_diaForcedSource:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: DiaForcedSourceCpuTime
+      connections.labelName: diaPipe
+      target: diaPipe:diaForcedSource.run
+  cputiming_diaPipe_alertPackager:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: PackageAlertsCpuTime
+      connections.labelName: diaPipe
+      target: diaPipe:alertPackager.run
   memory_apPipe:
     class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
     config:
