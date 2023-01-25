@@ -18,8 +18,7 @@ tasks:
   rbClassify:
     class: lsst.meas.transiNet.TransiNetTask
     config:
-      modelFile: testModel
-      weightsFile: '/home/nima/meas_transiNet/tests/data/checkpoint.pth.zip'
+      modelPackageName: 'neighbor:///rbResnet50-DC2'
       connections.coaddName: parameters.coaddName
 contracts:
   # Must re-declare contracts that cross apPipe and metrics boundary, as
