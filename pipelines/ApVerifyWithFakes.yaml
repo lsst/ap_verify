@@ -33,6 +33,11 @@ tasks:
     config:
       connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
       target: transformDiaSrcCatWithFakes.run
+  cputiming_transformDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
+      target: transformDiaSrcCatWithFakes.run
 subsets:
   apPipe:
     # Extend the subset through imageDifference.
