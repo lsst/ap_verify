@@ -34,7 +34,6 @@ import lsst.geom as geom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
-import lsst.obs.base as obsBase
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
 from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig, DetectAndMeasureConfig
@@ -161,23 +160,26 @@ class MockCharacterizeImageTask(PipelineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        if 'exposureIdInfo' not in inputs.keys():
-            inputs['exposureIdInfo'] = obsBase.ExposureIdInfo.fromDataId(
-                butlerQC.quantum.dataId, "visit_detector")
+        if 'idGenerator' not in inputs.keys():
+            inputs['idGenerator'] = self.config.idGenerator.apply(butlerQC.quantum.dataId)
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, exposure, exposureIdInfo=None, background=None):
+    def run(self, exposure, exposureIdInfo=None, background=None, idGenerator=None):
         """Produce characterization outputs with no processing.
 
         Parameters
         ----------
         exposure : `lsst.afw.image.Exposure`
             Exposure to characterize.
-        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`
-            ID info for exposure.
-        background : `lsst.afw.math.BackgroundList`
+        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`, optional
+            ID info for exposure. Deprecated in favor of ``idGenerator``, and
+            ignored if that is provided.
+        background : `lsst.afw.math.BackgroundList`, optional
             Initial model of background already subtracted from exposure.
+        idGenerator : `lsst.meas.base.IdGenerator`, optional
+            Object that generates source IDs and provides random number
+            generator seeds.
 
         Returns
         -------
@@ -217,8 +219,7 @@ class MockCalibrateTask(PipelineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        inputs['exposureIdInfo'] = obsBase.ExposureIdInfo.fromDataId(
-            butlerQC.quantum.dataId, "visit_detector")
+        inputs['idGenerator'] = self.config.idGenerator.apply(butlerQC.quantum.dataId)
 
         if self.config.doAstrometry:
             inputs.pop('astromRefCat')
@@ -235,19 +236,23 @@ class MockCalibrateTask(PipelineTask):
         butlerQC.put(outputs, outputRefs)
 
     def run(self, exposure, exposureIdInfo=None, background=None,
-            icSourceCat=None):
+            icSourceCat=None, idGenerator=None):
         """Produce calibration outputs with no processing.
 
         Parameters
         ----------
         exposure : `lsst.afw.image.Exposure`
             Exposure to calibrate.
-        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`
-            ID info for exposure.
-        background : `lsst.afw.math.BackgroundList`
+        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`, optional
+            ID info for exposure. Deprecated in favor of ``idGenerator``, and
+            ignored if that is provided.
+        background : `lsst.afw.math.BackgroundList`, optional
             Background model already subtracted from exposure.
-        icSourceCat : `lsst.afw.table.SourceCatalog`
+        icSourceCat : `lsst.afw.table.SourceCatalog`, optional
              A SourceCatalog from CharacterizeImageTask from which we can copy some fields.
+        idGenerator : `lsst.meas.base.IdGenerator`, optional
+            Object that generates source IDs and provides random number
+            generator seeds.
 
         Returns
         -------
@@ -366,10 +371,20 @@ class MockAlardLuptonSubtractTask(PipelineTask):
                       )
 
 
+class MockDetectAndMeasureConfig(DetectAndMeasureConfig):
+
+    def setDefaults(self):
+        super().setDefaults()
+        # Avoid delegating to lsst.obs.base.Instrument specialization for the
+        # data ID packing algorithm to use, since test code often does not use a
+        # real Instrument in its data IDs.
+        self.idGenerator.packer.name = "observation"
+
+
 class MockDetectAndMeasureTask(PipelineTask):
     """A do-nothing substitute for DetectAndMeasureTask.
     """
-    ConfigClass = DetectAndMeasureConfig
+    ConfigClass = MockDetectAndMeasureConfig
     _DefaultName = "notDetectAndMeasure"
 
     def __init__(self, **kwargs):
@@ -378,7 +393,7 @@ class MockDetectAndMeasureTask(PipelineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        idFactory = obsBase.ExposureIdInfo(8, 4).makeSourceIdFactory()
+        idFactory = afwTable.IdFactory.makeSimple()
 
         outputs = self.run(inputs['science'],
                            inputs['matchedTemplate'],
@@ -426,9 +441,8 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        expId, expBits = butlerQC.quantum.dataId.pack("visit_detector",
-                                                      returnMaxBits=True)
-        inputs["ccdVisitId"] = expId
+        idGenerator = self.config.idGenerator.apply(butlerQC.quantum.dataId)
+        inputs["ccdVisitId"] = idGenerator.catalog_id
         inputs["band"] = butlerQC.quantum.dataId["band"]
 
         outputs = self.run(**inputs)
@@ -448,7 +462,7 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
             The band in which the sources were observed.
         ccdVisitId : `int`
             The exposure ID in which the sources were observed.
-        funcs
+        funcs, optional
             Unused.
 
         Returns
@@ -463,17 +477,28 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
                       )
 
 
+class MockDiaPipelineConfig(DiaPipelineConfig):
+
+    def setDefaults(self):
+        super().setDefaults()
+        # Avoid delegating to lsst.obs.base.Instrument specialization for the
+        # data ID packing algorithm to use, since test code often does not use a
+        # real Instrument in its data IDs.
+        self.idGenerator.packer.name = "observation"
+
+
 class MockDiaPipelineTask(PipelineTask):
     """A do-nothing substitute for DiaPipelineTask.
     """
-    ConfigClass = DiaPipelineConfig
+    ConfigClass = MockDiaPipelineConfig
     _DefaultName = "notDiaPipe"
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        expId, expBits = butlerQC.quantum.dataId.pack("visit_detector",
-                                                      returnMaxBits=True)
-        inputs["ccdExposureIdBits"] = expBits
+        inputs["idGenerator"] = self.config.idGenerator.apply(butlerQC.quantum.dataId)
+        # Need to set ccdExposureIdBits (now deprecated) to None and pass it,
+        # since there are non-optional positional arguments after it.
+        inputs["ccdExposureIdBits"] = None
         inputs["band"] = butlerQC.quantum.dataId["band"]
         if not self.config.doSolarSystemAssociation:
             inputs["solarSystemObjectTable"] = None
@@ -489,7 +514,8 @@ class MockDiaPipelineTask(PipelineTask):
             exposure,
             template,
             ccdExposureIdBits,
-            band):
+            band,
+            idGenerator=None):
         """Produce DiaSource and DiaObject outputs with no processing.
 
         Parameters
@@ -507,9 +533,16 @@ class MockDiaPipelineTask(PipelineTask):
         template : `lsst.afw.image.ExposureF`
             Template exposure used to create diffIm.
         ccdExposureIdBits : `int`
-            Number of bits used for a unique ``ccdVisitId``.
+            Number of bits used for a unique ``ccdVisitId``.  Deprecated in
+            favor of ``idGenerator``, and ignored if that is present.  Pass
+            `None` explicitly to avoid a deprecation warning (a default is
+            impossible given that later positional arguments are not
+            defaulted).
         band : `str`
             The band in which the new DiaSources were detected.
+        idGenerator : `lsst.meas.base.IdGenerator`, optional
+            Object that generates source IDs and random number generator seeds.
+            Will be required after ``ccdExposureIdBits`` is removed.
 
         Returns
         -------
