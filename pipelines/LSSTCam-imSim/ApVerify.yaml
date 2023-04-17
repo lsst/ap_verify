@@ -18,7 +18,7 @@ tasks:
   rbClassify:
     class: lsst.meas.transiNet.TransiNetTask
     config:
-      modelPackageName: 'neighbor:///rbResnet50-DC2'
+      modelPackageName: 'rbResnet50-DC2'
       connections.coaddName: parameters.coaddName
 contracts:
   # Must re-declare contracts that cross apPipe and metrics boundary, as

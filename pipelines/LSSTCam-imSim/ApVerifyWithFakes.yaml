@@ -16,7 +16,7 @@ tasks:
   rbClassify:
     class: lsst.meas.transiNet.TransiNetTask
     config:
-      modelFile: testModel
-      weightsFile: '/home/nima/meas_transiNet/tests/data/checkpoint.pth.zip'
-      connections.coaddName: 'goodSeeing'
+    config:
+      modelPackageName: 'rbResnet50-DC2'
+      connections.coaddName: parameters.coaddName
 
