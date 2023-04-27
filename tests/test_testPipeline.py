@@ -57,7 +57,7 @@ class MockTaskTestSuite(unittest.TestCase):
         cls.addClassCleanup(shutil.rmtree, repoDir, ignore_errors=True)
         cls.repo = butlerTests.makeTestRepo(repoDir)
 
-        INSTRUMENT = "notACam"
+        INSTRUMENT = "DummyCam"
         VISIT = 42
         CCD = 101
         HTM = 42
@@ -69,7 +69,9 @@ class MockTaskTestSuite(unittest.TestCase):
         SUB_FILTER = 9
         # Mock instrument by hand, because some tasks care about parameters
         instrumentRecord = cls.repo.registry.dimensions["instrument"].RecordClass(
-            name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128)
+            name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128,
+            class_name="lsst.obs.base.instrument_tests.DummyCam",
+        )
         cls.repo.registry.syncDimensionData("instrument", instrumentRecord)
         butlerTests.addDataIdValue(cls.repo, "physical_filter", PHYSICAL, band=BAND)
         butlerTests.addDataIdValue(cls.repo, "subfilter", SUB_FILTER)
