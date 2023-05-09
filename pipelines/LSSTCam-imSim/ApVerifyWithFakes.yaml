@@ -16,9 +16,6 @@ tasks:
   transformDiaSrcCatWithFakes:
     class: lsst.ap.association.TransformDiaSourceCatalogTask
     config:
-      connections.coaddName: parameters.coaddName
-      connections.fakesType: parameters.fakesType
-      doRemoveSkySources: True
       doIncludeSpuriousness: True
   rbClassify:
     class: lsst.meas.transiNet.RBTransiNetTask
