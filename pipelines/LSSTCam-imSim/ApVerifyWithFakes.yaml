@@ -13,10 +13,15 @@ imports:
   # hard to separate.
 
 tasks:
-  rbClassify:
-    class: lsst.meas.transiNet.TransiNetTask
+  transformDiaSrcCatWithFakes:
+    class: lsst.ap.association.TransformDiaSourceCatalogTask
     config:
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      doRemoveSkySources: True
+      doIncludeSpuriousness: True
+  rbClassify:
+    class: lsst.meas.transiNet.RBTransiNetTask
     config:
       modelPackageName: 'rbResnet50-DC2'
       connections.coaddName: parameters.coaddName
-

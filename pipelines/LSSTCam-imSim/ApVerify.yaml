@@ -15,8 +15,14 @@ tasks:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
+  transformDiaSrcCat:
+    class: lsst.ap.association.TransformDiaSourceCatalogTask
+    config:
+      doRemoveSkySources: True
+      connections.coaddName: parameters.coaddName
+      doIncludeSpuriousness: True
   rbClassify:
-    class: lsst.meas.transiNet.TransiNetTask
+    class: lsst.meas.transiNet.RBTransiNetTask
     config:
       modelPackageName: 'rbResnet50-DC2'
       connections.coaddName: parameters.coaddName
