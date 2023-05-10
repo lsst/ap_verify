@@ -22,3 +22,4 @@ tasks:
     config:
       modelPackageName: 'rbResnet50-DC2'
       connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
