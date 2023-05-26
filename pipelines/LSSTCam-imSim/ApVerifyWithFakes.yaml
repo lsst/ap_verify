@@ -4,7 +4,7 @@
 instrument: lsst.obs.lsst.LsstCamImSim
 description: Fully instrumented AP pipeline with fakes, specialized for LSSTCam-imSim
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/ApVerifyWithFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
     exclude:
       - processCcd
   - location: $AP_PIPE_DIR/pipelines/LsstCamImSim/ProcessCcd.yaml

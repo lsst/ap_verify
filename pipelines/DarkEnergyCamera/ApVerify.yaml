@@ -3,7 +3,7 @@
 
 description: Fully instrumented AP pipeline specialized for DECam
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/ApVerify.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerify.yaml
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:

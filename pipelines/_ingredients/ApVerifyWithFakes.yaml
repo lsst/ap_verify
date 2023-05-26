@@ -3,11 +3,11 @@
 
 description: Fully instrumented AP pipeline with fakes
 imports:
-  - location: $AP_PIPE_DIR/pipelines/ApPipeWithFakes.yaml
-  - location: $AP_VERIFY_DIR/pipelines/MetricsRuntime.yaml
-  - location: $AP_VERIFY_DIR/pipelines/MetricsMisc.yaml
-  - location: $AP_VERIFY_DIR/pipelines/MetricsForFakes.yaml
-  - location: $AP_VERIFY_DIR/pipelines/ConversionsForFakes.yaml
+  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeWithFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsForFakes.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsForFakes.yaml
 tasks:
   # Parallel to ApPipe's retrieveTemplateWithFakes, allows non-fakes image differencing.
   retrieveTemplate:
