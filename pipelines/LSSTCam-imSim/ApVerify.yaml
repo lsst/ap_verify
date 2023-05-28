@@ -18,7 +18,7 @@ tasks:
   transformDiaSrcCat:
     class: lsst.ap.association.TransformDiaSourceCatalogTask
     config:
-      doIncludeSpuriousness: True
+      doIncludeReliability: True
   rbClassify:
     class: lsst.meas.transiNet.RBTransiNetTask
     config:
