@@ -6,7 +6,7 @@
 
 description: Type conversion tasks customized for AP pipeline
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/Conversions.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
     exclude:
       # Fakes pipeline doesn't produce non-fakes DiaSourceTable.
       - consolidateDiaSourceTable
