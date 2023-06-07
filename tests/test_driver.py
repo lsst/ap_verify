@@ -86,12 +86,12 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
 
         # Use datasets as a proxy for pipeline completion
         id = _getDataIds(self.workspace.analysisButler)[0]
-        self.assertTrue(self.workspace.analysisButler.datasetExists("calexp", id))
-        self.assertTrue(self.workspace.analysisButler.datasetExists("src", id))
-        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_differenceExp", id))
-        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_diaSrc", id))
-        self.assertTrue(self.workspace.analysisButler.datasetExists("apdb_marker", id))
-        self.assertTrue(self.workspace.analysisButler.datasetExists("goodSeeingDiff_assocDiaSrc", id))
+        self.assertTrue(self.workspace.analysisButler.exists("calexp", id))
+        self.assertTrue(self.workspace.analysisButler.exists("src", id))
+        self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_differenceExp", id))
+        self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_diaSrc", id))
+        self.assertTrue(self.workspace.analysisButler.exists("apdb_marker", id))
+        self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_assocDiaSrc", id))
 
     def _getCmdLineArgs(self, parseAndRunArgs):
         if parseAndRunArgs[0]:
@@ -147,7 +147,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         id = _getDataIds(self.workspace.analysisButler)[0]
         calexpQuery = set(self.workspace.analysisButler.registry.queryDatasetTypes("calexp"))
         calexpExists = len(calexpQuery) > 0
-        self.assertFalse(calexpExists and self.workspace.analysisButler.datasetExists("calexp", id))
+        self.assertFalse(calexpExists and self.workspace.analysisButler.exists("calexp", id))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
