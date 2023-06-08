@@ -68,7 +68,7 @@ class MockTaskTestSuite(unittest.TestCase):
         PHYSICAL = 'k2022'
         SUB_FILTER = 9
         # Mock instrument by hand, because some tasks care about parameters
-        instrumentRecord = cls.repo.registry.dimensions["instrument"].RecordClass(
+        instrumentRecord = cls.repo.dimensions["instrument"].RecordClass(
             name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128,
             class_name="lsst.obs.base.instrument_tests.DummyCam",
         )
