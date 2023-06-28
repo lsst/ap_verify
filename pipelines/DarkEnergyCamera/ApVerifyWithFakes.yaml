@@ -21,3 +21,13 @@ tasks:
       # Mirror calibrate config from DarkEnergyCamera/ProcessCcd.yaml
       calibrate.photoCal.match.referenceSelection.magLimit.fluxField: i_flux
       calibrate.photoCal.match.referenceSelection.magLimit.maximum: 22.0
+  transformDiaSrcCatWithFakes:
+    class: lsst.ap.association.TransformDiaSourceCatalogTask
+    config:
+      doIncludeReliability: True
+  rbClassify:
+    class: lsst.meas.transiNet.RBTransiNetTask
+    config:
+      modelPackageName: 'rbResnet50-DC2'
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
