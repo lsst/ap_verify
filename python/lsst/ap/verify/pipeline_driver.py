@@ -215,9 +215,6 @@ def _getApdbArguments(workspace, parsed):
         parsed.db = "sqlite:///" + workspace.dbLocation
 
     args = ["--config", "db_url=" + parsed.db]
-    # Same special-case check as ApdbConfig.validate()
-    if parsed.db.startswith("sqlite"):
-        args.extend(["--config", "isolation_level=READ_UNCOMMITTED"])
 
     return args
 
