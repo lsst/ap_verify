@@ -57,11 +57,6 @@ while the output is:
 
 This call will create a new directory at :file:`workspaces/cosmos`, ingest the Cosmos data into a new repository, then run visits 59150 and 59160 through the entire AP pipeline.
 
-.. warning::
-
-    Some datasets require particular :ref:`data ID queries <daf_butler_dimension_expressions>` (e.g. ``--data-query "visit in ..."``) in order to successfully run through the pipeline, due to missing data or other limitations.
-    Check the ``README.md`` in each dataset's main directory for what additional arguments might be necessary.
-
 
 .. _ap-verify-run-ingest:
 
