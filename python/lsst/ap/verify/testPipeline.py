@@ -352,7 +352,7 @@ class MockAlardLuptonSubtractTask(PipelineTask):
             maps to be applied if config.doApplyFinalizedPsf=True.  Catalog
             uses the detector id for the catalog id, sorted on id for fast
             lookup. Deprecated in favor of ``visitSummary``, and will be
-            removed after v27.
+            removed after v26.
         visitSummary : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with external calibrations to be applied. Catalog
             uses the detector id for the catalog id, sorted on id for fast
