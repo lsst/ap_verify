@@ -334,7 +334,7 @@ class MockAlardLuptonSubtractTask(PipelineTask):
     ConfigClass = AlardLuptonSubtractConfig
     _DefaultName = "notAlardLuptonSubtract"
 
-    def run(self, template, science, sources, finalizedPsfApCorrCatalog=None):
+    def run(self, template, science, sources, finalizedPsfApCorrCatalog=None, visitSummary=None):
         """PSF match, subtract, and decorrelate two images.
 
         Parameters
@@ -349,8 +349,15 @@ class MockAlardLuptonSubtractTask(PipelineTask):
             images around them.
         finalizedPsfApCorrCatalog : `lsst.afw.table.ExposureCatalog`, optional
             Exposure catalog with finalized psf models and aperture correction
-            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog uses
-            the detector id for the catalog id, sorted on id for fast lookup.
+            maps to be applied if config.doApplyFinalizedPsf=True.  Catalog
+            uses the detector id for the catalog id, sorted on id for fast
+            lookup. Deprecated in favor of ``visitSummary``, and will be
+            removed after v26.
+        visitSummary : `lsst.afw.table.ExposureCatalog`, optional
+            Exposure catalog with external calibrations to be applied. Catalog
+            uses the detector id for the catalog id, sorted on id for fast
+            lookup. Ignored (for temporary backwards compatibility) if
+            ``finalizedPsfApCorrCatalog`` is provided.
 
         Returns
         -------
@@ -360,7 +367,8 @@ class MockAlardLuptonSubtractTask(PipelineTask):
             ``matchedTemplate`` : `lsst.afw.image.ExposureF`
                 Warped and PSF-matched template exposure.
             ``backgroundModel`` : `lsst.afw.math.Function2D`
-                Background model that was fit while solving for the PSF-matching kernel
+                Background model that was fit while solving for the
+                PSF-matching kernel
             ``psfMatchingKernel`` : `lsst.afw.math.Kernel`
                 Kernel used to PSF-match the convolved image.
         """
