@@ -1,0 +1,36 @@
+# This concatenates various lsst.verify metrics to an AP pipeline
+
+description: Fully instrumented AP pipeline.
+imports:
+  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeCalibrateImage.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
+    exclude:
+      - timing_calibrate
+      - timing_characterizeImage
+      - cputiming_calibrate
+      - cputiming_characterizeImage
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMiscCalibrateImage.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsCalibrateImage.yaml
+tasks:
+  diaPipe:
+    class: lsst.ap.association.DiaPipelineTask
+    config:
+      # TODO: needed for "providing bulk sample alerts to brokers"; remove once
+      # we have an alternative.
+      doPackageAlerts: True
+  # TODO: rbClassify and doIncludeReliability logically belong in ap_pipe, but
+  # having ap_pipe require manual setup of rbClassifier_data would cause too
+  # many problems. Move to ApPipe.yaml once either DM-38454 is implemented (and
+  # weights added to standard repos) or rbClassifier_data is fully integrated
+  # with the stack.
+  rbClassify:
+    class: lsst.meas.transiNet.RBTransiNetTask
+    config:
+      modelPackageStorageMode: neighbor  # Mode of rbResnet50-DC2
+      modelPackageName: rbResnet50-DC2   # Useful for non-DC2 data as well
+      connections.coaddName: parameters.coaddName
+      connections.science: initial_pvi
+  transformDiaSrcCat:
+    class: lsst.ap.association.TransformDiaSourceCatalogTask
+    config:
+      doIncludeReliability: True  # Output from rbClassify

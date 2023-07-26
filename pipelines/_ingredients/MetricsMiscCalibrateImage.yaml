@@ -1,0 +1,14 @@
+# TODO DM-40388: This file will be merged into MetricsMisc.yaml, once the new pipeline is vetted.
+# Miscellaneous metrics for Alert Production
+# In the future, these might be placed in task-specific pipelines (for debugging)
+# or grouped by their datasets (to optimize expensive Butler reads)
+description: Miscelaneous AP Pipeline metrics, with CalibrateImage.
+imports:
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
+    # Disable these metrics, as the catalog output of CalibrateImageTask is
+    # not suitable for their intended purpose.
+    exclude:
+      - numSciSources
+      - fracDiaSourcesToSciSources
+      - numDeblendedSciSources
+      - numDeblendChildSciSources
