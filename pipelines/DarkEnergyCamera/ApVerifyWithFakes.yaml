@@ -12,8 +12,8 @@ imports:
       - processCcd
   - location: $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ProcessCcd.yaml
   # Can't use $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ApPipeWithFakes.yaml here
-  # because the changes made by that file and ../ApVerifyWithFakes.yaml are
-  # hard to separate.
+  # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
+  # are hard to separate.
 tasks:
   processVisitFakes:
     class: lsst.pipe.tasks.processCcdWithFakes.ProcessCcdWithVariableFakesTask
