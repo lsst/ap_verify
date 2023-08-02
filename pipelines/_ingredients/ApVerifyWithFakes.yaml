@@ -38,6 +38,7 @@ tasks:
   rbClassifyWithFakes:
     class: lsst.meas.transiNet.RBTransiNetTask
     config:
+      modelPackageStorageMode: neighbor  # Mode of rbResnet50-DC2
       modelPackageName: rbResnet50-DC2   # Useful for non-DC2 data as well
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
