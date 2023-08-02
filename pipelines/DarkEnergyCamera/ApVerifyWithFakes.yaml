@@ -14,14 +14,3 @@ imports:
   # Can't use $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ApPipeWithFakes.yaml here
   # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
   # are hard to separate.
-tasks:
-  transformDiaSrcCatWithFakes:
-    class: lsst.ap.association.TransformDiaSourceCatalogTask
-    config:
-      doIncludeReliability: True
-  rbClassify:
-    class: lsst.meas.transiNet.RBTransiNetTask
-    config:
-      modelPackageName: 'rbResnet50-DC2'
-      connections.coaddName: parameters.coaddName
-      connections.fakesType: parameters.fakesType

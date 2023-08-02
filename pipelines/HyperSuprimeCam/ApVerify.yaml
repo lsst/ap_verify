@@ -15,15 +15,6 @@ tasks:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
-  transformDiaSrcCat:
-    class: lsst.ap.association.TransformDiaSourceCatalogTask
-    config:
-      doIncludeReliability: True
-  rbClassify:
-    class: lsst.meas.transiNet.RBTransiNetTask
-    config:
-      modelPackageName: 'rbResnet50-DC2'
-      connections.coaddName: parameters.coaddName
 contracts:
   # Must re-declare contracts that cross apPipe and metrics boundary, as
   # these were removed on import.
