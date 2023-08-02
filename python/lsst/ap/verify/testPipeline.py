@@ -154,7 +154,7 @@ class MockCharacterizeImageTask(PipelineTask):
     ConfigClass = CharacterizeImageConfig
     _DefaultName = "notCharacterizeImage"
 
-    def __init__(self, butler=None, refObjLoader=None, schema=None, **kwargs):
+    def __init__(self, refObjLoader=None, schema=None, **kwargs):
         super().__init__(**kwargs)
         self.outputSchema = afwTable.SourceCatalog()
 
@@ -211,7 +211,7 @@ class MockCalibrateTask(PipelineTask):
     ConfigClass = CalibrateConfig
     _DefaultName = "notCalibrate"
 
-    def __init__(self, butler=None, astromRefObjLoader=None,
+    def __init__(self, astromRefObjLoader=None,
                  photoRefObjLoader=None, icSourceSchema=None,
                  initInputs=None, **kwargs):
         super().__init__(**kwargs)
