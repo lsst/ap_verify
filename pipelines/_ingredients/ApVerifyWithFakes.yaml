@@ -27,6 +27,8 @@ tasks:
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
     config:
+      # TODO: needed for "providing bulk sample alerts to brokers"; remove once
+      # we have an alternative.
       doPackageAlerts: True
   timing_transformDiaSrcCat:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
