@@ -9,17 +9,5 @@ imports:
       - processCcd
   - location: $AP_PIPE_DIR/pipelines/LsstCamImSim/ProcessCcd.yaml
   # Can't use $AP_PIPE_DIR/pipelines/LsstCamImSim/ApPipeWithFakes.yaml here
-  # because the changes made by that file and ../ApVerifyWithFakes.yaml are
-  # hard to separate.
-
-tasks:
-  transformDiaSrcCatWithFakes:
-    class: lsst.ap.association.TransformDiaSourceCatalogTask
-    config:
-      doIncludeReliability: True
-  rbClassify:
-    class: lsst.meas.transiNet.RBTransiNetTask
-    config:
-      modelPackageName: 'rbResnet50-DC2'
-      connections.coaddName: parameters.coaddName
-      connections.fakesType: parameters.fakesType
+  # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
+  # are hard to separate.
