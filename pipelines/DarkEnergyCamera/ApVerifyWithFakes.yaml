@@ -1,4 +1,4 @@
-# Gen 3 pipeline for ap_verify
+# Verification pipeline specialized for DECam with fake source inejection.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 # This pipeline assumes $AP_PIPE_DIR/pipelines/DarkEnergyCamera/RunIsrForCrosstalkSources.yaml

@@ -1,4 +1,4 @@
-# Pipeline for ap_verify on DC2
+# Verification pipeline specialized for the DC2 ImSim simulation.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 description: Fully instrumented AP pipeline specialized for LSSTCam-imSim

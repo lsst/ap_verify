@@ -1,4 +1,4 @@
-# Gen 3 pipeline for ap_verify
+# Verification pipeline specialized for the DC2 ImSim simulation.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 instrument: lsst.obs.lsst.LsstCamImSim

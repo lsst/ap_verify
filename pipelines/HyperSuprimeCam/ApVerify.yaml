@@ -1,4 +1,4 @@
-# Gen 3 pipeline for ap_verify
+# Verification pipeline specialized for HSC.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 description: Fully instrumented AP pipeline specialized for HSC
