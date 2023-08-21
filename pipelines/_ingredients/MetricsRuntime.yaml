@@ -27,6 +27,13 @@ tasks:
       connections.metric: CalibrateTime
       connections.labelName: calibrate
       target: calibrate.run
+  timing_calibrateImage:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.package: pipe_tasks
+      connections.metric: CalibrateImageTime
+      connections.labelName: calibrateImage
+      target: calibrateImage.run
   timing_subtractImages:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -119,6 +126,13 @@ tasks:
       connections.metric: CalibrateCpuTime
       connections.labelName: calibrate
       target: calibrate.run
+  cputiming_calibrateImage:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: pipe_tasks
+      connections.metric: CalibrateImageCpuTime
+      connections.labelName: calibrateImage
+      target: calibrateImage.run
   cputiming_subtractImages:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:

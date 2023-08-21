@@ -1,4 +1,4 @@
-# Gen 3 pipeline for ap_verify
+# Verification pipeline specialized for HSC, with fak source injection.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 instrument: lsst.obs.subaru.HyperSuprimeCam

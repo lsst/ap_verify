@@ -1,0 +1,20 @@
+# TODO DM-40388: This file will be merged in to Conversions.yaml, once the new pipeline is vetted.
+# Add-on pipeline designed to be added to ApVerify or ApPipe for QA purposes.
+#
+# This pipeline depends on an external pipeline for the coaddName and fakesType
+# pipeline parameters.
+description: Type conversion tasks customized for AP pipeline, with CalibrateImage.
+imports:
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
+
+tasks:
+  # TODO DM-40061: We can get rid of this task once we are writing the parquet
+  # table in CalibrateImageTask itself.
+  writeSourceTable:
+    class: lsst.pipe.tasks.postprocess.WriteSourceTableTask
+    config:
+      connections.catalog: initial_stars_footprints_detector
+  consolidateVisitSummary:
+    class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
+    config:
+      connections.calexp: initial_pvi
