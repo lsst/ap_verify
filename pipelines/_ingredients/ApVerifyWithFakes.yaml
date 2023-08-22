@@ -5,6 +5,9 @@ description: Fully instrumented AP pipeline with fakes
 imports:
   - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeWithFakes.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
+    exclude:
+      - timing_calibrateImage
+      - cputiming_calibrateImage
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsForFakes.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsForFakes.yaml
