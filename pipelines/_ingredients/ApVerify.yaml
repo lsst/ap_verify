@@ -5,6 +5,9 @@ description: Fully instrumented AP pipeline
 imports:
   - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipe.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
+    exclude:
+      - timing_calibrateImage
+      - cputiming_calibrateImage
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
 tasks:
