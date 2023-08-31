@@ -34,6 +34,13 @@ tasks:
       connections.metric: CalibrateImageTime
       connections.labelName: calibrateImage
       target: calibrateImage.run
+  timing_retrieveTemplate:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.package: ip_diffim
+      connections.metric: GetTemplateTime
+      connections.labelName: retrieveTemplate
+      target: retrieveTemplate.run
   timing_subtractImages:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -62,6 +69,13 @@ tasks:
       connections.metric: DipoleFitTime
       connections.labelName: detectAndMeasure
       target: detectAndMeasure:measurement.run
+  timing_rbClassify:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.package: meas_transinet
+      connections.metric: RBTransiNetTime
+      connections.labelName: rbClassify
+      target: rbClassify.run
   timing_diaPipe:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -133,6 +147,13 @@ tasks:
       connections.metric: CalibrateImageCpuTime
       connections.labelName: calibrateImage
       target: calibrateImage.run
+  cputiming_retrieveTemplate:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: ip_diffim
+      connections.metric: GetTemplateCpuTime
+      connections.labelName: retrieveTemplate
+      target: retrieveTemplate.run
   cputiming_subtractImages:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
@@ -168,6 +189,13 @@ tasks:
       connections.metric: DiaPipelineCpuTime
       connections.labelName: diaPipe
       target: diaPipe.run
+  cputiming_rbClassify:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.package: meas_transinet
+      connections.metric: RBTransiNetCpuTime
+      connections.labelName: rbClassify
+      target: rbClassify.run
   cputiming_transformDiaSrcCat:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
