@@ -40,6 +40,7 @@ tasks:
       connections.package: ip_diffim
       connections.metric: GetTemplateTime
       connections.labelName: retrieveTemplate
+      metadataDimensions: [instrument, visit, detector, skymap]
       target: retrieveTemplate.run
   timing_subtractImages:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
@@ -153,6 +154,7 @@ tasks:
       connections.package: ip_diffim
       connections.metric: GetTemplateCpuTime
       connections.labelName: retrieveTemplate
+      metadataDimensions: [instrument, visit, detector, skymap]
       target: retrieveTemplate.run
   cputiming_subtractImages:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
