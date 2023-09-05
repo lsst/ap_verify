@@ -59,6 +59,16 @@ tasks:
     config:
       connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
       target: transformDiaSrcCatWithFakes.run
+  timing_rbClassify:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: rbClassifyWithFakes  # Default is rbClassify
+      target: rbClassifyWithFakes.run
+  cputiming_rbClassify:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.labelName: rbClassifyWithFakes  # Default is rbClassify
+      target: rbClassifyWithFakes.run
 subsets:
   apPipe:
     # Extend the subset through imageDifference.
