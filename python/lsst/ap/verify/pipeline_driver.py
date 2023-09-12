@@ -106,7 +106,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     # processing pipeline (DM-31492).
     instruments = {id["instrument"] for id in workspace.workButler.registry.queryDataIds("instrument")}
     if "DECam" in instruments:
-        crosstalkPipeline = "${AP_PIPE_DIR}/pipelines/DarkEnergyCamera/RunIsrForCrosstalkSources.yaml"
+        crosstalkPipeline = "${AP_PIPE_DIR}/pipelines/DECam/RunIsrForCrosstalkSources.yaml"
         crosstalkArgs = ["pipetask", "run",
                          "--butler-config", workspace.repo,
                          "--pipeline", crosstalkPipeline,

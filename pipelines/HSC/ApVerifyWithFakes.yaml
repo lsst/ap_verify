@@ -7,7 +7,7 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
     exclude:
       - processCcd
-  - location: $AP_PIPE_DIR/pipelines/HyperSuprimeCam/ProcessCcd.yaml
-  # Can't use $AP_PIPE_DIR/pipelines/HyperSuprimeCam/ApPipeWithFakes.yaml here
+  - location: $AP_PIPE_DIR/pipelines/HSC/ProcessCcd.yaml
+  # Can't use $AP_PIPE_DIR/pipelines/HSC/ApPipeWithFakes.yaml here
   # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
   # are hard to separate.
