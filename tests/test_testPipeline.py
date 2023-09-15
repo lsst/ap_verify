@@ -101,7 +101,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "icExp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "icSrc", cls.visitId.keys(), "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "icExpBackground", cls.visitId.keys(), "Background")
-        butlerTests.addDatasetType(cls.repo, "gaia_dr2_20200414", cls.htmId.keys(), "SimpleCatalog")
+        butlerTests.addDatasetType(cls.repo, "gaia_dr3_20230707", cls.htmId.keys(), "SimpleCatalog")
         butlerTests.addDatasetType(cls.repo, "ps1_pv3_3pi_20170110", cls.htmId.keys(), "SimpleCatalog")
         butlerTests.addDatasetType(cls.repo, "calexp", cls.visitId.keys(), "ExposureF")
         butlerTests.addDatasetType(cls.repo, "src", cls.visitId.keys(), "SourceCatalog")
@@ -163,7 +163,7 @@ class MockTaskTestSuite(unittest.TestCase):
         self.butler.put(afwImage.ExposureF(), "icExp", self.visitId)
         self.butler.put(afwMath.BackgroundList(), "icExpBackground", self.visitId)
         self.butler.put(afwTable.SourceCatalog(), "icSrc", self.visitId)
-        self.butler.put(afwTable.SimpleCatalog(), "gaia_dr2_20200414", self.htmId)
+        self.butler.put(afwTable.SimpleCatalog(), "gaia_dr3_20230707", self.htmId)
         self.butler.put(afwTable.SimpleCatalog(), "ps1_pv3_3pi_20170110", self.htmId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
