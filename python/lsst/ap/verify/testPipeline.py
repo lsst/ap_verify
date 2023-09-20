@@ -231,7 +231,8 @@ class MockCalibrateTask(PipelineTask):
         if self.config.doWriteMatches and self.config.doAstrometry:
             normalizedMatches = afwTable.packMatches(outputs.astromMatches)
             if self.config.doWriteMatchesDenormalized:
-                outputs.matchesDenormalized = outputs.astromMatches
+                # Just need an empty BaseCatalog with a valid schema.
+                outputs.matchesDenormalized = afwTable.BaseCatalog(outputs.outputCat.schema)
             outputs.matches = normalizedMatches
         butlerQC.put(outputs, outputRefs)
 
