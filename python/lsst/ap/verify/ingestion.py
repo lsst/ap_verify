@@ -209,7 +209,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         if not exposures:
             raise RuntimeError(f"No exposures defined in {self.workspace.repo}.")
 
-        exposureKeys = list(exposures)[0].graph
+        exposureKeys = list(exposures)[0].dimensions
         exposuresWithVisits = {x.subset(exposureKeys) for x in
                                self.workspace.workButler.registry.queryDataIds(["exposure", "visit"])}
         exposuresNoVisits = exposures - exposuresWithVisits
