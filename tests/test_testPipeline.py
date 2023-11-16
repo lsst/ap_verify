@@ -120,7 +120,8 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrcTable", cls.visitId.keys(), "DataFrame")
         butlerTests.addDatasetType(cls.repo, "visitSsObjects", cls.visitOnlyId.keys(), "DataFrame")
         butlerTests.addDatasetType(cls.repo, "apdb_marker", cls.visitId.keys(), "Config")
-        butlerTests.addDatasetType(cls.repo, "deepDiff_associDiaSrc", cls.visitId.keys(), "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_assocDiaSrc", cls.visitId.keys(), "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.keys(), "DataFrame")
 
     def setUp(self):
         super().setUp()
@@ -285,6 +286,7 @@ class MockTaskTestSuite(unittest.TestCase):
              "template": self.visitId,
              "apdbMarker": self.visitId,
              "associatedDiaSources": self.visitId,
+             "longTrailedSources": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
