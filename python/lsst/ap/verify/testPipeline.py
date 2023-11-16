@@ -568,4 +568,5 @@ class MockDiaPipelineTask(PipelineTask):
                       associatedDiaSources=pandas.DataFrame(),
                       diaForcedSources=pandas.DataFrame(),
                       diaObjects=pandas.DataFrame(),
+                      longTrailedSources=pandas.DataFrame(),
                       )
