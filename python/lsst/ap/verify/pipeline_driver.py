@@ -95,6 +95,9 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
 
     pipelineFile = _getPipelineFile(workspace, parsedCmdLine)
     pipelineArgs = ["pipetask", "--long-log", "run",
+                    # fail-fast to ensure processing errors are obvious, and
+                    # to compensate for the extra interconnections added by
+                    # --graph-fixup (further down).
                     "--fail-fast",
                     "--butler-config", workspace.repo,
                     "--pipeline", pipelineFile,
