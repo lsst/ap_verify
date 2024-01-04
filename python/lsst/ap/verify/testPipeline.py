@@ -165,16 +165,13 @@ class MockCharacterizeImageTask(PipelineTask):
         outputs = self.run(**inputs)
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, exposure, exposureIdInfo=None, background=None, idGenerator=None):
+    def run(self, exposure, background=None, idGenerator=None):
         """Produce characterization outputs with no processing.
 
         Parameters
         ----------
         exposure : `lsst.afw.image.Exposure`
             Exposure to characterize.
-        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`, optional
-            ID info for exposure. Deprecated in favor of ``idGenerator``, and
-            ignored if that is provided.
         background : `lsst.afw.math.BackgroundList`, optional
             Initial model of background already subtracted from exposure.
         idGenerator : `lsst.meas.base.IdGenerator`, optional
@@ -236,7 +233,7 @@ class MockCalibrateTask(PipelineTask):
             outputs.matches = normalizedMatches
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, exposure, exposureIdInfo=None, background=None,
+    def run(self, exposure, background=None,
             icSourceCat=None, idGenerator=None):
         """Produce calibration outputs with no processing.
 
@@ -244,9 +241,6 @@ class MockCalibrateTask(PipelineTask):
         ----------
         exposure : `lsst.afw.image.Exposure`
             Exposure to calibrate.
-        exposureIdInfo : `lsst.obs.base.ExposureIdInfo`, optional
-            ID info for exposure. Deprecated in favor of ``idGenerator``, and
-            ignored if that is provided.
         background : `lsst.afw.math.BackgroundList`, optional
             Background model already subtracted from exposure.
         icSourceCat : `lsst.afw.table.SourceCatalog`, optional
