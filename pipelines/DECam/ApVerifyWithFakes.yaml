@@ -1,7 +1,7 @@
 # Verification pipeline specialized for DECam with fake source inejection.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
-# This pipeline assumes $AP_PIPE_DIR/pipelines/DarkEnergyCamera/RunIsrForCrosstalkSources.yaml
+# This pipeline assumes $AP_PIPE_DIR/pipelines/DECam/RunIsrForCrosstalkSources.yaml
 # has already been run.
 
 instrument: lsst.obs.decam.DarkEnergyCamera
@@ -10,7 +10,7 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
     exclude:
       - processCcd
-  - location: $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ProcessCcd.yaml
-  # Can't use $AP_PIPE_DIR/pipelines/DarkEnergyCamera/ApPipeWithFakes.yaml here
+  - location: $AP_PIPE_DIR/pipelines/DECam/ProcessCcd.yaml
+  # Can't use $AP_PIPE_DIR/pipelines/DECam/ApPipeWithFakes.yaml here
   # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
   # are hard to separate.
