@@ -31,7 +31,7 @@ Organizing the data
 
 * The :file:`raw` directory contains uningested science data.
   The directory may have any internal structure.
-* The :file:`preloaded` directory contains a :ref:`Gen 3 LSST Butler repository<lsst.daf.butler-using>` with calibration data, coadded difference imaging templates, refcats, and any other files needed for processing science data.
+* The :file:`preloaded` directory contains a :ref:`Gen 3 LSST Butler repository<lsst.daf.butler-using>` with calibration data, coadded difference imaging templates, refcats, pretrained models, and any other files needed for processing science data.
   The repository must have an ``<instrument>/defaults`` collection containing all of the above.
   It must not contain science data, which belongs only in :file:`raw`.
 * The :file:`config/export.yaml` file is a `relative-path export <lsst.daf.butler.Butler.export>` of the repository at :file:`preloaded`, used to set up a separate repository for running ``ap_verify``.

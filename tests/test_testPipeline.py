@@ -38,7 +38,7 @@ import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
     MockCalibrateTask, MockGetTemplateTask, \
     MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
-    MockDiaPipelineTask
+    MockRBTransiNetTask, MockDiaPipelineTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -82,6 +82,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDataIdValue(cls.repo, "tract", TRACT)
         butlerTests.addDataIdValue(cls.repo, "patch", PATCH)
 
+        cls.emptyId = cls.repo.registry.expandDataId({})
         cls.exposureId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
         cls.visitId = cls.repo.registry.expandDataId(
@@ -124,6 +125,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "apdb_marker", cls.visitId.dimensions, "Config")
         butlerTests.addDatasetType(cls.repo, "deepDiff_assocDiaSrc", cls.visitId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "deepRealBogusSources", cls.visitId.dimensions, "Catalog")
 
     def setUp(self):
         super().setUp()
@@ -246,6 +248,31 @@ class MockTaskTestSuite(unittest.TestCase):
              "difference": self.visitId,
              "diaSources": self.visitId,
              "subtractedMeasuredExposure": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
+    def testMockRBTransiNetTask(self):
+        task = MockRBTransiNetTask()
+        pipelineTests.assertValidInitOutput(task)
+        result = task.run(template=afwImage.ExposureF(),
+                          science=afwImage.ExposureF(),
+                          difference=afwImage.ExposureF(),
+                          diaSources=afwTable.SourceCatalog(),
+                          )
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "deepDiff_diaSrc", self.visitId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"template": self.visitId,
+             "science": self.visitId,
+             "difference": self.visitId,
+             "diaSources": self.visitId,
+             "pretrainedModel": self.emptyId,
+             "classifications": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 

@@ -39,6 +39,7 @@ from lsst.ip.isr import IsrTaskConfig
 from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig, DetectAndMeasureConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
+from lsst.meas.transiNet import RBTransiNetConfig
 from lsst.ap.association import TransformDiaSourceCatalogConfig, DiaPipelineConfig
 
 
@@ -431,6 +432,16 @@ class MockDetectAndMeasureTask(PipelineTask):
         return Struct(subtractedMeasuredExposure=difference,
                       diaSources=afwTable.SourceCatalog(),
                       )
+
+
+class MockRBTransiNetTask(PipelineTask):
+    """A do-nothing substitute for RBTransiNetTask.
+    """
+    _DefaultName = "notRbTransiNet"
+    ConfigClass = RBTransiNetConfig
+
+    def run(self, template, science, difference, diaSources, pretrainedModel=None):
+        return Struct(classifications=afwTable.BaseCatalog(afwTable.Schema()))
 
 
 class MockTransformDiaSourceCatalogTask(PipelineTask):

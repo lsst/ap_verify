@@ -30,16 +30,6 @@ Using the `Cosmos PDR2`_ CI dataset as an example, first setup the dataset, if i
 
 You will need to setup the dataset once each session.
 
-Next, clone the `model packages`_ for the Real-Bogus (RB) Classifier and run the setup as follows.
-
-.. _model packages: https://github.com/lsst-dm/rbClassifier_data/
-
-.. prompt:: bash
-
-   setup [-r] rbClassifier_data
-
-You will need to setup the rbClassifier_data as well once each session.
-
 You can then run :command:`ap_verify.py` as follows.
 
 .. prompt:: bash
