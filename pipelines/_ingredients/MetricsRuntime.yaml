@@ -119,6 +119,13 @@ tasks:
       connections.metric: PackageAlertsTime
       connections.labelName: diaPipe
       target: diaPipe:alertPackager.run
+  timing_filterDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: FilterDiaSourceCatalogTime
+      connections.labelName: filterDiaSrcCat
+      target: filterDiaSrcCat.run
   cputiming_isr:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
@@ -233,6 +240,13 @@ tasks:
       connections.metric: PackageAlertsCpuTime
       connections.labelName: diaPipe
       target: diaPipe:alertPackager.run
+  cputiming_filterDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.package: ap_association
+      connections.metric: FilterDiaSourceCatalogCpuTime
+      connections.labelName: filterDiaSrcCat
+      target: filterDiaSrcCat.run
   memory_apPipe:
     class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
     config:

@@ -34,13 +34,14 @@ import lsst.geom as geom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
+from lsst.ap.association import (TransformDiaSourceCatalogConfig,
+                                 DiaPipelineConfig, FilterDiaSourceCatalogConfig)
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
 from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig, DetectAndMeasureConfig
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.meas.transiNet import RBTransiNetConfig
-from lsst.ap.association import TransformDiaSourceCatalogConfig, DiaPipelineConfig
 
 
 class MockIsrTask(PipelineTask):
@@ -431,6 +432,30 @@ class MockDetectAndMeasureTask(PipelineTask):
         """
         return Struct(subtractedMeasuredExposure=difference,
                       diaSources=afwTable.SourceCatalog(),
+                      )
+
+
+class MockFilterDiaSourceCatalogTask(PipelineTask):
+    """A do-nothing substitute for FilterDiaSourceCatalogTask.
+    """
+    ConfigClass = FilterDiaSourceCatalogConfig
+    _DefaultName = "notFilterDiaSourceCatalog"
+
+    def run(self, diaSourceCat):
+        """Produce filtering outputs with no processing.
+
+        Parameters
+        ----------
+        diaSourceCat : `lsst.afw.table.SourceCatalog`
+            Catalog of sources measured on the difference image.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            Results struct with components.
+        """
+        return Struct(filteredDiaSourceCat=afwTable.SourceCatalog(),
+                      rejectedDiaSources=afwTable.SourceCatalog(),
                       )
 
 
