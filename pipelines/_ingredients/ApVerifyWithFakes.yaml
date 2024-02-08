@@ -33,6 +33,16 @@ tasks:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once
       # we have an alternative.
       doPackageAlerts: True
+  timing_filterDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: filterDiaSrcCatWithFakes  # Default is filterDiaSrcCat
+      target: filterDiaSrcCatWithFakes.run
+  cputiming_filterDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.labelName: filterDiaSrcCatWithFakes  # Default is filterDiaSrcCat
+      target: filterDiaSrcCatWithFakes.run
   timing_rbClassify:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
