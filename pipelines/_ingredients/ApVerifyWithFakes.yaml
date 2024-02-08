@@ -33,16 +33,6 @@ tasks:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once
       # we have an alternative.
       doPackageAlerts: True
-  timing_transformDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
-      target: transformDiaSrcCatWithFakes.run
-  cputiming_transformDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
-      target: transformDiaSrcCatWithFakes.run
   timing_rbClassify:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -53,6 +43,16 @@ tasks:
     config:
       connections.labelName: rbClassifyWithFakes  # Default is rbClassify
       target: rbClassifyWithFakes.run
+  timing_transformDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    config:
+      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
+      target: transformDiaSrcCatWithFakes.run
+  cputiming_transformDiaSrcCat:
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
+    config:
+      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
+      target: transformDiaSrcCatWithFakes.run
 subsets:
   apPipe:
     # Extend the subset through imageDifference.
