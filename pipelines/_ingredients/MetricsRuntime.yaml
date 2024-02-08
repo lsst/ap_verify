@@ -241,7 +241,7 @@ tasks:
       connections.labelName: diaPipe
       target: diaPipe:alertPackager.run
   cputiming_filterDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
+    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: FilterDiaSourceCatalogCpuTime
