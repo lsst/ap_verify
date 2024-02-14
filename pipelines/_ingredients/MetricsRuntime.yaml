@@ -1,8 +1,5 @@
 # Timing and system resource metrics for Alert Production
 
-# Note that some of these configs must be overridden in ApVerifyWithFakes.yaml,
-# because some task names differ from ApVerify.yaml.
-
 description: Runtime metrics (customized for AP pipeline)
 tasks:
   timing_isr:
