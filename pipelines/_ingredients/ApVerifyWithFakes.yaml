@@ -8,37 +8,12 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsForFakes.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsForFakes.yaml
 tasks:
-  # Parallel to ApPipe's retrieveTemplateWithFakes, allows non-fakes image differencing.
-  retrieveTemplate:
-    class: lsst.ip.diffim.getTemplate.GetTemplateTask
-    config:
-        connections.coaddName: parameters.coaddName
-  # Parallel to ApPipe's imageDifferenceWithFakes, allows clean differencing metrics.
-  subtractImages:
-    class: lsst.ip.diffim.subtractImages.AlardLuptonSubtractTask
-    config:
-      connections.coaddName: parameters.coaddName
-  detectAndMeasure:
-    class: lsst.ip.diffim.detectAndMeasure.DetectAndMeasureTask
-    config:
-      connections.coaddName: parameters.coaddName
-      doSkySources: True
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
     config:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once
       # we have an alternative.
       doPackageAlerts: True
-subsets:
-  apPipe:
-    # Extend the subset through imageDifference.
-    subset:
-      - isr
-      - characterizeImage
-      - calibrate
-      - retrieveTemplate
-      - subtractImages
-      - detectAndMeasure
 contracts:
   # Metric inputs must match pipeline outputs
   # Use of ConnectionsClass for templated fields is a workaround for DM-30210
