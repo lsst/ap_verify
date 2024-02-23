@@ -12,14 +12,14 @@ imports:
       - consolidateDiaSourceTable
 tasks:
   # Conversion of fakes_src [afw.table] to fakes_source [Parquet]
-  writeSourceTableWithFakes:
+  writeSourceTable:
     class: lsst.pipe.tasks.postprocess.WriteSourceTableTask
     config:
       connections.catalogType: parameters.fakesType
   # TODO: TransformSourceTableTask can't be run until we create a functor
   # config that doesn't depend on shapeHSM.
   # Merging of fakes_source [detector-level] to fakes_sourceTable_visit [visit-level]
-  consolidateSourceTableWithFakes:
+  consolidateSourceTable:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
       connections.catalogType: parameters.fakesType
@@ -27,7 +27,7 @@ tasks:
       connections.inputCatalogs: "{catalogType}source"
 
   # Merging of fakes_*Diff_diaSrcTable [detector-level Parquet] to fakes_diaSourceTable [visit-level]
-  consolidateDiaSourceTableWithFakes:
+  consolidateDiaSourceTable:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
       # Task doesn't support coaddName, so coopt catalogType instead.
@@ -38,7 +38,7 @@ tasks:
       connections.outputCatalog: fakes_diaSourceTable
 
   # Creation of fakes_visitSummary
-  consolidateVisitSummaryWithFakes:
+  consolidateVisitSummary:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
     config:
       connections.calexpType: parameters.fakesType

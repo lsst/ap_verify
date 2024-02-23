@@ -4,75 +4,16 @@
 description: Fully instrumented AP pipeline with fakes
 imports:
   - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeWithFakes.yaml
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
-    exclude:
-      - timing_calibrateImage
-      - cputiming_calibrateImage
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
+  # Most metrics should not be run with fakes, to avoid bias or contamination.
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsForFakes.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsForFakes.yaml
 tasks:
-  # Parallel to ApPipe's retrieveTemplateWithFakes, allows non-fakes image differencing.
-  retrieveTemplate:
-    class: lsst.ip.diffim.getTemplate.GetTemplateTask
-    config:
-        connections.coaddName: parameters.coaddName
-  # Parallel to ApPipe's imageDifferenceWithFakes, allows clean differencing metrics.
-  subtractImages:
-    class: lsst.ip.diffim.subtractImages.AlardLuptonSubtractTask
-    config:
-      connections.coaddName: parameters.coaddName
-  detectAndMeasure:
-    class: lsst.ip.diffim.detectAndMeasure.DetectAndMeasureTask
-    config:
-      connections.coaddName: parameters.coaddName
-      doSkySources: True
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
     config:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once
       # we have an alternative.
       doPackageAlerts: True
-  timing_filterDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.labelName: filterDiaSrcCatWithFakes  # Default is filterDiaSrcCat
-      target: filterDiaSrcCatWithFakes.run
-  cputiming_filterDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.labelName: filterDiaSrcCatWithFakes  # Default is filterDiaSrcCat
-      target: filterDiaSrcCatWithFakes.run
-  timing_rbClassify:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.labelName: rbClassifyWithFakes  # Default is rbClassify
-      target: rbClassifyWithFakes.run
-  cputiming_rbClassify:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.labelName: rbClassifyWithFakes  # Default is rbClassify
-      target: rbClassifyWithFakes.run
-  timing_transformDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
-      target: transformDiaSrcCatWithFakes.run
-  cputiming_transformDiaSrcCat:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.labelName: transformDiaSrcCatWithFakes  # Default is transformDiaSrcCat
-      target: transformDiaSrcCatWithFakes.run
-subsets:
-  apPipe:
-    # Extend the subset through imageDifference.
-    subset:
-      - isr
-      - characterizeImage
-      - calibrate
-      - retrieveTemplate
-      - subtractImages
-      - detectAndMeasure
 contracts:
   # Metric inputs must match pipeline outputs
   # Use of ConnectionsClass for templated fields is a workaround for DM-30210
@@ -82,5 +23,3 @@ contracts:
       apFakesCompletenessMag22t24.connections.ConnectionsClass(config=apFakesCompletenessMag22t24).matchedFakes.name
   - fakesMatch.connections.ConnectionsClass(config=fakesMatch).matchedDiaSources.name ==
       apFakesCompletenessMag24t26.connections.ConnectionsClass(config=apFakesCompletenessMag24t26).matchedFakes.name
-  - detectAndMeasure.connections.ConnectionsClass(config=detectAndMeasure).diaSources.name ==
-      fracDiaSourcesToSciSources.connections.ConnectionsClass(config=fracDiaSourcesToSciSources).diaSources.name
