@@ -1,0 +1,37 @@
+# Add-on pipeline designed to be added to ApVerify or ApPipe for QA purposes.
+#
+# This pipeline depends on an external pipeline for the coaddName and fakesType
+# pipeline parameters.
+description: Type conversion tasks customized for AP pipeline, with CalibrateImage.
+
+tasks:
+  # Merging of initial_stars_detector [detector-level] to initial_stars [visit-level]
+  consolidateSourceTable:
+    class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
+    config:
+      # This is output directly by CalibrateImageTask.
+      connections.inputCatalogs: initial_stars_detector
+      connections.outputCatalog: initial_stars
+
+  # Merging of *Diff_diaSrcTable [detector-level Parquet] to diaSourceTable [visit-level]
+  consolidateDiaSourceTable:
+    class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
+    config:
+      # Task doesn't support coaddName, so coopt catalogType instead.
+      connections.catalogType: parameters.coaddName
+      connections.inputCatalogs: "{catalogType}Diff_diaSrcTable"
+      connections.outputCatalog: diaSourceTable
+
+  consolidateVisitSummary:
+    class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
+    config:
+      connections.calexp: initial_pvi
+  makeVisitTable:
+    class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
+    config:
+      connections.visitSummaries: "{calexpType}visitSummary"
+  # Conversion of visitSummary [visit-level afw.table] to ccdVisitTable [instrument-level Parquet]
+  makeCcdVisitTable:
+    class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
+    config:
+      connections.visitSummaryRefs: "{calexpType}visitSummary"

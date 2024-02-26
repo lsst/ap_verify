@@ -2,15 +2,15 @@
 
 description: Fully instrumented AP pipeline.
 imports:
-  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeCalibrateImage.yaml
+  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipe.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
     exclude:
       - timing_calibrate
       - timing_characterizeImage
       - cputiming_calibrate
       - cputiming_characterizeImage
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMiscCalibrateImage.yaml
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsCalibrateImage.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
 tasks:
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask

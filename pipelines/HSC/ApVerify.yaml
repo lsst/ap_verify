@@ -1,15 +1,14 @@
-# TODO DM-40388: This file will replace ApVerify.yaml, once the new pipeline is vetted.
-# Verification pipeline specialized for the DC2 ImSim simulation.
+# Verification pipeline specialized for HSC.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
-description: Fully instrumented AP pipeline specialized for LSSTCam-imSim
+description: Fully instrumented AP pipeline specialized for HSC
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyCalibrateImage.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerify.yaml
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:
       - apPipe
-  - location: $AP_PIPE_DIR/pipelines/LSSTCam-imSim/ApPipeCalibrateImage.yaml
+  - location: $AP_PIPE_DIR/pipelines/HSC/ApPipe.yaml
 tasks:
   # ApVerify override removed by excluding apPipe.
   diaPipe:
