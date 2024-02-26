@@ -3,14 +3,14 @@
 
 description: Fully instrumented AP pipeline
 imports:
-  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipe.yaml
+  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeCalibrate.yaml
   # Metrics that should be run without fakes
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
     exclude:
       - timing_calibrateImage
       - cputiming_calibrateImage
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMiscCalibrate.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsCalibrate.yaml
 tasks:
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
