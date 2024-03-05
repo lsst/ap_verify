@@ -2,16 +2,20 @@
 #
 # This pipeline depends on an external pipeline for the coaddName and fakesType
 # pipeline parameters.
-description: Type conversion tasks customized for AP pipeline, with CalibrateImage.
 
+description: Type conversion tasks customized for AP pipeline
 tasks:
-  # Merging of initial_stars_detector [detector-level] to initial_stars [visit-level]
+  # Conversion of src [afw.table] to source [Parquet]
+  writeSourceTable:
+    class: lsst.pipe.tasks.postprocess.WriteSourceTableTask
+  # TODO: TransformSourceTableTask can't be run until we create a functor
+  # config that doesn't depend on shapeHSM.
+  # Merging of source [detector-level] to sourceTable_visit [visit-level]
   consolidateSourceTable:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
-      # This is output directly by CalibrateImageTask.
-      connections.inputCatalogs: initial_stars_detector
-      connections.outputCatalog: initial_stars
+      # Skip DPDD-ified sourceTable and just use source directly
+      connections.inputCatalogs: "{catalogType}source"
 
   # Merging of *Diff_diaSrcTable [detector-level Parquet] to diaSourceTable [visit-level]
   consolidateDiaSourceTable:
@@ -22,10 +26,10 @@ tasks:
       connections.inputCatalogs: "{catalogType}Diff_diaSrcTable"
       connections.outputCatalog: diaSourceTable
 
+  # Creation of visitSummary
   consolidateVisitSummary:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
-    config:
-      connections.calexp: initial_pvi
+  # Conversion of visitSummary [visit-level afw.table] to visitTable [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:

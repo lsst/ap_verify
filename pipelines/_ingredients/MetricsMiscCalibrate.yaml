@@ -1,7 +1,8 @@
 # Miscellaneous metrics for Alert Production
 # In the future, these might be placed in task-specific pipelines (for debugging)
 # or grouped by their datasets (to optimize expensive Butler reads)
-description: Miscelaneous AP Pipeline metrics.
+
+description: Miscelaneous AP Pipeline metrics
 tasks:
   numNewDiaObjects:
     class: lsst.ap.association.metrics.NumberNewDiaObjectsMetricTask
@@ -25,3 +26,13 @@ tasks:
       connections.labelName: diaPipe
   totalUnassociatedDiaObjects:
     class: lsst.ap.association.metrics.TotalUnassociatedDiaObjectsMetricTask
+  numSciSources:
+    class: lsst.ip.diffim.metrics.NumberSciSourcesMetricTask
+  fracDiaSourcesToSciSources:
+    class: lsst.ip.diffim.metrics.FractionDiaSourcesToSciSourcesMetricTask
+    config:
+      connections.coaddName: parameters.coaddName
+  numDeblendedSciSources:
+    class: lsst.pipe.tasks.metrics.NumberDeblendedSourcesMetricTask
+  numDeblendChildSciSources:
+    class: lsst.pipe.tasks.metrics.NumberDeblendChildSourcesMetricTask

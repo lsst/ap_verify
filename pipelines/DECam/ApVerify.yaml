@@ -15,9 +15,3 @@ tasks:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
-contracts:
-  # Must re-declare contracts that cross apPipe and metrics boundary, as
-  # these were removed on import.
-  # Use of ConnectionsClass for templated fields is a workaround for DM-30210
-  - detectAndMeasure.connections.ConnectionsClass(config=detectAndMeasure).diaSources.name ==
-      fracDiaSourcesToSciSources.connections.ConnectionsClass(config=fracDiaSourcesToSciSources).diaSources.name

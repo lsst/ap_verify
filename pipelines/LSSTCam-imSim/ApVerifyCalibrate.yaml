@@ -3,15 +3,21 @@
 
 description: Fully instrumented AP pipeline specialized for LSSTCam-imSim
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerify.yaml
+  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyCalibrate.yaml
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:
       - apPipe
-  - location: $AP_PIPE_DIR/pipelines/LSSTCam-imSim/ApPipe.yaml
+  - location: $AP_PIPE_DIR/pipelines/LSSTCam-imSim/ApPipeCalibrate.yaml
 tasks:
   # ApVerify override removed by excluding apPipe.
   diaPipe:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
+contracts:
+  # Must re-declare contracts that cross apPipe and metrics boundary, as
+  # these were removed on import.
+  # Use of ConnectionsClass for templated fields is a workaround for DM-30210
+  - detectAndMeasure.connections.ConnectionsClass(config=detectAndMeasure).diaSources.name ==
+      fracDiaSourcesToSciSources.connections.ConnectionsClass(config=fracDiaSourcesToSciSources).diaSources.name
