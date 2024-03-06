@@ -7,7 +7,9 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
     exclude:
       - processCcd
-  - location: $AP_PIPE_DIR/pipelines/LSSTCam-imSim/ProcessCcd.yaml
+  # The existing Fakes insertion system is not currently compatible with the
+  # new CalibrateImageTask, so the fakes pipeline still is on the old tasks.
+  - location: $AP_PIPE_DIR/pipelines/LSSTCam-imSim/ProcessCcdCalibrate.yaml
   # Can't use $AP_PIPE_DIR/pipelines/LSSTCam-imSim/ApPipeWithFakes.yaml here
   # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
   # are hard to separate.
