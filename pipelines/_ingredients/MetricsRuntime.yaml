@@ -267,3 +267,12 @@ tasks:
       connections.metric: PackageAlertsMemory
       connections.labelName: diaPipe
       target: diaPipe:alertPackager.run
+  timing_apPipe:
+    class: lsst.ap.pipe.metrics.PipelineTimingMetricTask
+    config:
+      connections.package: ap_pipe
+      connections.metric: ApPipelineTime
+      connections.labelStart: isr
+      connections.labelEnd: diaPipe
+      targetStart: isr.run
+      targetEnd: diaPipe.run
