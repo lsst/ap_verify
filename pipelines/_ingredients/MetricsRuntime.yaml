@@ -273,6 +273,6 @@ tasks:
       connections.package: ap_pipe
       connections.metric: ApPipelineTime
       connections.labelStart: isr
-      connections.labelEnd: diaPipe
+      connections.labelEnd: analyzeTrailedDiaSrcCore
       targetStart: isr.run
-      targetEnd: diaPipe.run
+      targetEnd: analyzeTrailedDiaSrcCore.run

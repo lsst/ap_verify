@@ -128,6 +128,8 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_assocDiaSrc", cls.visitId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "deepRealBogusSources", cls.visitId.dimensions, "Catalog")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_diaForcedSrc", cls.visitId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_diaObject", cls.visitId.dimensions, "DataFrame")
 
     def setUp(self):
         super().setUp()
@@ -324,6 +326,8 @@ class MockTaskTestSuite(unittest.TestCase):
              "apdbMarker": self.visitId,
              "associatedDiaSources": self.visitId,
              "longTrailedSources": self.visitId,
+             "diaForcedSources": self.visitId,
+             "diaObjects": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
