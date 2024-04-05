@@ -26,7 +26,7 @@
 # to be public for that.
 __all__ = []
 
-
+import astropy.table
 import numpy as np
 import pandas
 
@@ -432,6 +432,7 @@ class MockDetectAndMeasureTask(PipelineTask):
         """
         return Struct(subtractedMeasuredExposure=difference,
                       diaSources=afwTable.SourceCatalog(),
+                      spatiallySampledMetrics=astropy.table.Table(),
                       )
 
 

@@ -121,6 +121,8 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.dimensions, "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrc", cls.visitId.dimensions, "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrcTable", cls.visitId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_spatiallySampledMetrics", cls.visitId.dimensions,
+                                   "ArrowAstropy")
         butlerTests.addDatasetType(cls.repo, "deepDiff_candidateDiaSrc", cls.visitId.dimensions,
                                    "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "visitSsObjects", cls.visitOnlyId.dimensions, "DataFrame")
@@ -252,6 +254,7 @@ class MockTaskTestSuite(unittest.TestCase):
              "difference": self.visitId,
              "diaSources": self.visitId,
              "subtractedMeasuredExposure": self.visitId,
+             "spatiallySampledMetrics": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
