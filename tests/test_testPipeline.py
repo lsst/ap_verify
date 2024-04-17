@@ -38,7 +38,8 @@ import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
     MockCalibrateTask, MockGetTemplateTask, \
     MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
-    MockRBTransiNetTask, MockDiaPipelineTask, MockFilterDiaSourceCatalogTask
+    MockRBTransiNetTask, MockDiaPipelineTask, MockFilterDiaSourceCatalogTask, \
+    MockSpatiallySampledMetricsTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -254,7 +255,6 @@ class MockTaskTestSuite(unittest.TestCase):
              "difference": self.visitId,
              "diaSources": self.visitId,
              "subtractedMeasuredExposure": self.visitId,
-             "spatiallySampledMetrics": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
@@ -263,6 +263,33 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.assertValidInitOutput(task)
         result = task.run(afwTable.SourceCatalog())
         pipelineTests.assertValidOutput(task, result)
+
+    def testMockSpatiallySampledMetricsTask(self):
+        task = MockSpatiallySampledMetricsTask()
+        result = task.run(
+            afwImage.ExposureF(),
+            afwImage.ExposureF(),
+            afwImage.ExposureF(),
+            afwImage.ExposureF(),
+            afwTable.SourceCatalog(),
+        )
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_matchedExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "deepDiff_candidateDiaSrc", self.visitId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.visitId,
+            {"science": self.visitId,
+             "matchedTemplate": self.visitId,
+             "template": self.visitId,
+             "difference": self.visitId,
+             "diaSources": self.visitId,
+             "spatiallySampledMetrics": self.visitId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
     def testMockRBTransiNetTask(self):
         task = MockRBTransiNetTask()

@@ -38,7 +38,8 @@ from lsst.ap.association import (TransformDiaSourceCatalogConfig,
                                  DiaPipelineConfig, FilterDiaSourceCatalogConfig)
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
-from lsst.ip.diffim import GetTemplateConfig, AlardLuptonSubtractConfig, DetectAndMeasureConfig
+from lsst.ip.diffim import (GetTemplateConfig, AlardLuptonSubtractConfig,
+                            DetectAndMeasureConfig, SpatiallySampledMetricsConfig)
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.meas.transiNet import RBTransiNetConfig
@@ -432,7 +433,6 @@ class MockDetectAndMeasureTask(PipelineTask):
         """
         return Struct(subtractedMeasuredExposure=difference,
                       diaSources=afwTable.SourceCatalog(),
-                      spatiallySampledMetrics=astropy.table.Table(),
                       )
 
 
@@ -458,6 +458,39 @@ class MockFilterDiaSourceCatalogTask(PipelineTask):
         return Struct(filteredDiaSourceCat=afwTable.SourceCatalog(),
                       rejectedDiaSources=afwTable.SourceCatalog(),
                       )
+
+
+class MockSpatiallySampledMetricsTask(PipelineTask):
+    """A do-nothing substitute for SpatiallySampledMetricsTask.
+    """
+    ConfigClass = SpatiallySampledMetricsConfig
+    _DefaultName = "notSpatiallySampledMetricsTask"
+
+    def run(self, science, matchedTemplate, template, difference, diaSources):
+        """Produce spatially sampled metrics
+
+        Parameters
+        ----------
+        science : `lsst.afw.image.ExposureF`
+            Science exposure that the template was subtracted from.
+        matchedTemplate : `lsst.afw.image.ExposureF`
+            Warped and PSF-matched template that was used produce the
+            difference image.
+        template : `lsst.afw.image.ExposureF`
+            Warped and non PSF-matched template that was used to produce
+            the difference image.
+        difference : `lsst.afw.image.ExposureF`
+            Result of subtracting template from the science image.
+        diaSources : `lsst.afw.table.SourceCatalog`
+                The catalog of detected sources.
+
+        Returns
+        -------
+        results : `lsst.pipe.base.Struct`
+            Results struct with components.
+        """
+
+        return Struct(spatiallySampledMetrics=astropy.table.Table())
 
 
 class MockRBTransiNetTask(PipelineTask):
