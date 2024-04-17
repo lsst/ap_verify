@@ -119,6 +119,8 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_templateExp", cls.visitId.dimensions, "ExposureF")
         butlerTests.addDatasetType(cls.repo, "goodSeeingDiff_templateExp", cls.visitId.dimensions,
                                    "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_psfMatchKernel", cls.visitId.dimensions,
+                                   "MatchingKernel")
         butlerTests.addDatasetType(cls.repo, "deepDiff_matchedExp", cls.visitId.dimensions, "ExposureF")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrc", cls.visitId.dimensions, "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaSrcTable", cls.visitId.dimensions, "DataFrame")
@@ -232,6 +234,7 @@ class MockTaskTestSuite(unittest.TestCase):
              "sources": self.visitId,
              "difference": self.visitId,
              "matchedTemplate": self.visitId,
+             "psfMatchingKernel": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
