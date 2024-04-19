@@ -457,6 +457,7 @@ class MockFilterDiaSourceCatalogTask(PipelineTask):
         """
         return Struct(filteredDiaSourceCat=afwTable.SourceCatalog(),
                       rejectedDiaSources=afwTable.SourceCatalog(),
+                      longTrailedSources=afwTable.SourceCatalog(),
                       )
 
 
@@ -631,6 +632,4 @@ class MockDiaPipelineTask(PipelineTask):
         return Struct(apdbMarker=self.config.apdb.value,
                       associatedDiaSources=pandas.DataFrame(),
                       diaForcedSources=pandas.DataFrame(),
-                      diaObjects=pandas.DataFrame(),
-                      longTrailedSources=pandas.DataFrame(),
-                      )
+                      diaObjects=pandas.DataFrame(),)
