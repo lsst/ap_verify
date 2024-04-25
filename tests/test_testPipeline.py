@@ -337,7 +337,8 @@ class MockTaskTestSuite(unittest.TestCase):
 
     def testMockDiaPipelineTask(self):
         config = MockDiaPipelineTask.ConfigClass()
-        config.apdb.db_url = "testing_only"
+        config.doConfigureApdb = False
+        config.apdb_config_url = "testing_only"
         task = MockDiaPipelineTask(config=config)
         pipelineTests.assertValidInitOutput(task)
         result = task.run(pandas.DataFrame(), pandas.DataFrame(), afwImage.ExposureF(),
