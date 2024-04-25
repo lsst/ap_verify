@@ -36,8 +36,7 @@ import subprocess
 import logging
 
 import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
-import lsst.ctrl.mpexec.cli.pipetask
-from lsst.ap.pipe.make_apdb import makeApdb
+import lsst.dax.apdb as daxApdb
 
 _LOG = logging.getLogger(__name__)
 
@@ -60,7 +59,7 @@ class ApPipeParser(argparse.ArgumentParser):
                           help="A custom version of the ap_verify pipeline (e.g., with different metrics). "
                                "Defaults to the ApVerify.yaml within --dataset.")
         self.add_argument("--db", "--db_url", default=None,
-                          help="A location for the AP database, formatted as if for ApdbConfig.db_url. "
+                          help="A location for the AP database, formatted as if for apdb-cli create-sql. "
                                "Defaults to an SQLite file in the --output directory.")
         self.add_argument("--skip-pipeline", action="store_true",
                           help="Do not run the AP pipeline itself. This argument is useful "
@@ -91,7 +90,7 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     """
     log = _LOG.getChild('runApPipeGen3')
 
-    makeApdb(_getApdbArguments(workspace, parsedCmdLine))
+    _makeApdb(workspace, _getApdbArguments(workspace, parsedCmdLine))
 
     pipelineFile = _getPipelineFile(workspace, parsedCmdLine)
     pipelineArgs = ["pipetask", "--long-log", "run",
@@ -197,8 +196,8 @@ def _getPipelineFile(workspace, parsed):
 
 
 def _getApdbArguments(workspace, parsed):
-    """Return the config options for running make_apdb.py on this workspace,
-    as command-line arguments.
+    """Return the arguments for running apdb-cli create-sql on this workspace,
+    as key-value pairs.
 
     Parameters
     ----------
@@ -210,14 +209,14 @@ def _getApdbArguments(workspace, parsed):
 
     Returns
     -------
-    args : `list` of `str`
-        Command-line arguments calling ``--config`` or ``--config-file``,
-        following the conventions of `sys.argv`.
+    args : mapping [`str`]
+        Arguments to `lsst.dax.apdb.sql.Apdb.init_database`.
     """
     if not parsed.db:
         parsed.db = "sqlite:///" + workspace.dbLocation
 
-    args = ["--config", "db_url=" + parsed.db]
+    args = {"db_url": parsed.db,
+            }
 
     return args
 
@@ -239,14 +238,12 @@ def _getConfigArgumentsGen3(workspace, parsed):
         Command-line arguments calling ``--config`` or ``--config-file``,
         following the conventions of `sys.argv`.
     """
-    # Translate APDB-only arguments to work as a sub-config
-    args = [("diaPipe:apdb." + arg if arg != "--config" else arg)
-            for arg in _getApdbArguments(workspace, parsed)]
-    args.extend([
+    return [
+        # APDB config should have been stored in the workspace.
+        "--config", "parameters:apdb_config=" + workspace.dbConfigLocation,
         # Put output alerts into the workspace.
         "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,
-    ])
-    return args
+    ]
 
 
 def _getCollectionArguments(workspace, reuse):
@@ -284,3 +281,17 @@ def _getCollectionArguments(workspace, reuse):
     if reuse and oldRuns:
         args.extend(["--extend-run", "--skip-existing"])
     return args
+
+
+def _makeApdb(workspace, args):
+    """Create an APDB and store its config for future use.
+
+    Parameters
+    ----------
+    workspace : `lsst.ap.verify.workspace.Workspace`
+        A Workspace in which to store the database config.
+    args : mapping [`str`]
+        Arguments to `lsst.dax.apdb.sql.Apdb.init_database`.
+    """
+    config = daxApdb.ApdbSql.init_database(**args)
+    config.save(workspace.dbConfigLocation)
