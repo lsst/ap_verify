@@ -19,6 +19,9 @@ tasks:
       # we have an alternative.
       doPackageAlerts: True
 contracts:
+  - contract: diaPipe.doConfigureApdb or not totalUnassociatedDiaObjects.doReadMarker
+    msg: "totalUnassociatedDiaObjects.doReadMarker requires diaPipe.doConfigureApdb"
+  - (totalUnassociatedDiaObjects.doReadMarker) or (diaPipe.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url)
   # Metric inputs must match pipeline outputs
   # Use of ConnectionsClass for templated fields is a workaround for DM-30210
   - detectAndMeasure.connections.ConnectionsClass(config=detectAndMeasure).diaSources.name ==
