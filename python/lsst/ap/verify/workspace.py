@@ -116,6 +116,15 @@ class Workspace(metaclass=abc.ABCMeta):
 
     @property
     @abc.abstractmethod
+    def dbConfigLocation(self):
+        """The absolute location of the config file for the source association
+        database to be created or updated by the pipeline (`str`, read-only).
+
+        The location is assumed to be a Python (`lsst.pex.config.Config`) file.
+        """
+
+    @property
+    @abc.abstractmethod
     def alertLocation(self):
         """The absolute location of an output directory for persisted
         alert packets (`str`, read-only).
@@ -188,6 +197,10 @@ class WorkspaceGen3(Workspace):
     @property
     def dbLocation(self):
         return os.path.join(self._location, 'association.db')
+
+    @property
+    def dbConfigLocation(self):
+        return os.path.join(self._location, 'apdb.py')
 
     @property
     def alertLocation(self):

@@ -106,6 +106,15 @@ class WorkspaceGen3TestSuite(lsst.utils.tests.TestCase):
         # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
         self._assertNotInDir(self._testbed.dbLocation, url2pathname(self._testbed.repo))
 
+    def testDbConfig(self):
+        """Verify that a WorkspaceGen3 requests a database config in the target
+        directory, but not in any repository.
+        """
+        root = self._testWorkspace
+        self._assertInDir(self._testbed.dbConfigLocation, root)
+        # Workspace spec allows these to be URIs or paths, whatever the Butler accepts
+        self._assertNotInDir(self._testbed.dbConfigLocation, url2pathname(self._testbed.repo))
+
     def testAlerts(self):
         """Verify that a WorkspaceGen3 requests an alert dump in the target
         directory, but not in any repository.
