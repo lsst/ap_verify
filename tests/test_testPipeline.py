@@ -322,7 +322,7 @@ class MockTaskTestSuite(unittest.TestCase):
     def testMockTransformDiaSourceCatalogTask(self):
         task = MockTransformDiaSourceCatalogTask(initInputs=afwTable.SourceCatalog())
         pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k', 42)
+        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k', 42, 2)
         pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(afwTable.SourceCatalog(), "deepDiff_candidateDiaSrc", self.visitId)
