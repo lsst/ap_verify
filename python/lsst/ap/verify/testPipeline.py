@@ -514,15 +514,15 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        idGenerator = self.config.idGenerator.apply(butlerQC.quantum.dataId)
-        inputs["ccdVisitId"] = idGenerator.catalog_id
         inputs["band"] = butlerQC.quantum.dataId["band"]
+        inputs["visit"] = butlerQC.quantum.dataId["visit"]
+        inputs["detector"] = butlerQC.quantum.dataId["detector"]
 
         outputs = self.run(**inputs)
 
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, diaSourceCat, diffIm, band, ccdVisitId, funcs=None):
+    def run(self, diaSourceCat, diffIm, band, visit, detector, funcs=None):
         """Produce transformation outputs with no processing.
 
         Parameters
@@ -533,8 +533,8 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
             An image, to provide supplementary information.
         band : `str`
             The band in which the sources were observed.
-        ccdVisitId : `int`
-            The exposure ID in which the sources were observed.
+        visit, detector: `int`
+            Visit and detector the sources were detected on.
         funcs, optional
             Unused.
 
