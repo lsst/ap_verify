@@ -5,6 +5,7 @@ parameters:
   coaddName: goodSeeing
   # only refcat in ap_verify_testdata
   refcat: gaia
+  apdb_config: dummy_path.yaml
 tasks:
   isr:
     class: lsst.ap.verify.testPipeline.MockIsrTask
@@ -54,6 +55,8 @@ tasks:
     class: lsst.ap.verify.testPipeline.MockDiaPipelineTask
     config:
       doWriteAssociatedSources: True
+      doConfigureApdb: False
+      apdb_config_url: parameters.apdb_config
       connections.coaddName: parameters.coaddName
 contracts:
   # Inputs and outputs must match

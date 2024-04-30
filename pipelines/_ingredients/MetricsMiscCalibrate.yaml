@@ -26,6 +26,9 @@ tasks:
       connections.labelName: diaPipe
   totalUnassociatedDiaObjects:
     class: lsst.ap.association.metrics.TotalUnassociatedDiaObjectsMetricTask
+    config:
+        doReadMarker: False  # Impossible if diaPipe uses new-style config
+        apdb_config_url: parameters.apdb_config
   numSciSources:
     class: lsst.ip.diffim.metrics.NumberSciSourcesMetricTask
   fracDiaSourcesToSciSources:

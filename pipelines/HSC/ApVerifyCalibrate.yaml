@@ -15,3 +15,8 @@ tasks:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
+contracts:
+  # Contracts removed by excluding apPipe
+  - contract: diaPipe.doConfigureApdb or not totalUnassociatedDiaObjects.doReadMarker
+    msg: "totalUnassociatedDiaObjects.doReadMarker requires diaPipe.doConfigureApdb"
+  - (totalUnassociatedDiaObjects.doReadMarker) or (diaPipe.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url)
