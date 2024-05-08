@@ -442,21 +442,33 @@ class MockFilterDiaSourceCatalogTask(PipelineTask):
     ConfigClass = FilterDiaSourceCatalogConfig
     _DefaultName = "notFilterDiaSourceCatalog"
 
-    def run(self, diaSourceCat):
+    def run(self, diaSourceCat, diffImVisitInfo):
         """Produce filtering outputs with no processing.
 
         Parameters
         ----------
         diaSourceCat : `lsst.afw.table.SourceCatalog`
             Catalog of sources measured on the difference image.
+        diffImVisitInfo:  `lsst.afw.image.VisitInfo`
+            VisitInfo for the difference image corresponding to diaSourceCat.
 
         Returns
         -------
         results : `lsst.pipe.base.Struct`
             Results struct with components.
+
+            ``filteredDiaSourceCat`` : `lsst.afw.table.SourceCatalog`
+                The catalog of filtered sources.
+            ``rejectedDiaSources`` : `lsst.afw.table.SourceCatalog`
+                The catalog of rejected sky sources.
+            ``longTrailedDiaSources`` : `astropy.table.Table`
+                DiaSources which have trail lengths greater than
+                max_trail_length*exposure_time.
         """
+        # TODO Add docstrings for diffIm
         return Struct(filteredDiaSourceCat=afwTable.SourceCatalog(),
                       rejectedDiaSources=afwTable.SourceCatalog(),
+                      longTrailedSources=afwTable.SourceCatalog().asAstropy(),
                       )
 
 
@@ -631,6 +643,4 @@ class MockDiaPipelineTask(PipelineTask):
         return Struct(apdbMarker=self.config.apdb.value,
                       associatedDiaSources=pandas.DataFrame(),
                       diaForcedSources=pandas.DataFrame(),
-                      diaObjects=pandas.DataFrame(),
-                      longTrailedSources=pandas.DataFrame(),
-                      )
+                      diaObjects=pandas.DataFrame(),)

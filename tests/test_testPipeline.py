@@ -131,7 +131,8 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "visitSsObjects", cls.visitOnlyId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "apdb_marker", cls.visitId.dimensions, "Config")
         butlerTests.addDatasetType(cls.repo, "deepDiff_assocDiaSrc", cls.visitId.dimensions, "DataFrame")
-        butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.dimensions,
+                                   "ArrowAstropy")
         butlerTests.addDatasetType(cls.repo, "deepRealBogusSources", cls.visitId.dimensions, "Catalog")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaForcedSrc", cls.visitId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "deepDiff_diaObject", cls.visitId.dimensions, "DataFrame")
@@ -262,9 +263,10 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
     def testMockFilterDiaSourceCatalogTask(self):
+        visitInfo = afwImage.VisitInfo()
         task = MockFilterDiaSourceCatalogTask()
         pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwTable.SourceCatalog())
+        result = task.run(afwTable.SourceCatalog(), visitInfo)
         pipelineTests.assertValidOutput(task, result)
 
     def testMockSpatiallySampledMetricsTask(self):
@@ -359,7 +361,6 @@ class MockTaskTestSuite(unittest.TestCase):
              "template": self.visitId,
              "apdbMarker": self.visitId,
              "associatedDiaSources": self.visitId,
-             "longTrailedSources": self.visitId,
              "diaForcedSources": self.visitId,
              "diaObjects": self.visitId,
              })
