@@ -263,9 +263,10 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
     def testMockFilterDiaSourceCatalogTask(self):
+        visitInfo = afwImage.VisitInfo()
         task = MockFilterDiaSourceCatalogTask()
         pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwTable.SourceCatalog())
+        result = task.run(afwTable.SourceCatalog(), visitInfo)
         pipelineTests.assertValidOutput(task, result)
 
     def testMockSpatiallySampledMetricsTask(self):
