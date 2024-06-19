@@ -478,7 +478,7 @@ class MockSpatiallySampledMetricsTask(PipelineTask):
     ConfigClass = SpatiallySampledMetricsConfig
     _DefaultName = "notSpatiallySampledMetricsTask"
 
-    def run(self, science, matchedTemplate, template, difference, diaSources):
+    def run(self, science, matchedTemplate, template, difference, diaSources, psfMatchingKernel):
         """Produce spatially sampled metrics
 
         Parameters
@@ -495,6 +495,8 @@ class MockSpatiallySampledMetricsTask(PipelineTask):
             Result of subtracting template from the science image.
         diaSources : `lsst.afw.table.SourceCatalog`
                 The catalog of detected sources.
+        psfMatchingKernel : `~lsst.afw.math.LinearCombinationKernel`
+            The PSF matching kernel of the subtraction to evaluate.
 
         Returns
         -------
