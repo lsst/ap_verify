@@ -277,6 +277,7 @@ class MockTaskTestSuite(unittest.TestCase):
             afwImage.ExposureF(),
             afwImage.ExposureF(),
             afwTable.SourceCatalog(),
+            afwMath.LinearCombinationKernel(),
         )
         pipelineTests.assertValidOutput(task, result)
 
@@ -285,6 +286,7 @@ class MockTaskTestSuite(unittest.TestCase):
         self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
         self.butler.put(afwTable.SourceCatalog(), "deepDiff_candidateDiaSrc", self.visitId)
+        self.butler.put(afwMath.LinearCombinationKernel(), "deepDiff_psfMatchKernel", self.visitId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
             {"science": self.visitId,
@@ -292,6 +294,7 @@ class MockTaskTestSuite(unittest.TestCase):
              "template": self.visitId,
              "difference": self.visitId,
              "diaSources": self.visitId,
+             "psfMatchingKernel": self.visitId,
              "spatiallySampledMetrics": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
