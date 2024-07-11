@@ -84,7 +84,7 @@ class Workspace(metaclass=abc.ABCMeta):
         """Test whether two workspaces are of the same type and have the
         same location.
         """
-        return type(self) == type(other) and self.workDir == other.workDir
+        return type(self) is type(other) and self.workDir == other.workDir
 
     def __repr__(self):
         """A string representation that can be used to reconstruct the Workspace.
