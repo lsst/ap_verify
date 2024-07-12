@@ -25,6 +25,7 @@ Using lsst.ap.verify
    datasets
    new-metrics
    command-line-reference
+   limitations
 
 .. _lsst.ap.verify-contributing:
 
