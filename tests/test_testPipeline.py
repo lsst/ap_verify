@@ -39,7 +39,10 @@ from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, 
     MockCalibrateTask, MockGetTemplateTask, \
     MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
     MockRBTransiNetTask, MockDiaPipelineTask, MockFilterDiaSourceCatalogTask, \
-    MockSpatiallySampledMetricsTask
+    MockSpatiallySampledMetricsTask, MockMPSkyEphemerisQueryTask
+from lsst.daf.butler import Timespan
+from lsst.sphgeom import Circle
+from lsst.pipe.base.utils import RegionTimeInfo
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -73,11 +76,17 @@ class MockTaskTestSuite(unittest.TestCase):
             name=INSTRUMENT, visit_max=256, exposure_max=256, detector_max=128,
             class_name="lsst.obs.base.instrument_tests.DummyCam",
         )
+        # groupRecord = cls.repo.dimensions["group"].RecordClass(
+        #    name=VISIT, instrument=INSTRUMENT,
+        #    class_name="lsst.obs.base.instrument_tests.DummyCam",
+        # )
+
         cls.repo.registry.syncDimensionData("instrument", instrumentRecord)
         butlerTests.addDataIdValue(cls.repo, "physical_filter", PHYSICAL, band=BAND)
         butlerTests.addDataIdValue(cls.repo, "subfilter", SUB_FILTER)
         butlerTests.addDataIdValue(cls.repo, "exposure", VISIT)
         butlerTests.addDataIdValue(cls.repo, "visit", VISIT)
+        butlerTests.addDataIdValue(cls.repo, "group", VISIT)
         butlerTests.addDataIdValue(cls.repo, "detector", CCD)
         butlerTests.addDataIdValue(cls.repo, "skymap", SKYMAP)
         butlerTests.addDataIdValue(cls.repo, "tract", TRACT)
@@ -88,6 +97,8 @@ class MockTaskTestSuite(unittest.TestCase):
             {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
         cls.visitId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD})
+        cls.groupId = cls.repo.registry.expandDataId(
+            {"instrument": INSTRUMENT, "group": VISIT, "detector": CCD})
         cls.visitOnlyId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT})
         cls.skymapId = cls.repo.registry.expandDataId({"skymap": SKYMAP})
@@ -129,6 +140,8 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDatasetType(cls.repo, "deepDiff_candidateDiaSrc", cls.visitId.dimensions,
                                    "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "visitSsObjects", cls.visitOnlyId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "preloaded_ssObjects", cls.groupId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "predictedRegionTime", cls.groupId.dimensions, "RegionTimeInfo")
         butlerTests.addDatasetType(cls.repo, "apdb_marker", cls.visitId.dimensions, "Config")
         butlerTests.addDatasetType(cls.repo, "deepDiff_assocDiaSrc", cls.visitId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.dimensions,
@@ -324,6 +337,21 @@ class MockTaskTestSuite(unittest.TestCase):
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
+    def testMockMPSkyEphemerisQueryTask(self):
+        task = MockMPSkyEphemerisQueryTask()
+        pipelineTests.assertValidInitOutput(task)
+        dummyRegionTimeInfo = RegionTimeInfo(timespan=Timespan.makeEmpty(), region=Circle())
+        result = task.run(predictedRegionTime=dummyRegionTimeInfo)
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(dummyRegionTimeInfo, "predictedRegionTime", self.groupId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.groupId,
+            {"predictedRegionTime": self.groupId,
+             "ssObjects": self.groupId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
+
     def testMockTransformDiaSourceCatalogTask(self):
         task = MockTransformDiaSourceCatalogTask(initInputs=afwTable.SourceCatalog())
         pipelineTests.assertValidInitOutput(task)
@@ -351,14 +379,14 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(pandas.DataFrame(), "deepDiff_diaSrcTable", self.visitId)
-        self.butler.put(pandas.DataFrame(), "visitSsObjects", self.visitId)
+        self.butler.put(pandas.DataFrame(), "preloaded_ssObjects", self.groupId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
             {"diaSourceTable": self.visitId,
-             "solarSystemObjectTable": self.visitId,
+             "solarSystemObjectTable": self.visitOnlyId,
              "diffIm": self.visitId,
              "exposure": self.visitId,
              "template": self.visitId,
