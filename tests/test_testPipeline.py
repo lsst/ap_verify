@@ -141,7 +141,7 @@ class MockTaskTestSuite(unittest.TestCase):
                                    "SourceCatalog")
         butlerTests.addDatasetType(cls.repo, "visitSsObjects", cls.visitOnlyId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "preloaded_ssObjects", cls.groupId.dimensions, "DataFrame")
-        butlerTests.addDatasetType(cls.repo, "predictedRegionTime", cls.groupId.dimensions, "RegionTimeInfo")
+        butlerTests.addDatasetType(cls.repo, "regionTimeInfo", cls.groupId.dimensions, "RegionTimeInfo")
         butlerTests.addDatasetType(cls.repo, "apdb_marker", cls.visitId.dimensions, "Config")
         butlerTests.addDatasetType(cls.repo, "deepDiff_assocDiaSrc", cls.visitId.dimensions, "DataFrame")
         butlerTests.addDatasetType(cls.repo, "deepDiff_longTrailedSrc", cls.visitId.dimensions,
@@ -344,10 +344,10 @@ class MockTaskTestSuite(unittest.TestCase):
         result = task.run(predictedRegionTime=dummyRegionTimeInfo)
         pipelineTests.assertValidOutput(task, result)
 
-        self.butler.put(dummyRegionTimeInfo, "predictedRegionTime", self.groupId)
+        self.butler.put(dummyRegionTimeInfo, "regionTimeInfo", self.groupId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.groupId,
-            {"predictedRegionTime": self.groupId,
+            {"regionTimeInfo": self.groupId,
              "ssObjects": self.groupId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
