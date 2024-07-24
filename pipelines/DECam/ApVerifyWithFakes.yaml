@@ -8,11 +8,3 @@ instrument: lsst.obs.decam.DarkEnergyCamera
 description: Fully instrumented AP pipeline with fakes, specialized for DECam
 imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
-    exclude:
-      - processCcd
-  # The existing Fakes insertion system is not currently compatible with the
-  # new CalibrateImageTask, so the fakes pipeline still is on the old tasks.
-  - location: $AP_PIPE_DIR/pipelines/DECam/ProcessCcdCalibrate.yaml
-  # Can't use $AP_PIPE_DIR/pipelines/DECam/ApPipeWithFakes.yaml here
-  # because the changes made by that file and _ingredients/ApVerifyWithFakes.yaml
-  # are hard to separate.
