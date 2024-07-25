@@ -56,7 +56,6 @@ class MockTaskTestSuite(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
         repoDir = tempfile.mkdtemp()
         cls.addClassCleanup(shutil.rmtree, repoDir, ignore_errors=True)
         cls.repo = butlerTests.makeTestRepo(repoDir)
@@ -233,6 +232,7 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
     def testMockAlardLuptonSubtractTask(self):
+
         task = MockAlardLuptonSubtractTask()
         pipelineTests.assertValidInitOutput(task)
         result = task.run(afwImage.ExposureF(), afwImage.ExposureF(), afwTable.SourceCatalog())
@@ -347,7 +347,7 @@ class MockTaskTestSuite(unittest.TestCase):
         self.butler.put(dummyRegionTimeInfo, "regionTimeInfo", self.groupId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.groupId,
-            {"regionTimeInfo": self.groupId,
+            {"predictedRegionTime": self.groupId,
              "ssObjects": self.groupId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
