@@ -35,7 +35,8 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
 from lsst.ap.association import (TransformDiaSourceCatalogConfig,
-                                 DiaPipelineConfig, FilterDiaSourceCatalogConfig)
+                                 DiaPipelineConfig, FilterDiaSourceCatalogConfig,
+                                 MPSkyEphemerisQueryConfig)
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
 from lsst.ip.diffim import (GetTemplateConfig, AlardLuptonSubtractConfig,
@@ -515,6 +516,16 @@ class MockRBTransiNetTask(PipelineTask):
 
     def run(self, template, science, difference, diaSources, pretrainedModel=None):
         return Struct(classifications=afwTable.BaseCatalog(afwTable.Schema()))
+
+
+class MockMPSkyEphemerisQueryTask(PipelineTask):
+    """A do-nothing substitute for MPSkyEphemerisQueryTask.
+    """
+    _DefaultName = "notMPSkyEphemerisQuery"
+    ConfigClass = MPSkyEphemerisQueryConfig
+
+    def run(self, predictedRegionTime):
+        return Struct(ssObjects=pandas.DataFrame())
 
 
 class MockTransformDiaSourceCatalogTask(PipelineTask):
