@@ -24,8 +24,6 @@ tasks:
 
   consolidateVisitSummary:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
-    config:
-      connections.calexp: initial_pvi
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
