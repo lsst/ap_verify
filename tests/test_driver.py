@@ -86,8 +86,8 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
 
         # Use datasets as a proxy for pipeline completion
         id = _getDataIds(self.workspace.analysisButler)[0]
-        self.assertTrue(self.workspace.analysisButler.exists("calexp", id))
-        self.assertTrue(self.workspace.analysisButler.exists("src", id))
+        self.assertTrue(self.workspace.analysisButler.exists("initial_pvi", id))
+        self.assertTrue(self.workspace.analysisButler.exists("initial_stars_footprints_detector", id))
         self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_differenceExp", id))
         self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_diaSrc", id))
         self.assertTrue(self.workspace.analysisButler.exists("apdb_marker", id))
@@ -135,9 +135,9 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         # Depending on the overall test setup, the dataset may or may not be
         # registered if the pipeline didn't run; check both cases.
         id = _getDataIds(self.workspace.analysisButler)[0]
-        calexpQuery = set(self.workspace.analysisButler.registry.queryDatasetTypes("calexp"))
-        calexpExists = len(calexpQuery) > 0
-        self.assertFalse(calexpExists and self.workspace.analysisButler.exists("calexp", id))
+        exposureQuery = set(self.workspace.analysisButler.registry.queryDatasetTypes("initial_pvi"))
+        exposureExists = len(exposureQuery) > 0
+        self.assertFalse(exposureExists and self.workspace.analysisButler.exists("initial_pvi", id))
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):

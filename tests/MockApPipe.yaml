@@ -13,15 +13,11 @@ tasks:
       # ap_verify_testdata lacks many auxiliary inputs
       doDark: False
       doDefect: False
-  characterizeImage: lsst.ap.verify.testPipeline.MockCharacterizeImageTask
-  calibrate:
-    class: lsst.ap.verify.testPipeline.MockCalibrateTask
+  calibrateImage:
+    class: lsst.ap.verify.testPipeline.MockCalibrateImageTask
     config:
-      connections.astromRefCat: parameters.refcat
-      connections.photoRefCat: parameters.refcat
-      # ap_verify_testdata has bad refcats
-      doAstrometry: False
-      doPhotoCal: False
+      connections.astrometry_ref_cat: parameters.refcat
+      connections.photometry_ref_cat: parameters.refcat
   retrieveTemplate:
     class: lsst.ap.verify.testPipeline.MockGetTemplateTask
     config:

@@ -35,8 +35,8 @@ import lsst.afw.table as afwTable
 import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
 import lsst.pipe.base.testUtils as pipelineTests
-from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
-    MockCalibrateTask, MockGetTemplateTask, \
+from lsst.ap.verify.testPipeline import MockIsrTask, \
+    MockCalibrateImageTask, MockGetTemplateTask, \
     MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
     MockRBTransiNetTask, MockDiaPipelineTask, MockFilterDiaSourceCatalogTask, \
     MockSpatiallySampledMetricsTask
@@ -100,16 +100,24 @@ class MockTaskTestSuite(unittest.TestCase):
         cls.htmId = cls.repo.registry.expandDataId({"htm7": HTM})
 
         butlerTests.addDatasetType(cls.repo, "postISRCCD", cls.exposureId.dimensions, "Exposure")
-        butlerTests.addDatasetType(cls.repo, "icExp", cls.visitId.dimensions, "ExposureF")
-        butlerTests.addDatasetType(cls.repo, "icSrc", cls.visitId.dimensions, "SourceCatalog")
-        butlerTests.addDatasetType(cls.repo, "icExpBackground", cls.visitId.dimensions, "Background")
         butlerTests.addDatasetType(cls.repo, "gaia_dr3_20230707", cls.htmId.dimensions, "SimpleCatalog")
         butlerTests.addDatasetType(cls.repo, "ps1_pv3_3pi_20170110", cls.htmId.dimensions, "SimpleCatalog")
-        butlerTests.addDatasetType(cls.repo, "calexp", cls.visitId.dimensions, "ExposureF")
-        butlerTests.addDatasetType(cls.repo, "src", cls.visitId.dimensions, "SourceCatalog")
-        butlerTests.addDatasetType(cls.repo, "calexpBackground", cls.visitId.dimensions, "Background")
-        butlerTests.addDatasetType(cls.repo, "srcMatch", cls.visitId.dimensions, "Catalog")
-        butlerTests.addDatasetType(cls.repo, "srcMatchFull", cls.visitId.dimensions, "Catalog")
+        butlerTests.addDatasetType(cls.repo, "initial_pvi", cls.visitId.dimensions, "ExposureF")
+        butlerTests.addDatasetType(cls.repo, "initial_stars_footprints_detector", cls.visitId.dimensions,
+                                   "SourceCatalog")
+        butlerTests.addDatasetType(cls.repo, "initial_stars_detector", cls.visitId.dimensions,
+                                   "ArrowAstropy")
+        butlerTests.addDatasetType(cls.repo, "initial_psf_stars_footprints_detector", cls.visitId.dimensions,
+                                   "SourceCatalog")
+        butlerTests.addDatasetType(cls.repo, "initial_psf_stars_detector", cls.visitId.dimensions,
+                                   "ArrowAstropy")
+        butlerTests.addDatasetType(cls.repo, "initial_pvi_background", cls.visitId.dimensions, "Background")
+        butlerTests.addDatasetType(cls.repo, "initial_photoCalib_detector", cls.visitId.dimensions,
+                                   "PhotoCalib")
+        butlerTests.addDatasetType(cls.repo, "initial_astrometry_match_detector", cls.visitId.dimensions,
+                                   "Catalog")
+        butlerTests.addDatasetType(cls.repo, "initial_photometry_match_detector", cls.visitId.dimensions,
+                                   "Catalog")
         butlerTests.addDatasetType(cls.repo, lsst.skymap.BaseSkyMap.SKYMAP_DATASET_TYPE_NAME,
                                    cls.skymapId.dimensions, "SkyMap")
         butlerTests.addDatasetType(cls.repo, "goodSeeingCoadd", cls.patchId.dimensions, "ExposureF")
@@ -153,45 +161,27 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.assertValidOutput(task, result)
         # Skip runTestQuantum
 
-    def testMockCharacterizeImageTask(self):
-        task = MockCharacterizeImageTask()
+    def testMockCalibrateImageTask(self):
+        task = MockCalibrateImageTask()
         pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwImage.ExposureF())
-        pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(afwImage.ExposureF(), "postISRCCD", self.exposureId)
-        quantum = pipelineTests.makeQuantum(
-            task, self.butler, self.visitId,
-            {"exposure": self.exposureId,
-             "characterized": self.visitId,
-             "sourceCat": self.visitId,
-             "backgroundModel": self.visitId,
-             })
-        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
-
-    def testMockCalibrateTask(self):
-        task = MockCalibrateTask()
-        pipelineTests.assertValidInitOutput(task)
-        # Even the real CalibrateTask won't pass assertValidOutput, because for
-        # some reason the outputs are injected in runQuantum rather than run.
-
-        self.butler.put(afwImage.ExposureF(), "icExp", self.visitId)
-        self.butler.put(afwMath.BackgroundList(), "icExpBackground", self.visitId)
-        self.butler.put(afwTable.SourceCatalog(), "icSrc", self.visitId)
         self.butler.put(afwTable.SimpleCatalog(), "gaia_dr3_20230707", self.htmId)
         self.butler.put(afwTable.SimpleCatalog(), "ps1_pv3_3pi_20170110", self.htmId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
-            {"exposure": self.visitId,
+            {"exposures": [self.exposureId],
+             "astrometry_ref_cat": [self.htmId],
+             "photometry_ref_cat": [self.htmId],
+             "exposure": self.visitId,
              "background": self.visitId,
-             "icSourceCat": self.visitId,
-             "astromRefCat": [self.htmId],
-             "photoRefCat": [self.htmId],
-             "outputExposure": self.visitId,
-             "outputCat": self.visitId,
-             "outputBackground": self.visitId,
-             "matches": self.visitId,
-             "matchesDenormalized": self.visitId,
+             "stars_footprints": self.visitId,
+             "stars": self.visitId,
+             "psf_stars_footprints": self.visitId,
+             "psf_stars": self.visitId,
+             "applied_photo_calib": self.visitId,
+             "astrometry_matches": self.visitId,
+             "photometry_matches": self.visitId,
              })
         pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
@@ -205,7 +195,7 @@ class MockTaskTestSuite(unittest.TestCase):
                           )
         pipelineTests.assertValidOutput(task, result)
 
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "initial_pvi", self.visitId)
         skymap = lsst.skymap.DiscreteSkyMap(lsst.skymap.DiscreteSkyMapConfig())
         self.butler.put(skymap, lsst.skymap.BaseSkyMap.SKYMAP_DATASET_TYPE_NAME, self.skymapId)
         self.butler.put(afwImage.ExposureF(), "goodSeeingCoadd", self.patchId)
@@ -226,8 +216,8 @@ class MockTaskTestSuite(unittest.TestCase):
         pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
-        self.butler.put(afwTable.SourceCatalog(), "src", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "initial_pvi", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "initial_stars_footprints_detector", self.visitId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
             {"template": self.visitId,
@@ -248,10 +238,10 @@ class MockTaskTestSuite(unittest.TestCase):
                           )
         pipelineTests.assertValidOutput(task, result)
 
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "initial_pvi", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_matchedExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceTempExp", self.visitId)
-        self.butler.put(afwTable.SourceCatalog(), "src", self.visitId)
+        self.butler.put(afwTable.SourceCatalog(), "initial_stars_footprints_detector", self.visitId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,
             {"science": self.visitId,
@@ -281,7 +271,7 @@ class MockTaskTestSuite(unittest.TestCase):
         )
         pipelineTests.assertValidOutput(task, result)
 
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "initial_pvi", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_matchedExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
@@ -309,7 +299,7 @@ class MockTaskTestSuite(unittest.TestCase):
                           )
         pipelineTests.assertValidOutput(task, result)
 
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "initial_pvi", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
         self.butler.put(afwTable.SourceCatalog(), "deepDiff_candidateDiaSrc", self.visitId)
@@ -353,7 +343,7 @@ class MockTaskTestSuite(unittest.TestCase):
         self.butler.put(pandas.DataFrame(), "deepDiff_diaSrcTable", self.visitId)
         self.butler.put(pandas.DataFrame(), "visitSsObjects", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
-        self.butler.put(afwImage.ExposureF(), "calexp", self.visitId)
+        self.butler.put(afwImage.ExposureF(), "initial_pvi", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_templateExp", self.visitId)
         quantum = pipelineTests.makeQuantum(
             task, self.butler, self.visitId,

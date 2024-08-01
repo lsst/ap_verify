@@ -40,8 +40,7 @@ from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
 from lsst.ip.diffim import (GetTemplateConfig, AlardLuptonSubtractConfig,
                             DetectAndMeasureConfig, SpatiallySampledMetricsConfig)
-from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
-from lsst.pipe.tasks.calibrate import CalibrateConfig
+from lsst.pipe.tasks.calibrateImage import CalibrateImageConfig
 from lsst.meas.transiNet import RBTransiNetConfig
 
 
@@ -151,131 +150,86 @@ class MockIsrTask(PipelineTask):
                       )
 
 
-class MockCharacterizeImageTask(PipelineTask):
-    """A do-nothing substitute for CharacterizeImageTask.
+class MockCalibrateImageTask(PipelineTask):
+    """A do-nothing substitute for CalibrateImageTask.
     """
-    ConfigClass = CharacterizeImageConfig
-    _DefaultName = "notCharacterizeImage"
+    ConfigClass = CalibrateImageConfig
+    _DefaultName = "notCalibrateImage"
 
-    def __init__(self, refObjLoader=None, schema=None, **kwargs):
+    def __init__(self, initial_stars_schema=None, **kwargs):
         super().__init__(**kwargs)
-        self.outputSchema = afwTable.SourceCatalog()
+        self.initial_stars_schema = afwTable.SourceCatalog()
 
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
-        if 'idGenerator' not in inputs.keys():
-            inputs['idGenerator'] = self.config.idGenerator.apply(butlerQC.quantum.dataId)
-        outputs = self.run(**inputs)
+        exposures = inputs.pop("exposures")
+        id_generator = self.config.id_generator.apply(butlerQC.quantum.dataId)
+        outputs = self.run(exposures=exposures, id_generator=id_generator)
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, exposure, background=None, idGenerator=None):
-        """Produce characterization outputs with no processing.
-
-        Parameters
-        ----------
-        exposure : `lsst.afw.image.Exposure`
-            Exposure to characterize.
-        background : `lsst.afw.math.BackgroundList`, optional
-            Initial model of background already subtracted from exposure.
-        idGenerator : `lsst.meas.base.IdGenerator`, optional
-            Object that generates source IDs and provides random number
-            generator seeds.
-
-        Returns
-        -------
-        result : `lsst.pipe.base.Struct`
-            Struct containing these fields:
-
-            ``characterized``
-                Characterized exposure (`lsst.afw.image.Exposure`).
-            ``sourceCat``
-                Detected sources (`lsst.afw.table.SourceCatalog`).
-            ``backgroundModel``
-                Model of background subtracted from exposure (`lsst.afw.math.BackgroundList`)
-            ``psfCellSet``
-                Spatial cells of PSF candidates (`lsst.afw.math.SpatialCellSet`)
-        """
-        # Can't persist empty BackgroundList; DM-33714
-        bg = afwMath.BackgroundMI(geom.Box2I(geom.Point2I(0, 0), geom.Point2I(16, 16)),
-                                  afwImage.MaskedImageF(16, 16))
-        return Struct(characterized=exposure,
-                      sourceCat=afwTable.SourceCatalog(),
-                      backgroundModel=afwMath.BackgroundList(bg),
-                      psfCellSet=afwMath.SpatialCellSet(exposure.getBBox(), 10),
-                      )
-
-
-class MockCalibrateTask(PipelineTask):
-    """A do-nothing substitute for CalibrateTask.
-    """
-    ConfigClass = CalibrateConfig
-    _DefaultName = "notCalibrate"
-
-    def __init__(self, astromRefObjLoader=None,
-                 photoRefObjLoader=None, icSourceSchema=None,
-                 initInputs=None, **kwargs):
-        super().__init__(**kwargs)
-        self.outputSchema = afwTable.SourceCatalog()
-
-    def runQuantum(self, butlerQC, inputRefs, outputRefs):
-        inputs = butlerQC.get(inputRefs)
-        inputs['idGenerator'] = self.config.idGenerator.apply(butlerQC.quantum.dataId)
-
-        if self.config.doAstrometry:
-            inputs.pop('astromRefCat')
-        if self.config.doPhotoCal:
-            inputs.pop('photoRefCat')
-
-        outputs = self.run(**inputs)
-
-        if self.config.doWriteMatches and self.config.doAstrometry:
-            normalizedMatches = afwTable.packMatches(outputs.astromMatches)
-            if self.config.doWriteMatchesDenormalized:
-                # Just need an empty BaseCatalog with a valid schema.
-                outputs.matchesDenormalized = afwTable.BaseCatalog(outputs.outputCat.schema)
-            outputs.matches = normalizedMatches
-        butlerQC.put(outputs, outputRefs)
-
-    def run(self, exposure, background=None,
-            icSourceCat=None, idGenerator=None):
+    def run(self, *, exposures, id_generator=None, result=None):
         """Produce calibration outputs with no processing.
 
         Parameters
         ----------
-        exposure : `lsst.afw.image.Exposure`
-            Exposure to calibrate.
-        background : `lsst.afw.math.BackgroundList`, optional
-            Background model already subtracted from exposure.
-        icSourceCat : `lsst.afw.table.SourceCatalog`, optional
-             A SourceCatalog from CharacterizeImageTask from which we can copy some fields.
-        idGenerator : `lsst.meas.base.IdGenerator`, optional
-            Object that generates source IDs and provides random number
-            generator seeds.
+        exposures : `lsst.afw.image.Exposure` or `list` [`lsst.afw.image.Exposure`]
+            Post-ISR exposure(s), with an initial WCS, VisitInfo, and Filter.
+            Modified in-place during processing if only one is passed.
+            If two exposures are passed, treat them as snaps and combine
+            before doing further processing.
+        id_generator : `lsst.meas.base.IdGenerator`, optional
+            Object that generates source IDs and provides random seeds.
+        result : `lsst.pipe.base.Struct`, optional
+            Result struct that is modified to allow saving of partial outputs
+            for some failure conditions. If the task completes successfully,
+            this is also returned.
 
         Returns
         -------
         result : `lsst.pipe.base.Struct`
-            Struct containing these fields:
+            Results as a struct with attributes:
 
-            ``outputExposure``
-                Calibrated science exposure with refined WCS and PhotoCalib
-                (`lsst.afw.image.Exposure`).
-            ``outputBackground``
-                Model of background subtracted from exposure
-                (`lsst.afw.math.BackgroundList`).
-            ``outputCat``
-                Catalog of measured sources (`lsst.afw.table.SourceCatalog`).
-            ``astromMatches``
-                List of source/refObj matches from the astrometry solver
-                (`list` [`lsst.afw.table.ReferenceMatch`]).
+            ``exposure``
+                Calibrated exposure, with pixels in nJy units.
+                (`lsst.afw.image.Exposure`)
+            ``stars``
+                Stars that were used to calibrate the exposure, with
+                calibrated fluxes and magnitudes.
+                (`astropy.table.Table`)
+            ``stars_footprints``
+                Footprints of stars that were used to calibrate the exposure.
+                (`lsst.afw.table.SourceCatalog`)
+            ``psf_stars``
+                Stars that were used to determine the image PSF.
+                (`astropy.table.Table`)
+            ``psf_stars_footprints``
+                Footprints of stars that were used to determine the image PSF.
+                (`lsst.afw.table.SourceCatalog`)
+            ``background``
+                Background that was fit to the exposure when detecting
+                ``stars``. (`lsst.afw.math.BackgroundList`)
+            ``applied_photo_calib``
+                Photometric calibration that was fit to the star catalog and
+                applied to the exposure. (`lsst.afw.image.PhotoCalib`)
+            ``astrometry_matches``
+                Reference catalog stars matches used in the astrometric fit.
+                (`list` [`lsst.afw.table.ReferenceMatch`] or `lsst.afw.table.BaseCatalog`)
+            ``photometry_matches``
+                Reference catalog stars matches used in the photometric fit.
+                (`list` [`lsst.afw.table.ReferenceMatch`] or `lsst.afw.table.BaseCatalog`)
         """
         # Can't persist empty BackgroundList; DM-33714
         bg = afwMath.BackgroundMI(geom.Box2I(geom.Point2I(0, 0), geom.Point2I(16, 16)),
                                   afwImage.MaskedImageF(16, 16))
-        return Struct(outputExposure=exposure,
-                      outputBackground=afwMath.BackgroundList(bg),
-                      outputCat=afwTable.SourceCatalog(),
-                      astromMatches=[],
+        return Struct(exposure=afwImage.ExposureF(),
+                      background=afwMath.BackgroundList(bg),
+                      stars_footprints=afwTable.SourceCatalog(),
+                      stars=afwTable.SourceCatalog().asAstropy(),
+                      psf_stars_footprints=afwTable.SourceCatalog(),
+                      psf_stars=afwTable.SourceCatalog().asAstropy(),
+                      applied_photo_calib=afwImage.PhotoCalib(),
+                      astrometry_matches=None,
+                      photometry_matches=None,
                       )
 
 

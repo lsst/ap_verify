@@ -35,7 +35,6 @@ tasks:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
     config:
       connections.calexpType: parameters.fakesType
-      connections.calexp: "{calexpType}initial_pvi"
       connections.visitSummary: "{calexpType}visitSummary"
       connections.visitSummarySchema: "{calexpType}visitSummary_schema"
   # Conversion of fakes_visitSummary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
