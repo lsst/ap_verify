@@ -34,7 +34,7 @@ import lsst.geom as geom
 import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
-from lsst.ap.association import (TransformDiaSourceCatalogConfig,
+from lsst.ap.association import (LoadDiaCatalogsConfig, TransformDiaSourceCatalogConfig,
                                  DiaPipelineConfig, FilterDiaSourceCatalogConfig)
 from lsst.pipe.base import PipelineTask, Struct
 from lsst.ip.isr import IsrTaskConfig
@@ -43,6 +43,41 @@ from lsst.ip.diffim import (GetTemplateConfig, AlardLuptonSubtractConfig,
 from lsst.pipe.tasks.characterizeImage import CharacterizeImageConfig
 from lsst.pipe.tasks.calibrate import CalibrateConfig
 from lsst.meas.transiNet import RBTransiNetConfig
+
+
+class MockLoadDiaCatalogsTask(PipelineTask):
+    """A do-nothing substitute for LoadDiaCatalogsTask.
+    """
+    ConfigClass = LoadDiaCatalogsConfig
+    _DefaultName = "notLoadDiaCatalogs"
+
+    def run(self, regionTime):
+        """Produce preloaded DiaSource and DiaObject outputs with no processing.
+
+        Parameters
+        ----------
+        regionTime : `lsst.pipe.base.utils.RegionTimeInfo`
+            A serializable container for a sky region and timespan.
+
+        Returns
+        -------
+        result : `lsst.pipe.base.Struct`
+            Results struct with components.
+
+            - ``diaObjects`` : Complete set of DiaObjects covering the input
+              exposure padded by ``pixelMargin``. DataFrame is indexed by
+              the ``diaObjectId`` column. (`pandas.DataFrame`)
+            - ``diaSources`` : Complete set of DiaSources covering the input
+              exposure padded by ``pixelMargin``. DataFrame is indexed by
+              ``diaObjectId``, ``band``, ``diaSourceId`` columns.
+              (`pandas.DataFrame`)
+            - ``diaForcedSources`` : Complete set of forced photometered fluxes
+            on the past 12 months of difference images at DiaObject locations.
+        """
+        return Struct(diaObjects=pandas.DataFrame(),
+                      diaSources=pandas.DataFrame(),
+                      diaForcedSources=pandas.DataFrame(),
+                      )
 
 
 class MockIsrTask(PipelineTask):
@@ -592,6 +627,9 @@ class MockDiaPipelineTask(PipelineTask):
             diffIm,
             exposure,
             template,
+            preloadedDiaObjects,
+            preloadedDiaSources,
+            preloadedDiaForcedSources,
             band,
             idGenerator):
         """Produce DiaSource and DiaObject outputs with no processing.
@@ -610,6 +648,12 @@ class MockDiaPipelineTask(PipelineTask):
             ``diffIm``.
         template : `lsst.afw.image.ExposureF`
             Template exposure used to create diffIm.
+        preloadedDiaObjects : `pandas.DataFrame`
+            Previously detected DiaObjects, loaded from the APDB.
+        preloadedDiaSources : `pandas.DataFrame`
+            Previously detected DiaSources, loaded from the APDB.
+        preloadedDiaForcedSources : `pandas.DataFrame`
+            Catalog of previously detected forced DiaSources, from the APDB
         band : `str`
             The band in which the new DiaSources were detected.
         idGenerator : `lsst.meas.base.IdGenerator`
