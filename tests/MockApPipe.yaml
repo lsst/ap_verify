@@ -7,6 +7,10 @@ parameters:
   refcat: gaia
   apdb_config: dummy_path.yaml
 tasks:
+  loadDiaCatalogs:
+    class: lsst.ap.verify.testPipeline.MockLoadDiaCatalogsTask
+    config:
+      apdb_config_url: parameters.apdb_config
   isr:
     class: lsst.ap.verify.testPipeline.MockIsrTask
     config:

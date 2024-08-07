@@ -33,13 +33,16 @@ import lsst.afw.image as afwImage
 import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
 import lsst.skymap
+from lsst.daf.butler import Timespan
 import lsst.daf.butler.tests as butlerTests
+from lsst.meas.base import IdGenerator
 import lsst.pipe.base.testUtils as pipelineTests
+from lsst.pipe.base.utils import RegionTimeInfo
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
     MockCalibrateTask, MockGetTemplateTask, \
     MockAlardLuptonSubtractTask, MockDetectAndMeasureTask, MockTransformDiaSourceCatalogTask, \
     MockRBTransiNetTask, MockDiaPipelineTask, MockFilterDiaSourceCatalogTask, \
-    MockSpatiallySampledMetricsTask
+    MockSpatiallySampledMetricsTask, MockLoadDiaCatalogsTask
 
 
 class MockTaskTestSuite(unittest.TestCase):
@@ -60,6 +63,7 @@ class MockTaskTestSuite(unittest.TestCase):
 
         INSTRUMENT = "DummyCam"
         VISIT = 42
+        GROUP = '42'
         CCD = 101
         HTM = 42
         SKYMAP = "TreasureMap"
@@ -78,6 +82,7 @@ class MockTaskTestSuite(unittest.TestCase):
         butlerTests.addDataIdValue(cls.repo, "subfilter", SUB_FILTER)
         butlerTests.addDataIdValue(cls.repo, "exposure", VISIT)
         butlerTests.addDataIdValue(cls.repo, "visit", VISIT)
+        butlerTests.addDataIdValue(cls.repo, "group", GROUP)
         butlerTests.addDataIdValue(cls.repo, "detector", CCD)
         butlerTests.addDataIdValue(cls.repo, "skymap", SKYMAP)
         butlerTests.addDataIdValue(cls.repo, "tract", TRACT)
@@ -88,6 +93,8 @@ class MockTaskTestSuite(unittest.TestCase):
             {"instrument": INSTRUMENT, "exposure": VISIT, "detector": CCD})
         cls.visitId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT, "detector": CCD})
+        cls.groupId = cls.repo.registry.expandDataId(
+            {"instrument": INSTRUMENT, "group": GROUP, "detector": CCD})
         cls.visitOnlyId = cls.repo.registry.expandDataId(
             {"instrument": INSTRUMENT, "visit": VISIT})
         cls.skymapId = cls.repo.registry.expandDataId({"skymap": SKYMAP})
@@ -99,6 +106,11 @@ class MockTaskTestSuite(unittest.TestCase):
             {"skymap": SKYMAP, "tract": TRACT, "patch": PATCH, "band": BAND, "subfilter": SUB_FILTER})
         cls.htmId = cls.repo.registry.expandDataId({"htm7": HTM})
 
+        butlerTests.addDatasetType(cls.repo, "regionTimeInfo", cls.groupId.dimensions, "RegionTimeInfo")
+        butlerTests.addDatasetType(cls.repo, "preloaded_diaObjects", cls.groupId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "preloaded_diaSources", cls.groupId.dimensions, "DataFrame")
+        butlerTests.addDatasetType(cls.repo, "preloaded_diaForcedSources", cls.groupId.dimensions,
+                                   "DataFrame")
         butlerTests.addDatasetType(cls.repo, "postISRCCD", cls.exposureId.dimensions, "Exposure")
         butlerTests.addDatasetType(cls.repo, "icExp", cls.visitId.dimensions, "ExposureF")
         butlerTests.addDatasetType(cls.repo, "icSrc", cls.visitId.dimensions, "SourceCatalog")
@@ -140,6 +152,26 @@ class MockTaskTestSuite(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self.butler = butlerTests.makeTestCollection(self.repo, uniqueId=self.id())
+
+    def testMockLoadDiaCatalogsTask(self):
+        config = MockLoadDiaCatalogsTask.ConfigClass()
+        config.apdb_config_url = "testing_only"
+        task = MockLoadDiaCatalogsTask(config=config)
+        pipelineTests.assertValidInitOutput(task)
+        region = lsst.sphgeom.Circle()
+        timespan = Timespan.makeEmpty()
+        result = task.run(RegionTimeInfo(region=region, timespan=timespan))
+        pipelineTests.assertValidOutput(task, result)
+
+        self.butler.put(RegionTimeInfo(region=region, timespan=timespan), "regionTimeInfo", self.groupId)
+        quantum = pipelineTests.makeQuantum(
+            task, self.butler, self.groupId,
+            {"regionTime": self.groupId,
+             "diaObjects": self.groupId,
+             "diaSources": self.groupId,
+             "diaForcedSources": self.groupId,
+             })
+        pipelineTests.runTestQuantum(task, self.butler, quantum, mockRun=False)
 
     def testMockIsr(self):
         # Testing MockIsrTask is tricky because the real ISR has an unstable
@@ -327,7 +359,7 @@ class MockTaskTestSuite(unittest.TestCase):
     def testMockTransformDiaSourceCatalogTask(self):
         task = MockTransformDiaSourceCatalogTask(initInputs=afwTable.SourceCatalog())
         pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k', 42, 2)
+        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k')
         pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(afwTable.SourceCatalog(), "deepDiff_candidateDiaSrc", self.visitId)
@@ -347,9 +379,14 @@ class MockTaskTestSuite(unittest.TestCase):
         task = MockDiaPipelineTask(config=config)
         pipelineTests.assertValidInitOutput(task)
         result = task.run(pandas.DataFrame(), pandas.DataFrame(), afwImage.ExposureF(),
-                          afwImage.ExposureF(), afwImage.ExposureF(), 42, 'k')
+                          afwImage.ExposureF(), afwImage.ExposureF(),
+                          pandas.DataFrame(), pandas.DataFrame(), pandas.DataFrame(),
+                          'k', IdGenerator())
         pipelineTests.assertValidOutput(task, result)
 
+        self.butler.put(pandas.DataFrame(), "preloaded_diaObjects", self.groupId)
+        self.butler.put(pandas.DataFrame(), "preloaded_diaSources", self.groupId)
+        self.butler.put(pandas.DataFrame(), "preloaded_diaForcedSources", self.groupId)
         self.butler.put(pandas.DataFrame(), "deepDiff_diaSrcTable", self.visitId)
         self.butler.put(pandas.DataFrame(), "visitSsObjects", self.visitId)
         self.butler.put(afwImage.ExposureF(), "deepDiff_differenceExp", self.visitId)
@@ -362,6 +399,9 @@ class MockTaskTestSuite(unittest.TestCase):
              "diffIm": self.visitId,
              "exposure": self.visitId,
              "template": self.visitId,
+             "preloadedDiaObjects": self.groupId,
+             "preloadedDiaSources": self.groupId,
+             "preloadedDiaForcedSources": self.groupId,
              "apdbMarker": self.visitId,
              "associatedDiaSources": self.visitId,
              "diaForcedSources": self.visitId,
