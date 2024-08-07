@@ -34,6 +34,7 @@ import lsst.afw.math as afwMath
 import lsst.afw.table as afwTable
 import lsst.skymap
 import lsst.daf.butler.tests as butlerTests
+from lsst.meas.base import IdGenerator
 import lsst.pipe.base.testUtils as pipelineTests
 from lsst.ap.verify.testPipeline import MockIsrTask, MockCharacterizeImageTask, \
     MockCalibrateTask, MockGetTemplateTask, \
@@ -327,7 +328,7 @@ class MockTaskTestSuite(unittest.TestCase):
     def testMockTransformDiaSourceCatalogTask(self):
         task = MockTransformDiaSourceCatalogTask(initInputs=afwTable.SourceCatalog())
         pipelineTests.assertValidInitOutput(task)
-        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k', 42, 2)
+        result = task.run(afwTable.SourceCatalog(), afwImage.ExposureF(), 'k')
         pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(afwTable.SourceCatalog(), "deepDiff_candidateDiaSrc", self.visitId)
@@ -347,7 +348,7 @@ class MockTaskTestSuite(unittest.TestCase):
         task = MockDiaPipelineTask(config=config)
         pipelineTests.assertValidInitOutput(task)
         result = task.run(pandas.DataFrame(), pandas.DataFrame(), afwImage.ExposureF(),
-                          afwImage.ExposureF(), afwImage.ExposureF(), 42, 'k')
+                          afwImage.ExposureF(), afwImage.ExposureF(), 'k', IdGenerator())
         pipelineTests.assertValidOutput(task, result)
 
         self.butler.put(pandas.DataFrame(), "deepDiff_diaSrcTable", self.visitId)

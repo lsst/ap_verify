@@ -529,14 +529,12 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
         inputs["band"] = butlerQC.quantum.dataId["band"]
-        inputs["visit"] = butlerQC.quantum.dataId["visit"]
-        inputs["detector"] = butlerQC.quantum.dataId["detector"]
 
         outputs = self.run(**inputs)
 
         butlerQC.put(outputs, outputRefs)
 
-    def run(self, diaSourceCat, diffIm, band, visit, detector, funcs=None):
+    def run(self, diaSourceCat, diffIm, band, reliability=None):
         """Produce transformation outputs with no processing.
 
         Parameters
@@ -545,12 +543,9 @@ class MockTransformDiaSourceCatalogTask(PipelineTask):
             The catalog to transform.
         diffIm : `lsst.afw.image.Exposure`
             An image, to provide supplementary information.
-        band : `str`
-            The band in which the sources were observed.
-        visit, detector: `int`
-            Visit and detector the sources were detected on.
-        funcs, optional
-            Unused.
+        reliability : `lsst.afw.table.SourceCatalog`, optional
+            Reliability (e.g. real/bogus) scores, row-matched to
+            ``diaSourceCat``.
 
         Returns
         -------
@@ -583,9 +578,6 @@ class MockDiaPipelineTask(PipelineTask):
     def runQuantum(self, butlerQC, inputRefs, outputRefs):
         inputs = butlerQC.get(inputRefs)
         inputs["idGenerator"] = self.config.idGenerator.apply(butlerQC.quantum.dataId)
-        # Need to set ccdExposureIdBits (now deprecated) to None and pass it,
-        # since there are non-optional positional arguments after it.
-        inputs["ccdExposureIdBits"] = None
         inputs["band"] = butlerQC.quantum.dataId["band"]
         if not self.config.doSolarSystemAssociation:
             inputs["solarSystemObjectTable"] = None
@@ -600,9 +592,8 @@ class MockDiaPipelineTask(PipelineTask):
             diffIm,
             exposure,
             template,
-            ccdExposureIdBits,
             band,
-            idGenerator=None):
+            idGenerator):
         """Produce DiaSource and DiaObject outputs with no processing.
 
         Parameters
@@ -619,17 +610,10 @@ class MockDiaPipelineTask(PipelineTask):
             ``diffIm``.
         template : `lsst.afw.image.ExposureF`
             Template exposure used to create diffIm.
-        ccdExposureIdBits : `int`
-            Number of bits used for a unique ``ccdVisitId``.  Deprecated in
-            favor of ``idGenerator``, and ignored if that is present.  Pass
-            `None` explicitly to avoid a deprecation warning (a default is
-            impossible given that later positional arguments are not
-            defaulted).
         band : `str`
             The band in which the new DiaSources were detected.
-        idGenerator : `lsst.meas.base.IdGenerator`, optional
+        idGenerator : `lsst.meas.base.IdGenerator`
             Object that generates source IDs and random number generator seeds.
-            Will be required after ``ccdExposureIdBits`` is removed.
 
         Returns
         -------
