@@ -51,6 +51,11 @@ tasks:
     config:
       doRemoveSkySources: True
       connections.coaddName: parameters.coaddName
+  getRegionTimeFromVisit:
+    # class: lsst.ap.verify.testPipeline.MockGetRegionTimeFromVisitTask
+    class: lsst.pipe.tasks.getRegionTimeFromVisit.GetRegionTimeFromVisitTask
+    config:
+      connections.coaddName: parameters.coaddName
   diaPipe:
     class: lsst.ap.verify.testPipeline.MockDiaPipelineTask
     config:
