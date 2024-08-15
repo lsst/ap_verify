@@ -7,6 +7,10 @@ parameters:
   refcat: gaia
   apdb_config: dummy_path.yaml
 tasks:
+  loadDiaCatalogs:
+    class: lsst.ap.verify.testPipeline.MockLoadDiaCatalogsTask
+    config:
+      apdb_config_url: parameters.apdb_config
   isr:
     class: lsst.ap.verify.testPipeline.MockIsrTask
     config:
@@ -50,6 +54,11 @@ tasks:
     class: lsst.ap.verify.testPipeline.MockTransformDiaSourceCatalogTask
     config:
       doRemoveSkySources: True
+      connections.coaddName: parameters.coaddName
+  getRegionTimeFromVisit:
+    # class: lsst.ap.verify.testPipeline.MockGetRegionTimeFromVisitTask
+    class: lsst.pipe.tasks.getRegionTimeFromVisit.GetRegionTimeFromVisitTask
+    config:
       connections.coaddName: parameters.coaddName
   diaPipe:
     class: lsst.ap.verify.testPipeline.MockDiaPipelineTask
