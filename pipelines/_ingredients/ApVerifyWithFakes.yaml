@@ -14,6 +14,7 @@ tasks:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once
       # we have an alternative.
       doPackageAlerts: True
+      alertPackager.doWriteAlerts: True
 contracts:
   # Metric inputs must match pipeline outputs
   # Use of ConnectionsClass for templated fields is a workaround for DM-30210
