@@ -65,7 +65,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    Multiple copies of this argument are allowed.
 
    If this argument is omitted, then all data IDs in the dataset will be processed.
-   
+
 .. option:: --dataset <dataset_package>
 
    **Input dataset package.**
@@ -87,6 +87,13 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    If this argument is omitted, ``ap_verify`` creates an SQLite database inside the directory indicated by :option:`--output`.
 
+.. option:: --namespace
+
+  **Namespace to use in the target database**
+
+  Takes a namespace string which has is a standard identifier format.
+  Only relevant for Postgres databases, together with ``--db`` option can be used to run ``ap_verify`` against a shared Postgres database.
+
 .. option:: -h, --help
 
    **Print help.**
@@ -98,7 +105,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Number of processes to use.**
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
-   
+
 .. option:: --output <workspace_dir>
 
    **Output and intermediate product path.**

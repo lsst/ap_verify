@@ -61,6 +61,8 @@ class ApPipeParser(argparse.ArgumentParser):
         self.add_argument("--db", "--db_url", default=None,
                           help="A location for the AP database, formatted as if for apdb-cli create-sql. "
                                "Defaults to an SQLite file in the --output directory.")
+        self.add_argument("--namespace", default=None,
+                          help="Namespace for the AP database.")
         self.add_argument("--skip-pipeline", action="store_true",
                           help="Do not run the AP pipeline itself. This argument is useful "
                                "for testing metrics on a fixed data set.")
@@ -215,8 +217,10 @@ def _getApdbArguments(workspace, parsed):
     if not parsed.db:
         parsed.db = "sqlite:///" + workspace.dbLocation
 
-    args = {"db_url": parsed.db,
-            }
+    args = {
+        "db_url": parsed.db,
+        "namespace": parsed.namespace,
+    }
 
     return args
 
