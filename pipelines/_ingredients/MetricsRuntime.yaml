@@ -90,13 +90,13 @@ tasks:
       connections.metric: MapDiaSourceTime
       connections.labelName: transformDiaSrcCat
       target: transformDiaSrcCat.run
-  timing_diaPipe_diaCatalogLoader:
+  timing_diaCatalogLoader:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: LoadDiaCatalogsTime
-      connections.labelName: diaPipe
-      target: diaPipe:diaCatalogLoader.run
+      connections.labelName: loadDiaCatalogs
+      target: loadDiaCatalogs.run
   timing_diaPipe_associator:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -211,13 +211,13 @@ tasks:
       connections.metric: MapDiaSourceCpuTime
       connections.labelName: transformDiaSrcCat
       target: transformDiaSrcCat.run
-  cputiming_diaPipe_diaCatalogLoader:
+  cputiming_diaCatalogLoader:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: LoadDiaCatalogsCpuTime
-      connections.labelName: diaPipe
-      target: diaPipe:diaCatalogLoader.run
+      connections.labelName: loadDiaCatalogs
+      target: loadDiaCatalogs.run
   cputiming_diaPipe_associator:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
