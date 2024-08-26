@@ -1,13 +1,12 @@
 
 setupRequired(utils)
-setupRequired(afw)
 setupRequired(verify)
 setupRequired(ap_pipe)
 setupRequired(ctrl_mpexec)
 
 # For testing
 setupOptional(ap_verify_testdata)
-setupOptional(obs_lsst)
+setupOptional(obs_lsst)  # NOT declared by ap_verify_testdata
 
 # For default metric configs
 setupRequired(ip_diffim)
