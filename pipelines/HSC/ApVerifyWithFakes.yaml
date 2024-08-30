@@ -1,7 +1,35 @@
-# Verification pipeline specialized for HSC, with fak source injection.
+# Verification pipeline specialized for HSC, with fake source injection.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
 instrument: lsst.obs.subaru.HyperSuprimeCam
 description: Fully instrumented AP pipeline with fakes, specialized for HSC
 imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
+    # Include all metrics from standard pipeline. It's not practical to create
+    # a metrics subset because it would require constant micromanagement.
+    exclude:
+      - apPipe
+  - location: $AP_PIPE_DIR/pipelines/HSC/ApPipeWithFakes.yaml
+tasks:
+  # ApVerify override removed by excluding apPipe.
+  diaPipe:
+    class: lsst.ap.association.DiaPipelineTask
+    config:
+      doPackageAlerts: True
+      alertPackager.doWriteAlerts: True
+contracts:
+  # Contracts removed by excluding apPipe
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCompletenessMag20t22.connections.ConnectionsClass(config=apFakesCompletenessMag20t22).matchedFakes.name
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCompletenessMag22t24.connections.ConnectionsClass(config=apFakesCompletenessMag22t24).matchedFakes.name
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCompletenessMag24t26.connections.ConnectionsClass(config=apFakesCompletenessMag24t26).matchedFakes.name
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCountMag20t22.connections.ConnectionsClass(config=apFakesCountMag20t22).matchedFakes.name
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCountMag22t24.connections.ConnectionsClass(config=apFakesCountMag22t24).matchedFakes.name
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCountMag24t26.connections.ConnectionsClass(config=apFakesCountMag24t26).matchedFakes.name
+  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
+      apFakesCount.connections.ConnectionsClass(config=apFakesCount).matchedFakes.name
