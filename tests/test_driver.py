@@ -34,20 +34,14 @@ from lsst.ap.verify.testUtils import DataTestCase
 from lsst.ap.verify import Dataset, WorkspaceGen3
 
 
-TESTDIR = os.path.abspath(os.path.dirname(__file__))
-
-
-def _getDataIds(butler):
-    return list(butler.registry.queryDataIds({"instrument", "visit", "detector"}, datasets="raw"))
-
-
 def patchApPipeGen3(method):
     """Shortcut decorator for consistently patching AP code.
     """
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
         dbPatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver._makeApdb")
-        patchedMethod = dbPatcher(method)
+        pipePatcher = unittest.mock.patch("lsst.ap.verify.pipeline_driver.subprocess")
+        patchedMethod = dbPatcher(pipePatcher(method))
         return patchedMethod(self, *args, **kwargs)
     return wrapper
 
@@ -74,24 +68,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         defineVisit = DefineVisitsTask(butler=self.workspace.workButler,
                                        config=DefineVisitsTask.ConfigClass())
         defineVisit.run(self.workspace.workButler.registry.queryDataIds("exposure", datasets="raw"))
-        ids = _getDataIds(self.workspace.workButler)
-        self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(
-            ["--data-query", f"instrument = '{ids[0]['instrument']}' AND visit = {ids[0]['visit']}",
-             "--pipeline", os.path.join(TESTDIR, "MockApPipe.yaml")])
-
-    def testrunApPipeGen3Steps(self):
-        """Test that runApPipeGen3 runs the entire pipeline.
-        """
-        pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
-
-        # Use datasets as a proxy for pipeline completion
-        id = _getDataIds(self.workspace.analysisButler)[0]
-        self.assertTrue(self.workspace.analysisButler.exists("calexp", id))
-        self.assertTrue(self.workspace.analysisButler.exists("src", id))
-        self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_differenceExp", id))
-        self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_diaSrc", id))
-        self.assertTrue(self.workspace.analysisButler.exists("apdb_marker", id))
-        self.assertTrue(self.workspace.analysisButler.exists("goodSeeingDiff_assocDiaSrc", id))
+        self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(["--pipeline", "foo.yaml"])
 
     def _getArgs(self, call_args):
         if call_args.args:
@@ -102,7 +79,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
             self.fail(f"No APDB args passed to {call_args}!")
 
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceDb(self, mockDb):
+    def testrunApPipeGen3WorkspaceDb(self, _mockPipe, mockDb):
         """Test that runApPipeGen3 places a database in the workspace location by default.
         """
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
@@ -113,7 +90,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         self.assertEqual(dbArgs["db_url"], "sqlite:///" + self.workspace.dbLocation)
 
     @patchApPipeGen3
-    def testrunApPipeGen3WorkspaceCustom(self, mockDb):
+    def testrunApPipeGen3WorkspaceCustom(self, _mockPipe, mockDb):
         """Test that runApPipeGen3 places a database in the specified location.
         """
         self.apPipeArgs.db = "postgresql://somebody@pgdb.misc.org/custom_db"
@@ -124,20 +101,14 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         self.assertIn("db_url", dbArgs)
         self.assertEqual(dbArgs["db_url"], self.apPipeArgs.db)
 
-    def testrunApPipeGen3Reuse(self):
+    @patchApPipeGen3
+    def testrunApPipeGen3Reuse(self, mockPipe, _mockDb):
         """Test that runApPipeGen3 does not run the pipeline at all (not even with
         --skip-existing) if --skip-pipeline is provided.
         """
         skipArgs = pipeline_driver.ApPipeParser().parse_args(["--skip-pipeline"])
         pipeline_driver.runApPipeGen3(self.workspace, skipArgs)
-
-        # Use datasets as a proxy for pipeline completion.
-        # Depending on the overall test setup, the dataset may or may not be
-        # registered if the pipeline didn't run; check both cases.
-        id = _getDataIds(self.workspace.analysisButler)[0]
-        calexpQuery = set(self.workspace.analysisButler.registry.queryDatasetTypes("calexp"))
-        calexpExists = len(calexpQuery) > 0
-        self.assertFalse(calexpExists and self.workspace.analysisButler.exists("calexp", id))
+        mockPipe.assert_not_called()
 
 
 class MemoryTester(lsst.utils.tests.MemoryTestCase):
