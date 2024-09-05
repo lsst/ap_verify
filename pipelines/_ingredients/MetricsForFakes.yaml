@@ -60,3 +60,260 @@ tasks:
       magMax: 39
       connections.coaddName: parameters.coaddName
       connections.fakesType: parameters.fakesType
+  apFakesCompletenessSNR0t4:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesCompletenessSNR0t4
+      snrMin: 0.01
+      snrMax: 4
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      consolidatedVisitTable: False
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCompletenessSNR4t8:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesCompletenessSNR4t8
+      snrMin: 4
+      snrMax: 8
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      consolidatedVisitTable: False
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCompletenessSNR8t200:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesCompletenessSNR8t200
+      snrMin: 8
+      snrMax: 200
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      consolidatedVisitTable: False
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCompletenessSNR6t5000:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesCompletenessSNR6t50000
+      snrMin: 6
+      snrMax: 5000
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      consolidatedVisitTable: False
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCountSNR0t4:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesCountSNR0t4
+      snrMin: 0.01
+      snrMax: 4
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCountSNR4t8:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesCountSNR4t8
+      snrMin: 4
+      snrMax: 8
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCountSNR6t200:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesCountSNR6t200
+      snrMin: 6
+      snrMax: 200
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  apFakesCountSNR6t5000:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesCountSNR6t5000
+      snrMin: 6
+      snrMax: 5000
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSrc"
+  # --- apFakesVisitCompleteness ---
+  apFakesVisitCompletenessSNR0t3:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR0t3
+      snrMin: 0.01
+      snrMax: 3
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR3t4:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR3t4
+      snrMin: 3
+      snrMax: 4
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR4t5:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR4t5
+      snrMin: 4
+      snrMax: 5
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR5t6:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR5t6
+      snrMin: 5
+      snrMax: 6
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR6t8:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR6t8
+      snrMin: 6
+      snrMax: 8
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR8t10:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR8t10
+      snrMin: 8
+      snrMax: 10
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR10t20:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR10t20
+      snrMin: 10
+      snrMax: 20
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR20t200:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR10t200
+      snrMin: 20
+      snrMax: 200
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCompletenessSNR200t5000:
+    class: lsst.ap.pipe.metrics.ApFakesCompletenessSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCompletenessSNR200t5000
+      snrMin: 200
+      snrMax: 5000
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR0t3:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR0t3
+      snrMin: 0.01
+      snrMax: 3
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR3t4:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR3t4
+      snrMin: 3
+      snrMax: 4
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR4t5:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR4t5
+      snrMin: 4
+      snrMax: 5
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR5t6:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR5t6
+      snrMin: 5
+      snrMax: 6
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR6t8:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR6t8
+      snrMin: 6
+      snrMax: 8
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR8t10:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR8t10
+      snrMin: 8
+      snrMax: 10
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR10t20:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR10t20
+      snrMin: 10
+      snrMax: 20
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR20t200:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR20t200
+      snrMin: 20
+      snrMax: 200
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
+  apFakesVisitCountSNR200t5000:
+    class: lsst.ap.pipe.metrics.ApFakesCountSNRMetricTask
+    config:
+      connections.metric: ApFakesVisitCountSNR200t5000
+      snrMin: 200
+      snrMax: 5000
+      consolidatedVisitTable: True
+      connections.coaddName: parameters.coaddName
+      connections.fakesType: parameters.fakesType
+      connections.matchedFakes: "{fakesType}{coaddName}Diff_matchDiaSourceTable"
