@@ -17,19 +17,3 @@ tasks:
     config:
       doPackageAlerts: True
       alertPackager.doWriteAlerts: True
-contracts:
-  # Contracts removed by excluding apPipe
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCompletenessMag20t22.connections.ConnectionsClass(config=apFakesCompletenessMag20t22).matchedFakes.name
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCompletenessMag22t24.connections.ConnectionsClass(config=apFakesCompletenessMag22t24).matchedFakes.name
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCompletenessMag24t26.connections.ConnectionsClass(config=apFakesCompletenessMag24t26).matchedFakes.name
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCountMag20t22.connections.ConnectionsClass(config=apFakesCountMag20t22).matchedFakes.name
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCountMag22t24.connections.ConnectionsClass(config=apFakesCountMag22t24).matchedFakes.name
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCountMag24t26.connections.ConnectionsClass(config=apFakesCountMag24t26).matchedFakes.name
-  - injectedMatch.connections.ConnectionsClass(config=injectedMatch).matchedDiaSources.name ==
-      apFakesCount.connections.ConnectionsClass(config=apFakesCount).matchedFakes.name
