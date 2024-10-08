@@ -3,6 +3,8 @@
 description: Fully instrumented AP pipeline.
 imports:
   - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipe.yaml
+    include:
+      - prompt
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
     exclude:
       - timing_calibrate
