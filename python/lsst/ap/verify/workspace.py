@@ -26,7 +26,6 @@ __all__ = ["Workspace", "WorkspaceGen3"]
 import abc
 import os
 import pathlib
-import re
 import stat
 
 import lsst.daf.butler as dafButler
@@ -219,9 +218,30 @@ class WorkspaceGen3(Workspace):
             The type of collection to add. This field is ignored when
             testing if a collection exists.
         """
-        matchingCollections = list(registry.queryCollections(re.compile(name)))
-        if not matchingCollections:
+        if not self._doesCollectionExist(registry, name):
             registry.registerCollection(name, type=collectionType)
+
+    def _doesCollectionExist(self, registry, name):
+        """Check if a collection exists in the registry.
+
+        Parameters
+        ----------
+        registry : `lsst.daf.butler.Registry`
+            The repository that may contain the collection.
+        name : `str`
+            The name of the collection to check for existence.
+
+        Returns
+        -------
+        exists : `bool`
+            `True` if the collection exists in the registry, `False` otherwise.
+
+        """
+        try:
+            matchingCollections = list(registry.queryCollections(name))
+            return len(matchingCollections) > 0
+        except dafButler.MissingCollectionError:
+            return False
 
     @property
     def workButler(self):
@@ -247,8 +267,7 @@ class WorkspaceGen3(Workspace):
 
                 # Create an output chain here, so that workButler can see it.
                 # Definition does not conflict with what pipetask --output uses.
-                # Regex is workaround for DM-25945.
-                if not list(queryButler.registry.queryCollections(re.compile(self.outputName))):
+                if not self._doesCollectionExist(queryButler.registry, self.outputName):
                     queryButler.registry.registerCollection(self.outputName,
                                                             dafButler.CollectionType.CHAINED)
                     queryButler.registry.setCollectionChain(self.outputName, inputs)
