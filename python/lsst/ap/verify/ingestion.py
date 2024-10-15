@@ -31,7 +31,6 @@ __all__ = ["Gen3DatasetIngestConfig", "ingestDatasetGen3"]
 
 import fnmatch
 import os
-import re
 import shutil
 from glob import glob
 import logging
@@ -138,9 +137,12 @@ class Gen3DatasetIngestTask(pipeBase.Task):
         RuntimeError
             Raised if there are no files to ingest.
         """
-        # TODO: regex is workaround for DM-25945
-        rawCollectionFilter = re.compile(self.dataset.instrument.makeDefaultRawIngestRunName())
-        rawCollections = list(self.workspace.workButler.registry.queryCollections(rawCollectionFilter))
+        try:
+            collectionName = self.dataset.instrument.makeDefaultRawIngestRunName()
+            rawCollections = list(self.workspace.workButler.registry.queryCollections(collectionName))
+        except lsst.daf.butler.MissingCollectionError:
+            rawCollections = []
+
         rawData = list(self.workspace.workButler.registry.queryDatasets(
             'raw',
             collections=rawCollections,

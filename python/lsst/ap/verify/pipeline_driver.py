@@ -277,7 +277,10 @@ def _getCollectionArguments(workspace, reuse):
     # skip-existing-in would work around that, but would lead to a worse bug in
     # the case that the user is alternating runs with and without --clean-run.
     # registry.refresh()
-    oldRuns = list(registry.queryCollections(re.compile(workspace.outputName + r"/\d+T\d+Z")))
+    collectionPattern = re.compile(workspace.outputName + r"/\d+T\d+Z")
+    oldRuns = list(registry.queryCollections(workspace.outputName + "/*"))
+    oldRuns = [run for run in oldRuns if collectionPattern.fullmatch(run)]
+
     if reuse and oldRuns:
         args.extend(["--extend-run", "--skip-existing"])
     return args

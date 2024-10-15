@@ -23,7 +23,6 @@
 
 import os
 import pickle
-import re
 import shutil
 import tempfile
 import unittest
@@ -133,9 +132,7 @@ class IngestionTestSuiteGen3(DataTestCase):
         # queryDatasets cannot (yet) search CALIBRATION collections, so we
         # instead search the RUN-type collections that calibrations are
         # ingested into first before being associated with a validity range.
-        calibrationRunPattern = re.compile(
-            re.escape(self.dataset.instrument.makeCollectionName("calib") + "/") + ".+"
-        )
+        calibrationRunPattern = self.dataset.instrument.makeCollectionName("calib") + "/*"
         calibrationRuns = list(
             self.butler.registry.queryCollections(
                 calibrationRunPattern,
