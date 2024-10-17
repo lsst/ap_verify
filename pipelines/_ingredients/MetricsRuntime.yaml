@@ -90,14 +90,6 @@ tasks:
       connections.metric: MapDiaSourceTime
       connections.labelName: transformDiaSrcCat
       target: transformDiaSrcCat.run
-  timing_diaCatalogLoader:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: ap_association
-      connections.metric: LoadDiaCatalogsTime
-      connections.labelName: loadDiaCatalogs
-      metadataDimensions: [instrument, group, detector]  # TimingMetricTask assumes visit
-      target: loadDiaCatalogs.run
   timing_diaPipe_associator:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -212,14 +204,6 @@ tasks:
       connections.metric: MapDiaSourceCpuTime
       connections.labelName: transformDiaSrcCat
       target: transformDiaSrcCat.run
-  cputiming_diaCatalogLoader:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.package: ap_association
-      connections.metric: LoadDiaCatalogsCpuTime
-      connections.labelName: loadDiaCatalogs
-      metadataDimensions: [instrument, group, detector]  # CpuTimingMetricTask assumes visit
-      target: loadDiaCatalogs.run
   cputiming_diaPipe_associator:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
