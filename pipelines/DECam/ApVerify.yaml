@@ -7,8 +7,10 @@ imports:
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:
-      - apPipe
+      - prompt
   - location: $AP_PIPE_DIR/pipelines/DECam/ApPipe.yaml
+    include:
+      - prompt
 tasks:
   # ApVerify override removed by excluding apPipe.
   diaPipe:
