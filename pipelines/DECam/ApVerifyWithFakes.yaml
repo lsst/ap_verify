@@ -12,9 +12,11 @@ imports:
     # a metrics subset because it would require constant micromanagement.
     exclude:
       - prompt
+      - afterburner
   - location: $AP_PIPE_DIR/pipelines/DECam/ApPipeWithFakes.yaml
     include:
       - prompt
+      - afterburner
 tasks:
   # ApVerify override removed by excluding apPipe.
   diaPipe:
