@@ -6,6 +6,7 @@ imports:
   - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipeWithFakes.yaml
     include:
       - prompt
+      - afterburner
   # Most metrics should not be run with fakes, to avoid bias or contamination.
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsForFakes.yaml
 tasks:
