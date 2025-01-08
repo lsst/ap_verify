@@ -170,8 +170,7 @@ def _getExecOrder():
 
 
 def _getPipelineFile(workspace, parsed):
-    """Return the config options for running make_apdb.py on this workspace,
-    as command-line arguments.
+    """Return the pipeline to be run.
 
     Parameters
     ----------
