@@ -23,6 +23,4 @@ tasks:
       doPackageAlerts: True
       alertPackager.doWriteAlerts: True
 contracts:
-  - contract: diaPipe.doConfigureApdb or not totalUnassociatedDiaObjects.doReadMarker
-    msg: "totalUnassociatedDiaObjects.doReadMarker requires diaPipe.doConfigureApdb"
-  - (totalUnassociatedDiaObjects.doReadMarker) or (diaPipe.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url)
+  - diaPipe.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url
