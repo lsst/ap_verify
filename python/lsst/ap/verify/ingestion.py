@@ -29,6 +29,7 @@ that pipeline code need not be aware of the dataset framework.
 
 __all__ = ["Gen3DatasetIngestConfig", "ingestDatasetGen3"]
 
+import argparse
 import fnmatch
 import os
 import shutil
@@ -43,6 +44,24 @@ import lsst.daf.butler
 import lsst.obs.base
 
 _LOG = logging.getLogger(__name__)
+
+
+class IngestionParser(argparse.ArgumentParser):
+    """An argument parser for data needed by ingestion.
+
+    This parser is not complete, and is designed to be passed to another parser
+    using the `parent` parameter.
+    """
+
+    def __init__(self):
+        # Help and documentation will be handled by main program's parser
+        argparse.ArgumentParser.__init__(self, add_help=False)
+
+        self.add_argument('--namespace', dest='namespace', default=None,
+                          help='The sasquastch namespace to use for the ap_verify metrics upload.')
+
+        self.add_argument('--restProxyUrl', dest='restProxyUrl', default=None,
+                          help='The sasquastch url to use for the ap_verify metrics upload.')
 
 
 class Gen3DatasetIngestConfig(pexConfig.Config):
@@ -74,6 +93,10 @@ class Gen3DatasetIngestConfig(pexConfig.Config):
             "supersedes ``dataFiles``.",
     )
 
+    def setDefaults(self):
+        super().setDefaults()
+        self.ingester.transfer = "copy"
+
 
 class Gen3DatasetIngestTask(pipeBase.Task):
     """Task for automating ingestion of a ap_verify dataset.
@@ -95,18 +118,23 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     # Suffix is de-facto convention for distinguishing Gen 2 and Gen 3 config overrides
     _DefaultName = "datasetIngest-gen3"
 
-    def __init__(self, dataset, workspace, *args, **kwargs):
+    def __init__(self, dataset, workspace, namespace, url, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.dataset = dataset
+        self.namespace = namespace
+        self.url = url
         # workspace.workButler is undefined until the repository is created
-        self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo, self.namespace, self.url)
+        if self.url is not None:
+            self.transferMode = "copy"
         self.makeSubtask("ingester", butler=self.workspace.workButler)
         self.makeSubtask("visitDefiner", butler=self.workspace.workButler)
 
     def _reduce_kwargs(self):
         # Add extra parameters to pickle
-        return dict(**super()._reduce_kwargs(), dataset=self.dataset, workspace=self.workspace)
+        return dict(**super()._reduce_kwargs(), dataset=self.dataset,
+                    workspace=self.workspace, namespace=self.namespace, url=self.url)
 
     def run(self, processes=1):
         """Ingest the contents of a dataset into a Butler repository.
@@ -242,7 +270,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             self.log.info("Configs are now stored in %s.", self.workspace.pipelineDir)
 
 
-def ingestDatasetGen3(dataset, workspace, processes=1):
+def ingestDatasetGen3(dataset, workspace, sasquatchNamespace, sasquatchUrl, processes=1):
     """Ingest the contents of an ap_verify dataset into a Gen 3 Butler repository.
 
     The original data directory is not modified.
@@ -254,12 +282,19 @@ def ingestDatasetGen3(dataset, workspace, processes=1):
     workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         The abstract location where the epository is be created, if it does
         not already exist.
+    sasquatchNamespace : `str`
+        The name of the namespace to post the ap_verify metrics to.
+    sasquatchUrl : `str`
+        The URL of the server to post the ap_verify metrics to.
     processes : `int`
         The number processes to use to ingest.
     """
     log = _LOG.getChild("ingestDataset")
 
-    ingester = Gen3DatasetIngestTask(dataset, workspace, config=_getConfig(Gen3DatasetIngestTask, dataset))
+    ingester = Gen3DatasetIngestTask(
+        dataset, workspace, sasquatchNamespace, sasquatchUrl,
+        config=_getConfig(Gen3DatasetIngestTask, dataset)
+    )
     ingester.run(processes=processes)
     log.info("Data ingested")
 

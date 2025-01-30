@@ -35,33 +35,57 @@ print_error() {
 
 usage() {
     print_error
-    print_error "Usage: $0 -d DATASET [-g NUM] [-p PATH] [-h]"
+    print_error "Usage: $0 -d DATASET [-g NUM] [-p PATH] [-n NAMESPACE] [-u URL] [-h]"
     print_error
     print_error "Specific options:"
     print_error "   -d          Dataset name"
     print_error "   -g          Middleware generation number (int) [currently unused]"
     print_error "   -p          Pipeline to run"
+    print_error "   -n          Namespace for metrics upload (optional, but required if -u is set)"
+    print_error "   -u          URL for metrics upload (optional, but required if -n is set)"
     print_error "   -h          show this message"
     exit 1
 }
 
-while getopts "d:g:p:h" option; do
+while getopts "d:g:p:n:u:h" option; do
     case "$option" in
         d)  DATASET="$OPTARG";;
         g)  GEN="$OPTARG";;
         p)  PIPE="$OPTARG";;
+        n)  NAMESPACE="$OPTARG";;
+        u)  URL="$OPTARG";;
         h)  usage;;
         *)  usage;;
     esac
 done
+
 if [[ -z "${DATASET}" ]]; then
     print_error "$0: mandatory argument -- d"
     usage
     exit 1
 fi
+
+# Ensure both NAMESPACE and URL exist, or neither does
+if { [[ -n "${NAMESPACE}" ]] && [[ -z "${URL}" ]]; } || { [[ -z "${NAMESPACE}" ]] && [[ -n "${URL}" ]]; }; then
+    print_error "Error: Both -n (namespace) and -u (URL) must be provided together, or neither."
+    usage
+    exit 1
+fi
+
+# Set PIPE argument if provided
 if [[ -n "${PIPE}" ]]; then
     PIPE="--pipeline ${PIPE}"
 fi
+
+# Set NAMESPACE and URL arguments if both are provided
+if [[ -n "${NAMESPACE}" && -n "${URL}" ]]; then
+    NAMESPACE_ARG="--namespace ${NAMESPACE}"
+    URL_ARG="--restProxyUrl ${URL}"
+else
+    NAMESPACE_ARG=""
+    URL_ARG=""
+fi
+
 shift $((OPTIND-1))
 
 PRODUCT_DIR=${AP_VERIFY_DIR}
@@ -92,4 +116,6 @@ ap_verify.py --dataset "${DATASET}" \
     ${PIPE} \
     --output "${WORKSPACE}" \
     --processes "${NUMPROC}" \
+    ${NAMESPACE_ARG} \
+    ${URL_ARG} \
     &>> "${WORKSPACE}"/apVerify.log

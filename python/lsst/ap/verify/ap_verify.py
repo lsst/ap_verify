@@ -36,7 +36,7 @@ import logging
 import lsst.log
 
 from .dataset import Dataset
-from .ingestion import ingestDatasetGen3
+from .ingestion import ingestDatasetGen3, IngestionParser
 from .pipeline_driver import ApPipeParser, runApPipeGen3
 from .workspace import WorkspaceGen3
 
@@ -92,7 +92,7 @@ class _ApVerifyParser(argparse.ArgumentParser):
             self,
             description='Executes the LSST DM AP pipeline and analyzes its performance using metrics.',
             epilog='',
-            parents=[_InputOutputParser(), _ProcessingParser(), ApPipeParser(), ],
+            parents=[IngestionParser(), _InputOutputParser(), _ProcessingParser(), ApPipeParser(), ],
             add_help=True)
 
 
@@ -109,7 +109,7 @@ class _IngestOnlyParser(argparse.ArgumentParser):
             'passing the same --output argument, or by other programs that accept '
             'Butler repositories as input.',
             epilog='',
-            parents=[_InputOutputParser(), _ProcessingParser()],
+            parents=[IngestionParser(), _InputOutputParser(), _ProcessingParser()],
             add_help=True)
 
 
@@ -150,7 +150,7 @@ def runApVerify(cmdLine=None):
     log.debug('Command-line arguments: %s', args)
 
     workspace = WorkspaceGen3(args.output)
-    ingestDatasetGen3(args.dataset, workspace, processes=args.processes)
+    ingestDatasetGen3(args.dataset, workspace, args.namespace, args.restProxyUrl, processes=args.processes)
     log.info('Running pipeline...')
     # Gen 3 pipeline includes both AP and metrics
     return runApPipeGen3(workspace, args, processes=args.processes)
