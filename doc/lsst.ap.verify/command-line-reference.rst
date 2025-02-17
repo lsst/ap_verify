@@ -65,7 +65,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    Multiple copies of this argument are allowed.
 
    If this argument is omitted, then all data IDs in the dataset will be processed.
-   
+
 .. option:: --dataset <dataset_package>
 
    **Input dataset package.**
@@ -87,6 +87,15 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    If this argument is omitted, ``ap_verify`` creates an SQLite database inside the directory indicated by :option:`--output`.
 
+.. option:: --namespace <sasquatch_namespace>
+
+   The sasquastch namespace to use for the ap_verify metrics upload.
+   If this is provided, then a valid REST proxy URL must be provided with :option:`--restProxyUrl`.
+
+.. option:: --restProxyUrl <sasquastch_proxy_url>
+
+   A URI string identifying the Sasquastch url to use for the ap_verify metrics upload. If this is provided, then a valid :option:`--namespace` must be provided.
+
 .. option:: -h, --help
 
    **Print help.**
@@ -98,7 +107,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
    **Number of processes to use.**
 
    When ``processes`` is larger than 1 the pipeline may use the Python `multiprocessing` module to parallelize processing of multiple datasets across multiple processors.
-   
+
 .. option:: --output <workspace_dir>
 
    **Output and intermediate product path.**
