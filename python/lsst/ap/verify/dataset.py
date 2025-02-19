@@ -155,7 +155,7 @@ class Dataset:
         """
         return f"Dataset({self._id!r})"
 
-    def makeCompatibleRepoGen3(self, repoDir, sasquatchNamespace, sasquatchRestProxyUrl):
+    def makeCompatibleRepoGen3(self, repoDir, sasquatchNamespace=None, sasquatchRestProxyUrl=None):
         """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.
 
         If the repository already exists, this call has no effect.
@@ -164,6 +164,12 @@ class Dataset:
         ----------
         repoDir : `str`
             The directory where the output repository will be created.
+        sasquatchNamespace : `str`, optional
+            The namespace to which to upload analysis_tools metrics. If
+            omitted, no metrics are uploaded.
+        sasquatchRestProxyUrl : `str`, optional
+            The server to which to upload analysis_tools metrics. Must be
+            provided if ``sasquatchNamespace`` is.
         """
         # No way to tell makeRepo "create only what's missing"
         try:
