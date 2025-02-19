@@ -155,7 +155,7 @@ class Dataset:
         """
         return f"Dataset({self._id!r})"
 
-    def makeCompatibleRepoGen3(self, repoDir):
+    def makeCompatibleRepoGen3(self, repoDir, sasquatchNamespace, sasquatchRestProxyUrl):
         """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.
 
         If the repository already exists, this call has no effect.
@@ -170,10 +170,25 @@ class Dataset:
             seedConfig = dafButler.Config()
             # Checksums greatly slow importing of large repositories
             seedConfig["datastore", "checksum"] = False
+            transfMode = "auto"
+            if sasquatchRestProxyUrl is not None:
+                seedConfig[
+                    "datastore", "cls"] = "lsst.daf.butler.datastores.chainedDatastore.ChainedDatastore"
+
+                datastores = [
+                    {"cls": "lsst.daf.butler.datastores.fileDatastore.FileDatastore",
+                     "root": "<butlerRoot>",
+                     },
+                    {"cls": "lsst.analysis.tools.interfaces.datastore.SasquatchDatastore",
+                     "restProxyUrl": sasquatchRestProxyUrl,
+                     "namespace": sasquatchNamespace,
+                     },
+                ]
+                seedConfig["datastore", "datastores"] = datastores
+                transfMode = "direct"
             repoConfig = dafButler.Butler.makeRepo(repoDir, config=seedConfig)
             butler = dafButler.Butler(repoConfig, writeable=True)
-            butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport,
-                           transfer="auto")
+            butler.import_(directory=self._preloadedRepo, filename=self._preloadedExport, transfer=transfMode)
         except FileExistsError:
             pass
 
