@@ -77,10 +77,7 @@ class IngestionTestSuiteGen3(DataTestCase):
         self.addCleanup(shutil.rmtree, self.root, ignore_errors=True)
         self.workspace = WorkspaceGen3(self.root)
         self.task = ingestion.Gen3DatasetIngestTask(config=self.config,
-                                                    dataset=self.dataset,
-                                                    workspace=self.workspace,
-                                                    namespace="sasquatch",
-                                                    url=None)
+                                                    dataset=self.dataset, workspace=self.workspace)
 
         self.butler = self.workspace.workButler
 
