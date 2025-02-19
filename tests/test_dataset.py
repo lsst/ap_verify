@@ -87,7 +87,7 @@ class DatasetTestSuite(DataTestCase):
         outputDir = os.path.join(testDir, 'goodOut')
 
         try:
-            self._testbed.makeCompatibleRepoGen3(outputDir)
+            self._testbed.makeCompatibleRepoGen3(outputDir, "sasquatch", None)
             self._checkOutputGen3(outputDir)
         finally:
             if os.path.exists(testDir):
@@ -101,9 +101,9 @@ class DatasetTestSuite(DataTestCase):
         outputDir = os.path.join(testDir, 'badOut')
 
         try:
-            self._testbed.makeCompatibleRepoGen3(outputDir)
+            self._testbed.makeCompatibleRepoGen3(outputDir, "sasquatch", None)
             self._checkOutputGen3(outputDir)
-            self._testbed.makeCompatibleRepoGen3(outputDir)
+            self._testbed.makeCompatibleRepoGen3(outputDir, "sasquatch", None)
             self._checkOutputGen3(outputDir)
         finally:
             if os.path.exists(testDir):

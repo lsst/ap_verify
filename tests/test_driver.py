@@ -61,7 +61,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         self.addCleanup(shutil.rmtree, self._testDir, ignore_errors=True)
 
         self.workspace = WorkspaceGen3(self._testDir)
-        self.dataset.makeCompatibleRepoGen3(self.workspace.repo)
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo, "sasquatch", None)
         raws = [os.path.join(self.dataset.rawLocation, "lsst_a_204595_R11_S01_i.fits")]
         rawIngest = RawIngestTask(butler=self.workspace.workButler, config=RawIngestTask.ConfigClass())
         rawIngest.run(raws, run=None)
