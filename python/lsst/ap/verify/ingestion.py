@@ -112,13 +112,19 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         The abstract location for all ``ap_verify`` outputs, including
         a Gen 3 repository.
+    namespace : `str`, optional
+        The Sasquatch namespace to which to upload analysis_tools metrics. If
+        omitted, no metrics are uploaded.
+    url : `str`, optional
+        The Sasquatch server to which to upload analysis_tools metrics. Must be
+        provided if ``namespace`` is.
     """
 
     ConfigClass = Gen3DatasetIngestConfig
     # Suffix is de-facto convention for distinguishing Gen 2 and Gen 3 config overrides
     _DefaultName = "datasetIngest-gen3"
 
-    def __init__(self, dataset, workspace, namespace, url, *args, **kwargs):
+    def __init__(self, dataset, workspace, namespace=None, url=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.dataset = dataset
@@ -270,7 +276,7 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             self.log.info("Configs are now stored in %s.", self.workspace.pipelineDir)
 
 
-def ingestDatasetGen3(dataset, workspace, sasquatchNamespace, sasquatchUrl, processes=1):
+def ingestDatasetGen3(dataset, workspace, sasquatchNamespace=None, sasquatchUrl=None, processes=1):
     """Ingest the contents of an ap_verify dataset into a Gen 3 Butler repository.
 
     The original data directory is not modified.
@@ -282,11 +288,11 @@ def ingestDatasetGen3(dataset, workspace, sasquatchNamespace, sasquatchUrl, proc
     workspace : `lsst.ap.verify.workspace.WorkspaceGen3`
         The abstract location where the epository is be created, if it does
         not already exist.
-    sasquatchNamespace : `str`
+    sasquatchNamespace : `str`, optional
         The name of the namespace to post the ap_verify metrics to.
-    sasquatchUrl : `str`
+    sasquatchUrl : `str`, optional
         The URL of the server to post the ap_verify metrics to.
-    processes : `int`
+    processes : `int`, optional
         The number processes to use to ingest.
     """
     log = _LOG.getChild("ingestDataset")
