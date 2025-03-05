@@ -155,7 +155,8 @@ class Dataset:
         """
         return f"Dataset({self._id!r})"
 
-    def makeCompatibleRepoGen3(self, repoDir, sasquatchNamespace=None, sasquatchRestProxyUrl=None):
+    def makeCompatibleRepoGen3(self, repoDir, sasquatchNamespace=None, sasquatchRestProxyUrl=None,
+                               extra=None):
         """Set up a directory as a Gen 3 repository compatible with this ap_verify dataset.
 
         If the repository already exists, this call has no effect.
@@ -169,6 +170,9 @@ class Dataset:
             omitted, no metrics are uploaded.
         sasquatchRestProxyUrl : `str`, optional
             The server to which to upload analysis_tools metrics. Must be
+            provided if ``sasquatchNamespace`` is.
+        extra : `dict`, optional
+            Extra parameters needed to post ap_verify metrics. Should be
             provided if ``sasquatchNamespace`` is.
         """
         # No way to tell makeRepo "create only what's missing"
@@ -188,6 +192,7 @@ class Dataset:
                     {"cls": "lsst.analysis.tools.interfaces.datastore.SasquatchDatastore",
                      "restProxyUrl": sasquatchRestProxyUrl,
                      "namespace": sasquatchNamespace,
+                     "extra_fields": extra if extra is not None else {},
                      },
                 ]
                 seedConfig["datastore", "datastores"] = datastores

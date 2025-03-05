@@ -30,6 +30,7 @@ command-line argument parsing.
 __all__ = ["runApVerify", "runIngestion"]
 
 import argparse
+import os
 import sys
 import logging
 
@@ -37,7 +38,7 @@ import lsst.log
 
 from .dataset import Dataset
 from .ingestion import ingestDatasetGen3, IngestionParser
-from .pipeline_driver import ApPipeParser, runApPipeGen3
+from .pipeline_driver import ApPipeParser, runApPipeGen3, _getPipelineFile
 from .workspace import WorkspaceGen3
 
 _LOG = logging.getLogger(__name__)
@@ -150,7 +151,15 @@ def runApVerify(cmdLine=None):
     log.debug('Command-line arguments: %s', args)
 
     workspace = WorkspaceGen3(args.output)
-    ingestDatasetGen3(args.dataset, workspace, args.namespace, args.restProxyUrl, processes=args.processes)
+    # Set the pipeline name as extra parameter for SasquatchDatastore to used
+    pipelineFile = _getPipelineFile(workspace, args)
+    extra = dict(vars(args)['extra'])
+    if 'pipeline' not in extra.keys():
+        extra['pipeline'] = os.path.basename(pipelineFile)
+
+    ingestDatasetGen3(
+        args.dataset, workspace, args.namespace, args.restProxyUrl,
+        extra=extra, processes=args.processes)
     log.info('Running pipeline...')
     # Gen 3 pipeline includes both AP and metrics
     return runApPipeGen3(workspace, args, processes=args.processes)
