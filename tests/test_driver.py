@@ -70,13 +70,25 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         defineVisit.run(self.workspace.workButler.registry.queryDataIds("exposure", datasets="raw"))
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(["--pipeline", "foo.yaml"])
 
-    def _getArgs(self, call_args):
+    def _getDbArgs(self, call_args):
+        """Get the database args from the `_makeApdb` call signature.
+        """
         if call_args.args:
             return call_args.args[1]
         elif "args" in call_args.kwargs:
             return call_args.kwargs["args"]
         else:
             self.fail(f"No APDB args passed to {call_args}!")
+
+    def _getInstrument(self, call_args):
+        """Get the instrument from the `_makeApdb` call signature.
+        """
+        if "instrument" in call_args.kwargs:
+            return call_args.kwargs["instrument"]
+        elif call_args.args:
+            return call_args.args[2]
+        else:
+            self.fail(f"No instrument passed to {call_args}!")
 
     @patchApPipeGen3
     def testrunApPipeGen3WorkspaceDb(self, _mockPipe, mockDb):
@@ -85,9 +97,10 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
         mockDb.assert_called_once()
-        dbArgs = self._getArgs(mockDb.call_args)
+        dbArgs = self._getDbArgs(mockDb.call_args)
         self.assertIn("db_url", dbArgs)
         self.assertEqual(dbArgs["db_url"], "sqlite:///" + self.workspace.dbLocation)
+        self.assertEqual(self._getInstrument(mockDb.call_args), "LSSTCam-imSim")
 
     @patchApPipeGen3
     def testrunApPipeGen3WorkspaceCustom(self, _mockPipe, mockDb):
@@ -97,7 +110,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         pipeline_driver.runApPipeGen3(self.workspace, self.apPipeArgs)
 
         mockDb.assert_called_once()
-        dbArgs = self._getArgs(mockDb.call_args)
+        dbArgs = self._getDbArgs(mockDb.call_args)
         self.assertIn("db_url", dbArgs)
         self.assertEqual(dbArgs["db_url"], self.apPipeArgs.db)
 
