@@ -34,6 +34,19 @@ from lsst.ap.verify.testUtils import DataTestCase
 from lsst.ap.verify import Dataset, WorkspaceGen3
 
 
+class FakeInstrument:
+    """A test instrument that has a name.
+    """
+    def getName(self):
+        return "FakeInst"
+
+
+class FakeDataset:
+    """A test dataset that has a fake instrument.
+    """
+    instrument = FakeInstrument()
+
+
 def patchApPipeGen3(method):
     """Shortcut decorator for consistently patching AP code.
     """
@@ -69,6 +82,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
                                        config=DefineVisitsTask.ConfigClass())
         defineVisit.run(self.workspace.workButler.registry.queryDataIds("exposure", datasets="raw"))
         self.apPipeArgs = pipeline_driver.ApPipeParser().parse_args(["--pipeline", "foo.yaml"])
+        vars(self.apPipeArgs)["dataset"] = FakeDataset()
 
     def _getArgs(self, call_args):
         if call_args.args:
@@ -107,6 +121,7 @@ class PipelineDriverTestSuiteGen3(DataTestCase):
         --skip-existing) if --skip-pipeline is provided.
         """
         skipArgs = pipeline_driver.ApPipeParser().parse_args(["--skip-pipeline"])
+        vars(skipArgs)["dataset"] = FakeDataset()
         pipeline_driver.runApPipeGen3(self.workspace, skipArgs)
         mockPipe.assert_not_called()
 

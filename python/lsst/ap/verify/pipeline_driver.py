@@ -90,7 +90,9 @@ def runApPipeGen3(workspace, parsedCmdLine, processes=1):
     """
     log = _LOG.getChild('runApPipeGen3')
 
-    _makeApdb(workspace, _getApdbArguments(workspace, parsedCmdLine))
+    _makeApdb(workspace,
+              _getApdbArguments(workspace, parsedCmdLine),
+              parsedCmdLine.dataset.instrument.getName())
 
     pipelineFile = _getPipelineFile(workspace, parsedCmdLine)
     pipelineArgs = ["pipetask", "--long-log", "run",
@@ -285,7 +287,7 @@ def _getCollectionArguments(workspace, reuse):
     return args
 
 
-def _makeApdb(workspace, args):
+def _makeApdb(workspace, args, instrument):
     """Create an APDB and store its config for future use.
 
     Parameters
@@ -294,6 +296,11 @@ def _makeApdb(workspace, args):
         A Workspace in which to store the database config.
     args : mapping [`str`]
         Arguments to `lsst.dax.apdb.sql.Apdb.init_database`.
+    instrument : `str`
+        Short name of the instrument this APDB will store.
     """
     config = daxApdb.ApdbSql.init_database(**args)
     config.save(workspace.dbConfigLocation)
+
+    apdb = daxApdb.ApdbSql(config)
+    apdb.metadata.set("instrument", instrument)
