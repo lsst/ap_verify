@@ -36,7 +36,7 @@ import shutil
 from glob import glob
 import logging
 
-import lsst.utils
+from lsst.utils.argparsing import AppendDict
 import lsst.pex.config as pexConfig
 import lsst.pipe.base as pipeBase
 
@@ -62,6 +62,12 @@ class IngestionParser(argparse.ArgumentParser):
 
         self.add_argument('--restProxyUrl', dest='restProxyUrl', default=None,
                           help='The sasquastch url to use for the ap_verify metrics upload.')
+
+        self.add_argument("--extra", action=AppendDict,
+                          help="Extra field (in the form key=value) to be added to any records "
+                          "uploaded to Sasquatch. See SasquatchDispatcher.dispatch and "
+                          ".dispatchRef for more details. The --extra argument can be passed "
+                          "multiple times.")
 
 
 class Gen3DatasetIngestConfig(pexConfig.Config):
@@ -118,20 +124,24 @@ class Gen3DatasetIngestTask(pipeBase.Task):
     url : `str`, optional
         The Sasquatch server to which to upload analysis_tools metrics. Must be
         provided if ``namespace`` is.
+    extra : `dict`, optional
+        Extra parameters to for the SasquatchDatastore, needed to post
+        ap_verify metrics. Should be provided if ``namespace`` is.
     """
 
     ConfigClass = Gen3DatasetIngestConfig
     # Suffix is de-facto convention for distinguishing Gen 2 and Gen 3 config overrides
     _DefaultName = "datasetIngest-gen3"
 
-    def __init__(self, dataset, workspace, namespace=None, url=None, *args, **kwargs):
+    def __init__(self, dataset, workspace, namespace=None, url=None, extra=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.workspace = workspace
         self.dataset = dataset
         self.namespace = namespace
+        self.extra = extra if extra is not None else {}
         self.url = url
         # workspace.workButler is undefined until the repository is created
-        self.dataset.makeCompatibleRepoGen3(self.workspace.repo, self.namespace, self.url)
+        self.dataset.makeCompatibleRepoGen3(self.workspace.repo, self.namespace, self.url, self.extra)
         if self.url is not None:
             self.transferMode = "copy"
         self.makeSubtask("ingester", butler=self.workspace.workButler)
@@ -276,7 +286,8 @@ class Gen3DatasetIngestTask(pipeBase.Task):
             self.log.info("Configs are now stored in %s.", self.workspace.pipelineDir)
 
 
-def ingestDatasetGen3(dataset, workspace, sasquatchNamespace=None, sasquatchUrl=None, processes=1):
+def ingestDatasetGen3(dataset, workspace, sasquatchNamespace=None, sasquatchUrl=None, extra=None,
+                      processes=1):
     """Ingest the contents of an ap_verify dataset into a Gen 3 Butler repository.
 
     The original data directory is not modified.
@@ -292,13 +303,15 @@ def ingestDatasetGen3(dataset, workspace, sasquatchNamespace=None, sasquatchUrl=
         The name of the namespace to post the ap_verify metrics to.
     sasquatchUrl : `str`, optional
         The URL of the server to post the ap_verify metrics to.
+    extra : `dict`, optional
+        Extra parameters needed to post ap_verify metrics to Sasquatch.
     processes : `int`, optional
         The number processes to use to ingest.
     """
     log = _LOG.getChild("ingestDataset")
 
     ingester = Gen3DatasetIngestTask(
-        dataset, workspace, sasquatchNamespace, sasquatchUrl,
+        dataset, workspace, sasquatchNamespace, sasquatchUrl, extra,
         config=_getConfig(Gen3DatasetIngestTask, dataset)
     )
     ingester.run(processes=processes)

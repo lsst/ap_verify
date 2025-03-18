@@ -131,3 +131,9 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
       At present, ap_verify assumes that the provided pipeline includes the ``diaPipe`` task from the AP pipeline, and configures it on the fly.
       It will likely crash if this task is missing.
+
+.. option:: --extra <key=value>
+
+   **Optional extra key=value arguments.**
+
+   These arguments are passed directly to the ``ap_verify`` pipeline, they are used in case a SasquastchDatastore is created, and are in the form ``key=value``. In the context of CI, a Jenkins job would tag the test run with these extra parameters.

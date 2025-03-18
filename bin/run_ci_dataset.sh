@@ -35,7 +35,7 @@ print_error() {
 
 usage() {
     print_error
-    print_error "Usage: $0 -d DATASET [-g NUM] [-p PATH] [-n NAMESPACE] [-u URL] [-h]"
+    print_error "Usage: $0 -d DATASET [-g NUM] [-p PATH] [-n NAMESPACE] [-u URL] [-e KEY=VALUE]... [-h]"
     print_error
     print_error "Specific options:"
     print_error "   -d          Dataset name"
@@ -43,19 +43,37 @@ usage() {
     print_error "   -p          Pipeline to run"
     print_error "   -n          Namespace for metrics upload (optional, but required if -u is set)"
     print_error "   -u          URL for metrics upload (optional, but required if -n is set)"
+    print_error "   -e          Extra key=value parameters for metric upload (optional, multiple)"
     print_error "   -h          show this message"
     exit 1
 }
 
-while getopts "d:g:p:n:u:h" option; do
+DATASET=""
+GEN=""
+PIPE=""
+NAMESPACE=""
+URL=""
+declare -A EXTRA_PARAMS  # Associative array for --extra key=value pairs
+
+while getopts ":d:g:p:n:u:e:h" option; do
     case "$option" in
         d)  DATASET="$OPTARG";;
         g)  GEN="$OPTARG";;
         p)  PIPE="$OPTARG";;
         n)  NAMESPACE="$OPTARG";;
         u)  URL="$OPTARG";;
+        e)
+            if [[ "$OPTARG" != *=* ]]; then
+                print_error "Error: -e requires a key=value argument."
+                usage
+            fi
+            key="${OPTARG%%=*}"
+            value="${OPTARG#*=}"
+            EXTRA_PARAMS["$key"]="$value"
+            ;;
         h)  usage;;
-        *)  usage;;
+        \?) print_error "Unknown option: -$OPTARG"; usage;;
+        :) print_error "Option -$OPTARG requires an argument."; usage;;
     esac
 done
 
@@ -81,11 +99,16 @@ fi
 if [[ -n "${NAMESPACE}" && -n "${URL}" ]]; then
     NAMESPACE_ARG="--namespace ${NAMESPACE}"
     URL_ARG="--restProxyUrl ${URL}"
+    EXTRA_OPTIONS=""
+    for key in "${!EXTRA_PARAMS[@]}"; do
+        EXTRA_OPTIONS="${EXTRA_OPTIONS} --extra $key=${EXTRA_PARAMS[$key]}"
+    done
 else
     NAMESPACE_ARG=""
     URL_ARG=""
 fi
 
+# Handle --extra parameters
 shift $((OPTIND-1))
 
 PRODUCT_DIR=${AP_VERIFY_DIR}
@@ -118,4 +141,5 @@ ap_verify.py --dataset "${DATASET}" \
     --processes "${NUMPROC}" \
     ${NAMESPACE_ARG} \
     ${URL_ARG} \
+    ${EXTRA_OPTIONS} \
     &>> "${WORKSPACE}"/apVerify.log
