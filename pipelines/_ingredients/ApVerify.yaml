@@ -15,7 +15,7 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
 tasks:
-  diaPipe:
+  associateApdb:
     class: lsst.ap.association.DiaPipelineTask
     config:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once
@@ -23,4 +23,4 @@ tasks:
       doPackageAlerts: True
       alertPackager.doWriteAlerts: True
 contracts:
-  - diaPipe.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url
+  - associateApdb.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url

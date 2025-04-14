@@ -10,7 +10,7 @@ imports:
   # Most metrics should not be run with fakes, to avoid bias or contamination.
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ConversionsForFakes.yaml
 tasks:
-  diaPipe:
+  associateApdb:
     class: lsst.ap.association.DiaPipelineTask
     config:
       # TODO: needed for "providing bulk sample alerts to brokers"; remove once

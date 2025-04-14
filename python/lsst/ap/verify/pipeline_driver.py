@@ -169,7 +169,7 @@ def _getExecOrder():
     # Source association algorithm is not time-symmetric. Force execution of
     # association (through DiaPipelineTask) in order of ascending visit number.
     return lsst.ctrl.mpexec.execFixupDataId.ExecFixupDataId(
-        taskLabel="diaPipe", dimensions=["visit", ], reverse=False)
+        taskLabel="associateApdb", dimensions=["visit", ], reverse=False)
 
 
 def _getPipelineFile(workspace, parsed):
@@ -244,7 +244,7 @@ def _getConfigArgumentsGen3(workspace, parsed):
         # APDB config should have been stored in the workspace.
         "--config", "parameters:apdb_config=" + workspace.dbConfigLocation,
         # Put output alerts into the workspace.
-        "--config", "diaPipe:alertPackager.alertWriteLocation=" + workspace.alertLocation,
+        "--config", "associateApdb:alertPackager.alertWriteLocation=" + workspace.alertLocation,
     ]
 
 
