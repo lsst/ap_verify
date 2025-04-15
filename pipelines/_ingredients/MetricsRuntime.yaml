@@ -10,22 +10,6 @@ tasks:
       connections.labelName: isr   # partial name of metadata dataset
       metadataDimensions: [instrument, exposure, detector]  # TimingMetricTask assumes visit
       target: isr.run              # method name in metadata. Usually matches label for top-level tasks
-  # TODO XXXX: These two can be removed once the pipeline that uses characterize/calibrate is gone.
-  timing_characterizeImage:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CharacterizeImageTime
-      connections.labelName: characterizeImage
-      target: characterizeImage.run
-  timing_calibrate:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CalibrateTime
-      connections.labelName: calibrate
-      target: calibrate.run
-  ###
   timing_calibrateImage:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -126,20 +110,6 @@ tasks:
       connections.labelName: isr
       metadataDimensions: [instrument, exposure, detector]  # TimingMetricTask assumes visit
       target: isr.run
-  cputiming_characterizeImage:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CharacterizeImageCpuTime
-      connections.labelName: characterizeImage
-      target: characterizeImage.run
-  cputiming_calibrate:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CalibrateCpuTime
-      connections.labelName: calibrate
-      target: calibrate.run
   cputiming_calibrateImage:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:

@@ -7,11 +7,6 @@ imports:
       - prompt
       - afterburner
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
-    exclude:
-      - timing_calibrate
-      - timing_characterizeImage
-      - cputiming_calibrate
-      - cputiming_characterizeImage
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
 tasks:
