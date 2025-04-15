@@ -8,7 +8,7 @@ description: Type conversion tasks customized for AP pipeline
 imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
     exclude:
-      # Fakes pipeline doesn't produce non-fakes DiaSourceTable.
+      # Fakes pipeline doesn't produce non-fakes dia_source_visit.
       - consolidateDiaSourceTable
 tasks:
   # TODO: TransformSourceTableTask can't be run until we create a functor
@@ -18,38 +18,35 @@ tasks:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
       # This is output directly by CalibrateImageTask.
-      connections.inputCatalogs: initial_stars_detector
-      connections.outputCatalog: initial_stars
+      connections.inputCatalogs: single_visit_star_unstandardized
+      connections.outputCatalog: consolidated_single_visit_star_unstandardized
   # Merging of fakes_*Diff_diaSrcTable [detector-level Parquet] to fakes_diaSourceTable [visit-level]
   consolidateDiaSourceTable:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
-      # Task doesn't support coaddName, so coopt catalogType instead.
-      connections.catalogType: parameters.coaddName
-      # TODO: hard-code the "fakes_" label because I can't insert two templates,
-      # and fakesType is more stable than coaddName.
-      connections.inputCatalogs: "fakes_{catalogType}Diff_diaSrcTable"
-      connections.outputCatalog: fakes_diaSourceTable
-  # Creation of fakes_visitSummary
+      connections.catalogType: parameters.fakesType
+      connections.inputCatalogs: "{catalogType}dia_source_detector"
+      connections.outputCatalog: "{catalogType}dia_source_visit"
+  # Creation of fakes_preliminary_visit_summary
   consolidateVisitSummary:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
     config:
       connections.calexpType: parameters.fakesType
-      connections.calexp: "{calexpType}initial_pvi"
-      connections.visitSummary: "{calexpType}visitSummary"
-      connections.visitSummarySchema: "{calexpType}visitSummary_schema"
-  # Conversion of fakes_visitSummary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
+      connections.calexp: "{calexpType}preliminary_visit_image"
+      connections.visitSummary: "{calexpType}preliminary_visit_summary"
+      connections.visitSummarySchema: "{calexpType}preliminary_visit_summary_schema"
+  # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
       connections.calexpType: parameters.fakesType
-      connections.visitSummaries: "{calexpType}visitSummary"
-  # Conversion of fakes_visitSummary [visit-level afw.table] to fakes_ccdVisitTable [instrument-level Parquet]
-      connections.outputCatalog: "{calexpType}visitTable"
+      connections.visitSummaries: "{calexpType}preliminary_visit_summary"
+      connections.outputCatalog: "{calexpType}visit_table"
+  # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visit_detector_table [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
       connections.calexpType: parameters.fakesType
-      connections.visitSummaryRefs: "{calexpType}visitSummary"
-      connections.outputCatalog: "{calexpType}ccdVisitTable"
+      connections.visitSummaryRefs: "{calexpType}preliminary_visit_summary"
+      connections.outputCatalog: "{calexpType}visit_detector_table"
 
