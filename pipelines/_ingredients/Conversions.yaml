@@ -26,12 +26,16 @@ tasks:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
     config:
       connections.calexp: initial_pvi
+      connections.visitSummary: visitSummary
+      connections.visitSummarySchema: visitSummary_schema
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
       connections.visitSummaries: "{calexpType}visitSummary"
+      connections.outputCatalog: "{calexpType}visitTable"
   # Conversion of visitSummary [visit-level afw.table] to ccdVisitTable [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
       connections.visitSummaryRefs: "{calexpType}visitSummary"
+      connections.outputCatalog: "{calexpType}ccdVisitTable"

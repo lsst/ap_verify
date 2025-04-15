@@ -45,9 +45,11 @@ tasks:
       connections.calexpType: parameters.fakesType
       connections.visitSummaries: "{calexpType}visitSummary"
   # Conversion of fakes_visitSummary [visit-level afw.table] to fakes_ccdVisitTable [instrument-level Parquet]
+      connections.outputCatalog: "{calexpType}visitTable"
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
       connections.calexpType: parameters.fakesType
       connections.visitSummaryRefs: "{calexpType}visitSummary"
+      connections.outputCatalog: "{calexpType}ccdVisitTable"
 
