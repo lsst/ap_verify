@@ -129,7 +129,7 @@ Required arguments are :option:`--dataset` and :option:`--output`.
 
    .. note::
 
-      At present, ap_verify assumes that the provided pipeline includes the ``diaPipe`` task from the AP pipeline, and configures it on the fly.
+      At present, ap_verify assumes that the provided pipeline includes the ``apdb_config`` parameter, which should be a path to the file created by ``apdb-cli create-cassandra`` or ``apdb-cli create-sql`` when initializing the APDB.
       It will likely crash if this task is missing.
 
 .. option:: --extra <key=value>

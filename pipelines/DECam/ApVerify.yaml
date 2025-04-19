@@ -15,11 +15,11 @@ imports:
       - afterburner
 tasks:
   # ApVerify override removed by excluding apPipe.
-  diaPipe:
+  associateApdb:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True
       alertPackager.doWriteAlerts: True
 contracts:
   # Contracts removed by excluding apPipe
-  - diaPipe.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url
+  - associateApdb.apdb_config_url == totalUnassociatedDiaObjects.apdb_config_url

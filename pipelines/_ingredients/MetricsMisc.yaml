@@ -6,23 +6,23 @@ tasks:
   numNewDiaObjects:
     class: lsst.ap.association.metrics.NumberNewDiaObjectsMetricTask
     config:
-      connections.labelName: diaPipe  # partial name of metadata dataset
+      connections.labelName: associateApdb  # partial name of metadata dataset
   numUnassociatedDiaObjects:
     class: lsst.ap.association.metrics.NumberUnassociatedDiaObjectsMetricTask
     config:
-      connections.labelName: diaPipe
+      connections.labelName: associateApdb
   fracUpdatedDiaObjects:
     class: lsst.ap.association.metrics.FractionUpdatedDiaObjectsMetricTask
     config:
-      connections.labelName: diaPipe
+      connections.labelName: associateApdb
   numTotalSolarSystemObjects:
     class: lsst.ap.association.metrics.NumberSolarSystemObjectsMetricTask
     config:
-      connections.labelName: diaPipe
+      connections.labelName: associateApdb
   numAssociatedSsObjects:
     class: lsst.ap.association.metrics.NumberAssociatedSolarSystemObjectsMetricTask
     config:
-      connections.labelName: diaPipe
+      connections.labelName: associateApdb
   totalUnassociatedDiaObjects:
     class: lsst.ap.association.metrics.TotalUnassociatedDiaObjectsMetricTask
     config:

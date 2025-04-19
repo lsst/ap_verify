@@ -16,7 +16,7 @@ imports:
       - afterburner
 tasks:
   # ApVerify override removed by excluding apPipe.
-  diaPipe:
+  associateApdb:
     class: lsst.ap.association.DiaPipelineTask
     config:
       doPackageAlerts: True

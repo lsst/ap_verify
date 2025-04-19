@@ -10,22 +10,6 @@ tasks:
       connections.labelName: isr   # partial name of metadata dataset
       metadataDimensions: [instrument, exposure, detector]  # TimingMetricTask assumes visit
       target: isr.run              # method name in metadata. Usually matches label for top-level tasks
-  # TODO XXXX: These two can be removed once the pipeline that uses characterize/calibrate is gone.
-  timing_characterizeImage:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CharacterizeImageTime
-      connections.labelName: characterizeImage
-      target: characterizeImage.run
-  timing_calibrate:
-    class: lsst.verify.tasks.commonMetrics.TimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CalibrateTime
-      connections.labelName: calibrate
-      target: calibrate.run
-  ###
   timing_calibrateImage:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -33,14 +17,14 @@ tasks:
       connections.metric: CalibrateImageTime
       connections.labelName: calibrateImage
       target: calibrateImage.run
-  timing_retrieveTemplate:
+  timing_rewarpTemplate:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: GetTemplateTime
-      connections.labelName: retrieveTemplate
+      connections.labelName: rewarpTemplate
       metadataDimensions: [instrument, visit, detector, skymap]
-      target: retrieveTemplate.run
+      target: rewarpTemplate.run
   timing_subtractImages:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -53,71 +37,71 @@ tasks:
     config:
       connections.package: ip_diffim
       connections.metric: DetectAndMeasureTime
-      connections.labelName: detectAndMeasure
-      target: detectAndMeasure.run
+      connections.labelName: detectAndMeasureDiaSource
+      target: detectAndMeasureDiaSource.run
   timing_detectAndMeasure_detection:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: meas_algorithms
       connections.metric: SourceDetectionTime
-      connections.labelName: detectAndMeasure
-      target: detectAndMeasure:detection.run
+      connections.labelName: detectAndMeasureDiaSource
+      target: detectAndMeasureDiaSource:detection.run
   timing_detectAndMeasure_measurement:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: DipoleFitTime
-      connections.labelName: detectAndMeasure
-      target: detectAndMeasure:measurement.run
-  timing_rbClassify:
+      connections.labelName: detectAndMeasureDiaSource
+      target: detectAndMeasureDiaSource:measurement.run
+  timing_computeReliability:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: meas_transinet
       connections.metric: RBTransiNetTime
-      connections.labelName: rbClassify
-      target: rbClassify.run
-  timing_diaPipe:
+      connections.labelName: computeReliability
+      target: computeReliability.run
+  timing_associateApdb:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: DiaPipelineTime
-      connections.labelName: diaPipe
-      target: diaPipe.run
-  timing_transformDiaSrcCat:
+      connections.labelName: associateApdb
+      target: associateApdb.run
+  timing_standardizeDiaSource:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: MapDiaSourceTime
-      connections.labelName: transformDiaSrcCat
-      target: transformDiaSrcCat.run
-  timing_diaPipe_associator:
+      connections.labelName: standardizeDiaSource
+      target: standardizeDiaSource.run
+  timing_associateApdb_associator:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: AssociationTime
-      connections.labelName: diaPipe
-      target: diaPipe:associator.run
-  timing_diaPipe_diaForcedSource:
+      connections.labelName: associateApdb
+      target: associateApdb:associator.run
+  timing_associateApdb_diaForcedSource:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: DiaForcedSourceTime
-      connections.labelName: diaPipe
-      target: diaPipe:diaForcedSource.run
-  timing_diaPipe_alertPackager:
+      connections.labelName: associateApdb
+      target: associateApdb:diaForcedSource.run
+  timing_associateApdb_alertPackager:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: PackageAlertsTime
-      connections.labelName: diaPipe
-      target: diaPipe:alertPackager.run
-  timing_filterDiaSrcCat:
+      connections.labelName: associateApdb
+      target: associateApdb:alertPackager.run
+  timing_filterDiaSource:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: FilterDiaSourceCatalogTime
-      connections.labelName: filterDiaSrcCat
-      target: filterDiaSrcCat.run
+      connections.labelName: filterDiaSource
+      target: filterDiaSource.run
   cputiming_isr:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
@@ -126,20 +110,6 @@ tasks:
       connections.labelName: isr
       metadataDimensions: [instrument, exposure, detector]  # TimingMetricTask assumes visit
       target: isr.run
-  cputiming_characterizeImage:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CharacterizeImageCpuTime
-      connections.labelName: characterizeImage
-      target: characterizeImage.run
-  cputiming_calibrate:
-    class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
-    config:
-      connections.package: pipe_tasks
-      connections.metric: CalibrateCpuTime
-      connections.labelName: calibrate
-      target: calibrate.run
   cputiming_calibrateImage:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
@@ -147,14 +117,14 @@ tasks:
       connections.metric: CalibrateImageCpuTime
       connections.labelName: calibrateImage
       target: calibrateImage.run
-  cputiming_retrieveTemplate:
+  cputiming_rewarpTemplate:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: GetTemplateCpuTime
-      connections.labelName: retrieveTemplate
+      connections.labelName: rewarpTemplate
       metadataDimensions: [instrument, visit, detector, skymap]
-      target: retrieveTemplate.run
+      target: rewarpTemplate.run
   cputiming_subtractImages:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
@@ -167,98 +137,98 @@ tasks:
     config:
       connections.package: ip_diffim
       connections.metric: DetectAndMeasureCpuTime
-      connections.labelName: detectAndMeasure
-      target: detectAndMeasure.run
+      connections.labelName: detectAndMeasureDiaSource
+      target: detectAndMeasureDiaSource.run
   cputiming_detectAndMeasure_detection:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: meas_algorithms
       connections.metric: SourceDetectionCpuTime
-      connections.labelName: detectAndMeasure
-      target: detectAndMeasure:detection.run
+      connections.labelName: detectAndMeasureDiaSource
+      target: detectAndMeasureDiaSource:detection.run
   cputiming_detectAndMeasure_measurement:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: DipoleFitCpuTime
-      connections.labelName: detectAndMeasure
-      target: detectAndMeasure:measurement.run
-  cputiming_diaPipe:
+      connections.labelName: detectAndMeasureDiaSource
+      target: detectAndMeasureDiaSource:measurement.run
+  cputiming_associateApdb:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: DiaPipelineCpuTime
-      connections.labelName: diaPipe
-      target: diaPipe.run
-  cputiming_rbClassify:
+      connections.labelName: associateApdb
+      target: associateApdb.run
+  cputiming_computeReliability:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: meas_transinet
       connections.metric: RBTransiNetCpuTime
-      connections.labelName: rbClassify
-      target: rbClassify.run
-  cputiming_transformDiaSrcCat:
+      connections.labelName: computeReliability
+      target: computeReliability.run
+  cputiming_standardizeDiaSource:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: MapDiaSourceCpuTime
-      connections.labelName: transformDiaSrcCat
-      target: transformDiaSrcCat.run
-  cputiming_diaPipe_associator:
+      connections.labelName: standardizeDiaSource
+      target: standardizeDiaSource.run
+  cputiming_associateApdb_associator:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: AssociationCpuTime
-      connections.labelName: diaPipe
-      target: diaPipe:associator.run
-  cputiming_diaPipe_diaForcedSource:
+      connections.labelName: associateApdb
+      target: associateApdb:associator.run
+  cputiming_associateApdb_diaForcedSource:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: DiaForcedSourceCpuTime
-      connections.labelName: diaPipe
-      target: diaPipe:diaForcedSource.run
-  cputiming_diaPipe_alertPackager:
+      connections.labelName: associateApdb
+      target: associateApdb:diaForcedSource.run
+  cputiming_associateApdb_alertPackager:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: PackageAlertsCpuTime
-      connections.labelName: diaPipe
-      target: diaPipe:alertPackager.run
-  cputiming_filterDiaSrcCat:
+      connections.labelName: associateApdb
+      target: associateApdb:alertPackager.run
+  cputiming_filterDiaSource:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ap_association
       connections.metric: FilterDiaSourceCatalogCpuTime
-      connections.labelName: filterDiaSrcCat
-      target: filterDiaSrcCat.run
+      connections.labelName: filterDiaSource
+      target: filterDiaSource.run
   memory_apPipe:
     class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
     config:
       connections.package: ap_pipe
       connections.metric: ApPipeMemory
-      connections.labelName: diaPipe
-      target: diaPipe.run  # Memory use is peak over process, so measure last task
+      connections.labelName: associateApdb
+      target: associateApdb.run  # Memory use is peak over process, so measure last task
   memory_diaForcedSource:
     class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
     config:
       connections.package: ap_association
       connections.metric: DiaForcedSourceMemory
-      connections.labelName: diaPipe
-      target: diaPipe:diaForcedSource.run
+      connections.labelName: associateApdb
+      target: associateApdb:diaForcedSource.run
   memory_alertPackager:
     class: lsst.verify.tasks.commonMetrics.MemoryMetricTask
     config:
       connections.package: ap_association
       connections.metric: PackageAlertsMemory
-      connections.labelName: diaPipe
-      target: diaPipe:alertPackager.run
+      connections.labelName: associateApdb
+      target: associateApdb:alertPackager.run
   timing_apPipe:
     class: lsst.ap.pipe.metrics.PipelineTimingMetricTask
     config:
       connections.package: ap_pipe
       connections.metric: ApPipelineTime
       connections.labelStart: isr
-      connections.labelEnd: analyzeTrailedDiaSrcCore
+      connections.labelEnd: analyzeTrailedDiaSourceTable
       targetStart: isr.run
-      targetEnd: analyzeTrailedDiaSrcCore.run
+      targetEnd: analyzeTrailedDiaSourceTable.run
