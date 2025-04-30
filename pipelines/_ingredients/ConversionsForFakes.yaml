@@ -24,29 +24,25 @@ tasks:
   consolidateDiaSourceTable:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
-      connections.catalogType: parameters.fakesType
-      connections.inputCatalogs: "{catalogType}dia_source_detector"
-      connections.outputCatalog: "{catalogType}dia_source_visit"
+      connections.inputCatalogs: fakes_dia_source_detector
+      connections.outputCatalog: fakes_dia_source_visit
   # Creation of fakes_preliminary_visit_summary
   consolidateVisitSummary:
     class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
     config:
-      connections.calexpType: parameters.fakesType
-      connections.calexp: "{calexpType}preliminary_visit_image"
-      connections.visitSummary: "{calexpType}preliminary_visit_summary"
-      connections.visitSummarySchema: "{calexpType}preliminary_visit_summary_schema"
+      connections.calexp: fakes_preliminary_visit_image
+      connections.visitSummary: fakes_preliminary_visit_summary
+      connections.visitSummarySchema: fakes_preliminary_visit_summary_schema
   # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
-      connections.calexpType: parameters.fakesType
-      connections.visitSummaries: "{calexpType}preliminary_visit_summary"
-      connections.outputCatalog: "{calexpType}visit_table"
+      connections.visitSummaries: fakes_preliminary_visit_summary
+      connections.outputCatalog: fakes_visit_table
   # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visit_detector_table [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
-      connections.calexpType: parameters.fakesType
-      connections.visitSummaryRefs: "{calexpType}preliminary_visit_summary"
-      connections.outputCatalog: "{calexpType}visit_detector_table"
+      connections.visitSummaryRefs: fakes_preliminary_visit_summary
+      connections.outputCatalog: fakes_visit_detector_table
 
