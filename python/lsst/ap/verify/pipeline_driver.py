@@ -35,8 +35,8 @@ import re
 import subprocess
 import logging
 
-import lsst.ctrl.mpexec.execFixupDataId  # not part of lsst.ctrl.mpexec
 import lsst.dax.apdb as daxApdb
+import lsst.pipe.base.exec_fixup_data_id  # not lifted to package scope intentionally
 
 _LOG = logging.getLogger(__name__)
 
@@ -158,7 +158,7 @@ def _getExecOrder():
 
     Returns
     -------
-    order : `lsst.ctrl.mpexec.ExecutionGraphFixup`
+    order : `lsst.pipe.base.exec_fixup_data_id.ExecutionGraphFixup`
         An object encoding the desired execution order as an algorithm for
         modifying inter-quantum dependencies.
 
@@ -168,7 +168,7 @@ def _getExecOrder():
     """
     # Source association algorithm is not time-symmetric. Force execution of
     # association (through DiaPipelineTask) in order of ascending visit number.
-    return lsst.ctrl.mpexec.execFixupDataId.ExecFixupDataId(
+    return lsst.pipe.base.exec_fixup_data_id.ExecFixupDataId(
         taskLabel="associateApdb", dimensions=["visit", ], reverse=False)
 
 
