@@ -9,6 +9,9 @@ imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
+parameters:
+  # Use release_id=0 for development and all testing with ap_verify
+  release_id: 0
 tasks:
   associateApdb:
     class: lsst.ap.association.DiaPipelineTask
