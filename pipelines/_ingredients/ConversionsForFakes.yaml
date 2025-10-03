@@ -26,13 +26,6 @@ tasks:
     config:
       connections.inputCatalogs: fakes_dia_source_detector
       connections.outputCatalog: fakes_dia_source_visit
-  # Creation of fakes_preliminary_visit_summary
-  consolidateVisitSummary:
-    class: lsst.pipe.tasks.postprocess.ConsolidateVisitSummaryTask
-    config:
-      connections.calexp: fakes_preliminary_visit_image
-      connections.visitSummary: fakes_preliminary_visit_summary
-      connections.visitSummarySchema: fakes_preliminary_visit_summary_schema
   # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
