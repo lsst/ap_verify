@@ -17,14 +17,14 @@ tasks:
       connections.metric: CalibrateImageTime
       connections.labelName: calibrateImage
       target: calibrateImage.run
-  timing_rewarpTemplate:
+  timing_buildTemplate:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: GetTemplateTime
-      connections.labelName: rewarpTemplate
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: rewarpTemplate.run
+      connections.labelName: buildTemplate
+      metadataDimensions: [instrument, visit, detector]
+      target: buildTemplate.run
   timing_subtractImages:
     class: lsst.verify.tasks.commonMetrics.TimingMetricTask
     config:
@@ -117,14 +117,14 @@ tasks:
       connections.metric: CalibrateImageCpuTime
       connections.labelName: calibrateImage
       target: calibrateImage.run
-  cputiming_rewarpTemplate:
+  cputiming_buildTemplate:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
       connections.package: ip_diffim
       connections.metric: GetTemplateCpuTime
-      connections.labelName: rewarpTemplate
-      metadataDimensions: [instrument, visit, detector, skymap]
-      target: rewarpTemplate.run
+      connections.labelName: buildTemplate
+      metadataDimensions: [instrument, visit, detector]
+      target: buildTemplate.run
   cputiming_subtractImages:
     class: lsst.verify.tasks.commonMetrics.CpuTimingMetricTask
     config:
