@@ -20,5 +20,3 @@ tasks:
     config:
       doPackageAlerts: True
       alertPackager.doWriteAlerts: True
-contracts:
-  # Contracts removed by excluding apPipe
