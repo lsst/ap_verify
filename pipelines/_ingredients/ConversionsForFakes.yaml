@@ -20,22 +20,22 @@ tasks:
       # This is output directly by CalibrateImageTask.
       connections.inputCatalogs: single_visit_star_unstandardized
       connections.outputCatalog: consolidated_single_visit_star_unstandardized
-  # Merging of fakes_*Diff_diaSrcTable [detector-level Parquet] to fakes_diaSourceTable [visit-level]
+  # Merging of detector-level dia_source_detector [Parquet] to fakes_dia_source_visit [visit-level]
   consolidateDiaSourceTable:
     class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
     config:
-      connections.inputCatalogs: fakes_dia_source_detector
+      connections.inputCatalogs: dia_source_detector
       connections.outputCatalog: fakes_dia_source_visit
-  # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visitTable [instrument-level Parquet]
+  # Conversion of preliminary_visit_summary [visit-level afw.table] to fakes_visit_table [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
-      connections.visitSummaries: fakes_preliminary_visit_summary
+      connections.visitSummaries: preliminary_visit_summary
       connections.outputCatalog: fakes_visit_table
-  # Conversion of fakes_preliminary_visit_summary [visit-level afw.table] to fakes_visit_detector_table [instrument-level Parquet]
+  # Conversion of preliminary_visit_summary [visit-level afw.table] to fakes_visit_detector_table [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
-      connections.visitSummaryRefs: fakes_preliminary_visit_summary
+      connections.visitSummaryRefs: preliminary_visit_summary
       connections.outputCatalog: fakes_visit_detector_table
 
