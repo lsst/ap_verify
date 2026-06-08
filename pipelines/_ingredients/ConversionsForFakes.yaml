@@ -7,9 +7,6 @@
 description: Type conversion tasks customized for AP pipeline
 imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
-    exclude:
-      # Fakes pipeline doesn't produce non-fakes dia_source_visit.
-      - consolidateDiaSourceTable
 tasks:
   # TODO: TransformSourceTableTask can't be run until we create a functor
   # config that doesn't depend on shapeHSM.
@@ -20,12 +17,6 @@ tasks:
       # This is output directly by CalibrateImageTask.
       connections.inputCatalogs: single_visit_star_unstandardized
       connections.outputCatalog: consolidated_single_visit_star_unstandardized
-  # Merging of detector-level dia_source_detector [Parquet] to fakes_dia_source_visit [visit-level]
-  consolidateDiaSourceTable:
-    class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
-    config:
-      connections.inputCatalogs: dia_source_detector
-      connections.outputCatalog: fakes_dia_source_visit
   # Conversion of preliminary_visit_summary [visit-level afw.table] to fakes_visit_table [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask

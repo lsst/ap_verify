@@ -12,16 +12,6 @@ tasks:
       # This is output directly by CalibrateImageTask.
       connections.inputCatalogs: single_visit_star_unstandardized
       connections.outputCatalog: initial_stars
-
-  # Merging of *Diff_diaSrcTable [detector-level Parquet] to dia_source_visit [visit-level]
-  consolidateDiaSourceTable:
-    class: lsst.pipe.tasks.postprocess.ConsolidateSourceTableTask
-    config:
-      # Task doesn't support coaddName, so coopt catalogType instead.
-      connections.catalogType: parameters.coaddName
-      connections.inputCatalogs: dia_source_detector
-      connections.outputCatalog: dia_source_visit
-
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
