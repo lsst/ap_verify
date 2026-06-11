@@ -1,7 +1,7 @@
 # Verification pipeline specialized for the DC2 ImSim simulation.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
-description: Fully instrumented AP pipeline specialized for LSSTCam-imSim
+description: Fully instrumented AP pipeline specialized for LSSTComCam
 imports:
   - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerify.yaml
     # Include all metrics from standard pipeline. It's not practical to create
@@ -20,3 +20,4 @@ tasks:
     config:
       doPackageAlerts: True
       alertPackager.doWriteAlerts: True
+      doSolarSystemAssociation: True
