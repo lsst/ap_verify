@@ -4,13 +4,13 @@
 instrument: lsst.obs.lsst.LsstComCam
 description: Fully instrumented AP pipeline with fakes, specialized for LSSTComCam
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/ApVerifyWithFakes.yaml
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:
       - prompt
       - afterburner
-  - location: $AP_PIPE_DIR/pipelines/LSSTComCam/ApPipeWithFakes.yaml
+  - location: resource://lsst.ap.pipe/resources/pipelines/LSSTComCam/ApPipeWithFakes.yaml
     include:
       - prompt
       - afterburner

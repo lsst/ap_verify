@@ -2,13 +2,13 @@
 
 description: Fully instrumented AP pipeline.
 imports:
-  - location: $AP_PIPE_DIR/pipelines/_ingredients/ApPipe.yaml
+  - location: resource://lsst.ap.pipe/resources/pipelines/_ingredients/ApPipe.yaml
     include:
       - prompt
       - afterburner
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsRuntime.yaml
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/MetricsMisc.yaml
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/MetricsRuntime.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/MetricsMisc.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/Conversions.yaml
 parameters:
   # Use release_id=0 for development and all testing with ap_verify
   release_id: 0
