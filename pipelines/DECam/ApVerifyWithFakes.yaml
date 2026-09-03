@@ -1,19 +1,19 @@
 # Verification pipeline specialized for DECam with fake source inejection.
 # This concatenates various lsst.verify metrics to an AP pipeline
 
-# This pipeline assumes $AP_PIPE_DIR/pipelines/DECam/RunIsrForCrosstalkSources.yaml
+# This pipeline assumes resource://lsst.ap.pipe/resources/pipelines/DECam/RunIsrForCrosstalkSources.yaml
 # has already been run.
 
 instrument: lsst.obs.decam.DarkEnergyCamera
 description: Fully instrumented AP pipeline with fakes, specialized for DECam
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerifyWithFakes.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/ApVerifyWithFakes.yaml
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:
       - prompt
       - afterburner
-  - location: $AP_PIPE_DIR/pipelines/DECam/ApPipeWithFakes.yaml
+  - location: resource://lsst.ap.pipe/resources/pipelines/DECam/ApPipeWithFakes.yaml
     include:
       - prompt
       - afterburner
