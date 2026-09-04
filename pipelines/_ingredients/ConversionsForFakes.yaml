@@ -6,7 +6,7 @@
 
 description: Type conversion tasks customized for AP pipeline
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/Conversions.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/Conversions.yaml
 tasks:
   # TODO: TransformSourceTableTask can't be run until we create a functor
   # config that doesn't depend on shapeHSM.
