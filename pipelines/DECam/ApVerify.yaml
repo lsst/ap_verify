@@ -3,13 +3,13 @@
 
 description: Fully instrumented AP pipeline specialized for DECam
 imports:
-  - location: $AP_VERIFY_DIR/pipelines/_ingredients/ApVerify.yaml
+  - location: resource://lsst.ap.verify/resources/pipelines/_ingredients/ApVerify.yaml
     # Include all metrics from standard pipeline. It's not practical to create
     # a metrics subset because it would require constant micromanagement.
     exclude:
       - prompt
       - afterburner
-  - location: $AP_PIPE_DIR/pipelines/DECam/ApPipe.yaml
+  - location: resource://lsst.ap.pipe/resources/pipelines/DECam/ApPipe.yaml
     include:
       - prompt
       - afterburner
