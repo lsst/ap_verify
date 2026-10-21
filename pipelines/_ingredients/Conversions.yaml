@@ -15,11 +15,11 @@ tasks:
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
-      connections.visitSummaries: "{calexpType}preliminary_visit_summary"
+      connections.visitSummaries: "{calexpType}visit_summary"
       connections.outputCatalog: "{calexpType}visit_table"
-  # Conversion of preliminary_visit_summary [visit-level afw.table] to visit_detector_table [instrument-level Parquet]
+  # Conversion of visit_summary [visit-level afw.table] to visit_detector_table [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
-      connections.visitSummaryRefs: "{calexpType}preliminary_visit_summary"
+      connections.visitSummaryRefs: "{calexpType}visit_summary"
       connections.outputCatalog: "{calexpType}visit_detector_table"

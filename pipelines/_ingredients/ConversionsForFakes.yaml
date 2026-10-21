@@ -17,16 +17,16 @@ tasks:
       # This is output directly by CalibrateImageTask.
       connections.inputCatalogs: single_visit_star_unstandardized
       connections.outputCatalog: consolidated_single_visit_star_unstandardized
-  # Conversion of preliminary_visit_summary [visit-level afw.table] to fakes_visit_table [instrument-level Parquet]
+  # Conversion of visit_summary [visit-level afw.table] to fakes_visit_table [instrument-level Parquet]
   makeVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
     config:
-      connections.visitSummaries: preliminary_visit_summary
+      connections.visitSummaries: visit_summary
       connections.outputCatalog: fakes_visit_table
-  # Conversion of preliminary_visit_summary [visit-level afw.table] to fakes_visit_detector_table [instrument-level Parquet]
+  # Conversion of visit_summary [visit-level afw.table] to fakes_visit_detector_table [instrument-level Parquet]
   makeCcdVisitTable:
     class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
     config:
-      connections.visitSummaryRefs: preliminary_visit_summary
+      connections.visitSummaryRefs: visit_summary
       connections.outputCatalog: fakes_visit_detector_table
 
