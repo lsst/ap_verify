@@ -12,14 +12,3 @@ tasks:
       # This is output directly by CalibrateImageTask.
       connections.inputCatalogs: single_visit_star_unstandardized
       connections.outputCatalog: initial_stars
-  makeVisitTable:
-    class: lsst.pipe.tasks.postprocess.MakeVisitTableTask
-    config:
-      connections.visitSummaries: "{calexpType}visit_summary"
-      connections.outputCatalog: "{calexpType}visit_table"
-  # Conversion of visit_summary [visit-level afw.table] to visit_detector_table [instrument-level Parquet]
-  makeCcdVisitTable:
-    class: lsst.pipe.tasks.postprocess.MakeCcdVisitTableTask
-    config:
-      connections.visitSummaryRefs: "{calexpType}visit_summary"
-      connections.outputCatalog: "{calexpType}visit_detector_table"
